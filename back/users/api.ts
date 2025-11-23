@@ -1,8 +1,10 @@
-import { api, APIError, Query } from "encore.dev/api";
+import { api, APIError, ErrCode, Query } from "encore.dev/api";
 import { UserDTO, UserService } from "./users";
 import { db } from "./database";
 import { sessionTokens } from "./schema";
 import { AuthData, getAuthData } from "~encore/auth";
+import { Errors } from "./errors";
+// import { ProblemDetails } from "./errors";
 
 // Welcome to Encore!
 // This is a simple "Hello World" project to get you started.
@@ -17,147 +19,132 @@ import { AuthData, getAuthData } from "~encore/auth";
 //	curl http://localhost:4000/hello/World
 //
 
-/**
- * Registers a new user.
- *
- * @remarks
- * This endpoint is exposed as a POST method at the path `/register`.
- * It accepts user registration parameters and returns a response with the registered user data.
- *
- * @param params - The user registration parameters.
- * @returns A promise that resolves to a UserRegistrationResponse object containing the result and user data.
- *
- * @throws APIError - If there is an error creating the user.
- *
- * @example
- * ```typescript
- * const response = await register({
- *   firstName: "John",
- *   lastName: "Doe",
- *   email: "john.doe@example.com",
- *   phone: "1234567890",
- *   password: "password123",
- *   address: "123 Main St",
- *   dni: 12345678
- * });
- * ```
- */
-export const register = api(
-   { expose: true, method: "POST", path: "/register" },
-   async (
-      params: UserRegistrationParams,
-   ): Promise<UserRegistrationResponse> => {
-      try {
-         const user = await UserService.register(params);
-         return {
-            result: "ok",
-            data: user,
-         };
-      } catch (error) {
-         throw APIError.aborted(error?.detail || "Error creating the user");
-      }
+const registerHATEOAS = [
+   { "rel": "login", "href": "/api/v1/auth/login", "method": "POST" }
+];
+
+export const test = api(
+   { expose: true, method: "GET", path: "/test" },
+   async () => {
+      // const users = await db.select().from(sessionTokens);
+      // return packResponse(users);
+      throw Errors.invalidCredentials("test");
    },
 );
 
-/**
- * API endpoint for user login.
- *
- * @returns {Promise<UserLoginResponse>} - Response containing the login token.
- * @throws {APIError} - Throws an error if the login process fails.
- */
-export const login = api(
-   { expose: true, method: "POST", path: "/login" },
-   async (params: UserLoginParams): Promise<UserLoginResponse> => {
-      try {
-         const tokens = await UserService.login(params.email, params.password);
-         return {
-            result: "ok",
-            data: tokens,
-         };
-      } catch (error) {
-         throw APIError.aborted(error?.detail || "Error creating the user");
-      }
-   },
-);
-
-export const logout = api(
-   { expose: true, method: "POST", path: "/logout", auth: true },
-   async (params: UserLogoutParams) => {
-      await UserService.logout(params.sessionToken, params.refreshToken);
-      return { result: "ok" };
-   },
-);
-
-export const refresh = api(
-   { expose: true, method: "POST", path: "/refresh", auth: true },
-   async (params: UserLogoutParams) => {
-      const tokens = await UserService.refresh(
-         params.sessionToken,
-         params.refreshToken,
-      );
-      return {
-         result: "ok",
-         data: tokens,
-      };
-   },
-);
-
-export const verify = api(
-   { expose: true, method: "GET", path: "/verify" },
-   async (params: VerifyUserParams) => {
-      await UserService.verifyUser(params.token);
-      return {
-         result: "ok"
-      };
-   }
-)
-
-
-
-// export const tokens = api(
-//    { expose: true, method: "GET", path: "/tokens" },
-//    async () => {
-//       return await db.select().from(sessionTokens);
+// export const register = api(
+//    { expose: true, method: "POST", path: "/auth/register" },
+//    async (
+//       params: UserRegistrationParams,
+//    ): Promise<UserRegistrationResponse> => {
+//       try {
+//          const user = await UserService.register(params);
+//          return packResponse(user, registerHATEOAS)
+//       } catch (error) {
+//          throw APIError.aborted(error?.detail || "Error creating the user");
+//       }
 //    },
 // );
 
-// export const _private = api(
-//    { expose: true, method: "GET", path: "/private", auth: true },
-//    async (): Promise<{ message: string }> => {
-//       const data = getAuthData() as UserDTO & { userID: string };
+// /**
+//  * API endpoint for user login.
+//  *
+//  * @returns {Promise<UserLoginResponse>} - Response containing the login token.
+//  * @throws {APIError} - Throws an error if the login process fails.
+//  */
+// export const login = api(
+//    { expose: true, method: "POST", path: "/login" },
+//    async (params: UserLoginParams): Promise<UserLoginResponse> => {
+//       try {
+//          const tokens = await UserService.login(params.email, params.password);
+//          return {
+//             result: "ok",
+//             data: tokens,
+//          };
+//       } catch (error) {
+//          throw APIError.aborted(error?.detail || "Error creating the user");
+//       }
+//    },
+// );
+
+// export const logout = api(
+//    { expose: true, method: "POST", path: "/logout", auth: true },
+//    async (params: UserLogoutParams) => {
+//       await UserService.logout(params.sessionToken, params.refreshToken);
+//       return { result: "ok" };
+//    },
+// );
+
+// export const refresh = api(
+//    { expose: true, method: "POST", path: "/refresh", auth: true },
+//    async (params: UserLogoutParams) => {
+//       const tokens = await UserService.refresh(
+//          params.sessionToken,
+//          params.refreshToken,
+//       );
 //       return {
-//          message: `Hola ${data.firstName} ${data.lastName}`,
+//          result: "ok",
+//          data: tokens,
 //       };
 //    },
 // );
 
-interface DataWithMessage<T> {
-   result: string;
-   error?: string;
-   data?: T;
+// export const verify = api(
+//    { expose: true, method: "GET", path: "/verify" },
+//    async (params: VerifyUserParams) => {
+//       await UserService.verifyUser(params.token);
+//       return {
+//          result: "ok"
+//       };
+//    }
+// )
+
+
+interface StandardResponseWithoutHATEOAS<T> {
+   data: T;
 }
 
+interface StandardResponseWithHATEOAS<T> {
+   data: T;
+   links: HATEOAS[];
+}
+
+type StandardResponse<T> = StandardResponseWithoutHATEOAS<T> | StandardResponseWithHATEOAS<T>;
+
 export interface UserRegistrationParams {
+   email: string;
+   password: string;
    firstName: string;
    lastName: string;
-   email: string;
    phone: string;
-   password: string;
    address?: string;
    dni?: number;
 }
 
-export type UserRegistrationResponse = DataWithMessage<{
-   id: number;
-   firstName: string;
-   lastName: string;
-   email: string;
-   phone: string;
-   address: string | null;
-   dni: number | null;
-   verified: boolean;
-}>;
+interface HATEOASLink {
+   rel: string;
+   href: string;
+   method: string;
+}
 
+interface HATEOAS {
+   links: HATEOASLink[];
+}
+
+interface SuccessfulUserRegistrationData extends HATEOAS {
+   data: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      phone: string;
+      address?: string;
+      dni?: number;
+      isVerified: boolean;
+   };
+}
+
+export type UserRegistrationResponse = ProblemDetails | SuccessfulUserRegistrationData;
 export interface UserLoginParams {
    email: string;
    password: string;
@@ -168,10 +155,25 @@ export interface UserLogoutParams {
    refreshToken: string;
 }
 
-export type UserLoginResponse = DataWithMessage<UserLogoutParams>;
+export type UserLoginResponse = StandardResponse<UserLogoutParams>;
 
 export interface VerifyUserParams {
    token: Query<string>;
+}
+
+function packResponse<T>(data: T): StandardResponseWithoutHATEOAS<T>;
+function packResponse<T>(data: T, hateoas?: HATEOAS[]): StandardResponse<T>;
+
+function packResponse<T>(data: T, hateoas?: HATEOAS[]): StandardResponse<T> {
+   if (!hateoas)
+      return {
+         data: data,
+      };
+
+   return {
+      data: data,
+      links: hateoas
+   };
 }
 
 // ==================================================================

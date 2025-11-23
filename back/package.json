@@ -27,10 +27,11 @@
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.3",
-    "encore.dev": "^1.46.4",
+    "encore.dev": "^1.51.6",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
-    "prisma": "^6.4.1"
+    "prisma": "^6.4.1",
+    "odata": "file:../odata"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.13.0"
