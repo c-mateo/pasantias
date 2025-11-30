@@ -3,7 +3,9 @@
 import { prisma } from "#start/prisma"
 import { HttpContext } from "@adonisjs/core/http"
 import vine from "@vinejs/vine"
-import { parse } from "odata"
+import { checkUnique } from "../../prisma/strategies.js"
+import { apiErrors } from "#exceptions/myExceptions"
+import { rsqlStringToQuery } from "rsql-prisma"
 
 enum CompanySort {
     NAME = 'name',
@@ -16,11 +18,15 @@ enum CompanySort {
 
 const schema = vine.compile(vine.object({
     limit: vine.number().range([10, 100]).optional(),
-    before: vine.number().optional(),
     after: vine.number().optional(),
-    // cursor: vine.number().optional(),
     sort: vine.enum(CompanySort).optional(),
     filter: vine.any().optional().transform(v => String(v)),
+}))
+
+const validator = vine.compile(vine.object({
+    params: vine.object({
+        id: vine.number()
+    }),
 }))
 
 const createValidator = vine.compile(vine.object({
@@ -32,7 +38,19 @@ const createValidator = vine.compile(vine.object({
     logo: vine.string().maxLength(500).url().optional(),
 }))
 
-function getOrderBy(sort?: CompanySort) {
+const updateValidator = vine.compile(vine.object({
+    params: vine.object({
+        id: vine.number()
+    }),
+    name: vine.string().minLength(3).maxLength(200).optional(),
+    description: vine.string().optional(),
+    website: vine.string().url().optional(),
+    email: vine.string().email().optional(),
+    phone: vine.string().optional(),
+    logo: vine.string().maxLength(500).url().optional()
+}))
+
+function getOrder(sort?: CompanySort) {
     switch (sort) {
         case CompanySort.NAME:
             return { name: 'asc' } as const
@@ -54,129 +72,52 @@ function getOrderBy(sort?: CompanySort) {
 export default class CompaniesController {
     // GET /companies
     async list({ request }: HttpContext) {
-        // const qs = request.qs()
-        // if (Array.isArray(qs.filter)) {
-        //     qs.filter = qs.filter.join(' ')
-        // }
         const query = await schema.validate(request.qs())
         console.log(query)
-
-        const filter = query.filter
-        // console.log(filter)
-
-        // if (filter.before && !filter.after) {
-            //     await prisma.company.findMany({
-        //         take: -filter.limit!,
-        //         cursor: {
-            //             id: filter.before,
-        //         },
-        //         skip: 1,
-        //     })
-        // }
-        // const sign = filter.before ? -1 : 1
         
         // Straightforward pagination
-        const limit = query.limit ?? 2
-        // console.log(limit)
+        // const where = query.filter ? await parse(query.filter, {
+        //     id: 'number',
+        //     name: 'string',
+        //     description: 'string',
+        //     website: 'string',
+        //     email: 'string',
+        //     phone: 'string',
+        // }) : undefined
 
-        const cursor = query.after ? { id: query.after } : undefined
+        const where = query.filter ? rsqlStringToQuery(query.filter) as any : undefined
+        console.log(where)
 
-        const where = filter ? await parse(filter, {
-            id: 'number',
-            name: 'string',
-            description: 'string',
-            website: 'string',
-            email: 'string',
-            phone: 'string',
-        }) : undefined
-
-        const companies = await prisma.company.findMany({
-            cursor: cursor,
-            take: limit ? limit + 1 : undefined,
-            skip: cursor ? 1 : 0,
+        return await prisma.company.paginate({
+            limit: query.limit ?? 20,
+            after: query.after,
+            where: where,
+            orderBy: getOrder(query.sort),
             omit: {
                 createdAt: true,
                 updatedAt: true,
-                deletedAt: true,
-                // TODO: Realmente es necesario saber cuando se verificó?
-                verifiedAt: true,
+                deletedAt: true
             },
-            where: where,
-            orderBy: getOrderBy(query.sort)
-        })
-        
-        const hasNext = companies.length === (limit + 1)
-        const next = hasNext ? companies.splice(-1)[0] : null
-
-        // Backward pagination
-        // const limit = filter.limit ?? 2
-        // const take = -(limit + 2)
-        // // console.log(limit)
-
-        // const cursor = filter.before ? { id: filter.before } : undefined
-        // // const cursor = filter.after ? { id: filter.after } : undefined
-
-        // const companies = await prisma.company.findMany({
-        //     cursor: cursor,
-        //     take: take,
-        //     // skip: 1,
-        //     // where: {
-        //     //     id: {
-        //     //         lt: filter.before,
-        //     //     }
-        //     // }
-        // })
-
-        // const hasNext = companies[companies.length - 1].id === filter.before
-        // const hasPrev = companies.length === (limit + 2) || !hasNext && companies.length === (limit + 1)
-        // const prev = hasPrev ? companies[1 + Number(!hasNext)] : null
-        // const next = hasNext ? companies.splice(-1)[0] : null
-
-        // const data = companies.splice(-limit, limit)
-
-        return {
-            data: companies,
-            pagination: {
-                limit: limit,
-                next: next ? next.id : null,
-                hasNext: hasNext,
-                // prev: prev ? prev.id : null,
-                // next: next ? next.id : null,
-                // hasPrev: hasPrev,
-                // hasNext: hasNext
-            },
-            links: [
-                {
-                    rel: "self",
-                    href: request.parsedUrl.path
-                },
-                // {
-                //     rel: "prev",
-                //     href: prev ? `${request.url()}?before=${prev.id}` : null
-                // },
-                {
-                    rel: "next",
-                    href: next ? `${request.url()}?after=${next.id}` : null
+            extra: (result) => ({
+                links: {
+                    self: request.parsedUrl.path,
+                    next: result.pagination.next ? `${request.url()}?after=${result.pagination.next}` : null,
                 }
-            ]
-        }
+            }),
+        })
     }
 
     // GET /companies/:id
-    async get({ request, response }: HttpContext) {
+    async get({ request }: HttpContext) {
         const companyId = request.param('id')
-        const company = await prisma.company.findUnique({
+        const company = await prisma.company.findUniqueOrThrow({
             where: { id: companyId },
             omit: {
                 createdAt: true,
                 updatedAt: true,
                 deletedAt: true,
-                verifiedAt: true,
             }
         })
-        if (!company) {
-            response.notFound({ error: 'Company not found' })
-        }
         return {
             data: company,
             links: [
@@ -185,37 +126,48 @@ export default class CompaniesController {
         }
     }
 
-    async getOffers({ request, response }: HttpContext) {
-        const companyId = request.param('id')
-        const company = await prisma.company.findUnique({
-            where: { id: companyId },
-        })
-        if (!company) {
-            response.notFound({ error: 'Company not found' })
+    // POST /companies
+    async create({ request, response }: HttpContext) {
+        const validated = await request.validateUsing(createValidator)
+        const company = await prisma.company.guardedCreate({
+            data: validated
+        }, [ checkUnique(['name', 'email', 'phone']) ])
+        response.created(company)
+    }
+
+    async update({ request }: HttpContext) {
+        const { params, ...validated } = await request.validateUsing(updateValidator)
+        const updatedCompany = await prisma.company.guardedUpdate({
+            where: { id: params.id },
+            data: validated,
+        }, [ checkUnique(['name', 'email', 'phone']) ] )
+        return {
+            data: updatedCompany,
         }
-        const offers = await prisma.offer.findMany({
-            where: { companyId: companyId },
+    }
+
+    // DELETE /companies/:id
+    async delete({ request, response }: HttpContext) {
+        const { params } = await request.validateUsing(validator)
+        await prisma.company.guardedDelete({
+            where: { id: params.id },
         })
+        response.noContent()
+    }
+
+    async getOffers({ request }: HttpContext) {
+        const { params } = await request.validateUsing(validator)
+        const offers = await prisma.offer.findMany({
+            where: { companyId: params.id },
+        })
+        if (!offers) {
+            throw apiErrors.notFound('Company', params.id)
+        }
         return {
             data: offers,
             pagination: {
                 // TODO: Implement pagination
             }
         }
-    }
-    
-    // POST /companies
-    async create({ request }: HttpContext) {
-        const validated = await request.validateUsing(createValidator)
-        return await prisma.company.create({
-            data: {
-                name: validated.name,
-                description: validated.description,
-                website: validated.website,
-                email: validated.email,
-                phone: validated.phone,
-                logo: validated.logo,
-            }
-        })
     }
 }

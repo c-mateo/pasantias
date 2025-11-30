@@ -1,9 +1,7 @@
 import { prisma } from "#start/prisma";
 import { symbols } from "@adonisjs/auth";
 import { SessionGuardUser, SessionUserProviderContract } from "@adonisjs/auth/types/session";
-import { User } from "@prisma/client";
-
-
+import { User } from "../../generated/prisma/index.js";
 
 export class FakeUserProvider implements SessionUserProviderContract<User> {
     declare [symbols.PROVIDER_REAL_USER]: User

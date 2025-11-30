@@ -2,7 +2,7 @@ import { defineConfig } from '@adonisjs/auth'
 import { sessionGuard } from '@adonisjs/auth/session'
 import type { InferAuthenticators, InferAuthEvents, Authenticators } from '@adonisjs/auth/types'
 import { configProvider } from '@adonisjs/core'
-import { User } from '@prisma/client'
+import { User } from '../generated/prisma/index.js'
 
 const authConfig = defineConfig({
   default: 'web',

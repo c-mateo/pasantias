@@ -1,6 +1,8 @@
 import app from '@adonisjs/core/services/app'
 import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
 import { StatusPageRange } from '@adonisjs/core/types/http'
+import { ValidationError } from '@vinejs/vine'
+import { ApiException } from './myExceptions.js'
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -14,7 +16,28 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * response to the client
    */
   async handle(error: unknown, ctx: HttpContext) {
+    // console.log("Handle", error)
+    // if (error instanceof ValidationError) {
+    //   if (error.messages.some((msg => msg.rule === 'exists'))) {
+    //     return ctx.response.notFound({
+    //       message: 'Resource not found',
+    //     })
+    //   }
+    // }
+
+    if (error instanceof ApiException) {
+      const formattedError = error.format({ instance: ctx.request.url() })
+      return ctx.response.status(error.status).json(formattedError)
+    }
+    
     return super.handle(error, ctx)
+    // return ctx.response.status(400).json({
+    //   "type": "https://pasantias.unraf.edu.ar/errors/{error-type}",
+    //   "title": "Human-readable summary",
+    //   "status": 400,
+    //   "detail": "Specific explanation of this error occurrence",
+    //   "instance": ctx.request.url(),
+    // })
   }
 
   /**

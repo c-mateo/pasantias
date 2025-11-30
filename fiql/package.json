@@ -1,0 +1,30 @@
+{
+  "name": "odata",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json --outDir ./dist",
+    "test": "jest --config ./jest.config.cjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@rsql/builder": "^1.6.0",
+    "antlr4": "^4.13.2",
+    "rsql-prisma": "^1.0.3",
+    "vitest": "^4.0.14"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.3",
+    "antlr-ng": "^1.0.10",
+    "jest": "^29.6.4",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.2"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  }
+}

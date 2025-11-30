@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client.js'
 import env from './env.js'
-// import { PrismaClient } from '@prisma/client'
+import { guardModelExtension, paginationExtension } from '../prisma/extensions.js'
 
 const user = env.get('DB_USER')
 const password = env.get('DB_PASSWORD') || ''
@@ -22,25 +22,23 @@ export const prisma = new PrismaClient({
     { level: 'query', emit: 'event' },
     { level: 'info', emit: 'event' },
     { level: 'warn', emit: 'event' },]
-})
+}).$extends(guardModelExtension).$extends(paginationExtension);
 
-console.log(await prisma.course.findMany())
 
 // const datos = [
-//   { name: "Licenciatura en Educación" },
+//   // { name: "Licenciatura en Educación" },
 //   { name: "Licenciatura en Industrias Alimentarias" },
 //   { name: "Licenciatura en Gestión de la Tecnología" },
 //   { name: "Licenciatura en Administración y gestión de la información" },
 //   { name: "Licenciatura en Ciencias del Entretenimiento" },
 //   { name: "Licenciatura en Automatización y Robótica" },
-//   { name: "Licenciatura en Gestión de la Tecnología" },
 //   { name: "Licenciatura en Diseño Industrial" },
 //   { name: "Licenciatura en Medios Audiovisuales y Digitales" },
 //   { name: "Licenciatura en Producción de Videojuegos y entretenimiento digital" },
 //   { name: "Licenciatura en Relaciones del Trabajo" },
 //   { name: "Licenciatura en Administración y gestión de la información" },
 //   { name: "Licenciatura en Bioinformática" },
-//   { name: "Licenciatura en Agro Informática" },
+//   { name: "Licenciatura en Agroinformática" },
 //   { name: "Licenciatura en Tecnología Ambiental y Energías Renovables" },
 //   { name: "Licenciatura en Gestión de la Tecnología aplicada a Logística" },
 //   { name: "Licenciatura en Industrias Creativas" },
@@ -80,7 +78,8 @@ console.log(await prisma.course.findMany())
 // })
 
 // await prisma.course.createMany({
-//   data: datos
+//   data: datos,
+//   skipDuplicates: true,
 // })
 
 process.on('beforeExit', async () => {

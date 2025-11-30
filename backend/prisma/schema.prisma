@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../generated/prisma"
 }
 
@@ -29,13 +29,13 @@ model User {
   // Perfil obligatorio
   firstName       String   @db.Text                 // Encriptado
   lastName        String   @db.Text                 // Encriptado
-  dni             String   @db.Text                 // Encriptado (8 dígitos)
-  phone           String   @db.Text                 // Encriptado
-  domicilio       String   @db.Text                 // Encriptado (calle y número)
+  dni             String   @unique @db.Text         // Encriptado (8 dígitos)
+  phone           String?  @unique @db.Text         // Encriptado
+  address         String?  @db.Text                 // Encriptado (calle y número)
   
   // Ubicación (plain text para filtrar)
-  localidad       String   @db.VarChar(100)         // Encriptado
-  provincia       String   @db.VarChar(100)         // Encriptado
+  city           String?  @db.VarChar(100)         // Encriptado
+  province       String?  @db.VarChar(100)         // Encriptado
   
   // Metadata
   createdAt       DateTime @default(now())
@@ -47,13 +47,14 @@ model User {
   courses         Course[]                      // N-N: Usuario en múltiples carreras
   skills          Skill[]
   documents       Document[]
-  drafts          ApplicationDraft[]
+  drafts          Draft[]
   applications    Application[]
   sessions        Session[]
   notifications   Notification[]
+  authTokens      AuthToken[]
   
   @@index([emailHash])
-  @@index([provincia, localidad])
+  @@index([province, city])
 }
 
 enum UserRole {
@@ -62,7 +63,7 @@ enum UserRole {
 }
 
 model Session {
-  id             String   @id @default(cuid())
+  id             String   @id @default(cuid(2))
   userId         Int
   createdAt      DateTime @default(now())
   lastActivityAt DateTime @default(now())  // Para sliding/renewal
@@ -77,6 +78,26 @@ model Session {
   @@index([lastActivityAt])
 }
 
+model AuthToken {
+  id         String   @id @default(cuid(2))
+  userId     Int
+  tokenHash  String   @unique @db.VarChar(64) // SHA256 del token
+  type       AuthTokenType
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([expiresAt])
+  @@unique([userId, type])
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 // ==========================================
 // CATÁLOGOS
 // ==========================================
@@ -85,6 +106,7 @@ model Course {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(200)
   description String?  @db.Text
+  shortName   String?  @db.VarChar(20)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -96,7 +118,6 @@ model Skill {
   id          Int      @id @default(autoincrement())
   name        String   @unique @db.VarChar(200)
   description String?  @db.Text
-  category    String?  @db.VarChar(100)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -130,16 +151,12 @@ model Company {
   phone       String?  @db.VarChar(50)
   logo        String?  @db.VarChar(500)
   
-  verified    Boolean  @default(false)
-  verifiedAt  DateTime?
-  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
   
   offers      Offer[]
   
-  @@index([verified])
   @@index([email])
 }
 
@@ -149,6 +166,10 @@ model Offer {
   title           String      @db.VarChar(200)
   description     String      @db.Text
   status          OfferStatus @default(DRAFT)
+  location        String?     @db.VarChar(200)
+  salary          Int?        // En moneda local
+  durationWeeks   Int?        // Duración estimada en semanas
+  startDate       DateTime?
   
   publishedAt     DateTime?
   expiresAt       DateTime?
@@ -164,7 +185,7 @@ model Offer {
   company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   requiredDocs    RequiredDocument[]
   skills          Skill[]
-  drafts          ApplicationDraft[]
+  drafts          Draft[]
   applications    Application[]
   
   @@index([companyId])
@@ -187,8 +208,8 @@ model RequiredDocument {
   offer           Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
   documentType    DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
   
-  draftDocuments  DraftDocument[]
-  appDocuments    ApplicationDocument[]
+  // TODO: Debería?
+  // attachments     DocumentAttachment[]
   
   @@id([offerId, documentTypeId])
   @@index([offerId])
@@ -204,40 +225,66 @@ model Document {
   userId               Int
   documentTypeId       Int
   originalName         String   @db.VarChar(255)
+  size                 Int      // En bytes
   
   // Path con UUID para anonimato
   // Ej: /uploads/documents/2025/11/a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf
   path                 String   @unique @db.VarChar(500)
-  
-  fileSize             Int?
+  hash                 String   @db.VarChar(64)  // SHA256 del archivo para evitar duplicados
   
   createdAt            DateTime @default(now())
   lastUsedAt           DateTime @default(now())
   scheduledForDeletion DateTime?
+  hiddenAt             DateTime? // Soft delete
   
   // Integración universitaria (baja prioridad)
   // source               DocumentSource @default(USER_UPLOAD)
-  externalId           String?  @db.VarChar(200)
-  verifiedAt           DateTime?
+  // externalId           String?  @db.VarChar(200)
+  // verifiedAt           DateTime?
   // verifiedBy           Int?
   
   user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   documentType         DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
   // verifier             User?        @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
   
-  draftDocuments       DraftDocument[]
-  applicationDocuments ApplicationDocument[]
+  attachments          DocumentAttachment[]
   
   @@index([userId])
   @@index([userId, documentTypeId])
   @@index([scheduledForDeletion])
 }
 
+// Representa la asociación de un documento con un borrador o una postulación (no ambas)
+model DocumentAttachment {
+  id            Int       @id @default(autoincrement())
+
+  documentId    Int
+  draftId       Int?
+  applicationId Int?
+  // requiredDocumentId Int?
+
+  document      Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  draft         Draft?       @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  // requiredDocument RequiredDocument? @relation(fields: [requiredDocumentId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@unique([documentId, draftId])
+  @@unique([documentId, applicationId])
+  @@index([draftId])
+  @@index([applicationId])
+  @@index([documentId])
+}
+
+
+
 // ==========================================
 // BORRADORES DE POSTULACIÓN
 // ==========================================
 
-model ApplicationDraft {
+model Draft {
+  id          Int       @id @default(autoincrement())
   userId      Int
   offerId     Int
   
@@ -250,29 +297,14 @@ model ApplicationDraft {
   
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   offer       Offer            @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  documents   DraftDocument[]
+  attachments DocumentAttachment[]
   
-  @@id([userId, offerId])
+  @@unique([userId, offerId])
   @@index([userId])
   @@index([offerId])
   @@index([updatedAt])
   @@index([expiresAt])
-}
-
-model DraftDocument {
-  userId          Int
-  offerId         Int
-  documentId      Int
-  documentTypeId  Int
-  
-  draft           ApplicationDraft @relation(fields: [userId, offerId], references: [userId, offerId], onDelete: Cascade)
-  document        Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  required        RequiredDocument @relation(fields: [offerId, documentTypeId], references: [offerId, documentTypeId])
-  
-  @@id([userId, offerId, documentId])
-  @@unique([userId, offerId, documentTypeId])
-  @@index([userId, offerId])
-  @@index([documentId])
+	@@map("ApplicationDraft")
 }
 
 // ==========================================
@@ -285,13 +317,7 @@ model Application {
   offerId         Int
   status          ApplicationStatus @default(PENDING)
   
-  appliedAt       DateTime          @default(now())
-  reviewedAt      DateTime?
-  finalizedAt     DateTime?
-  acceptedAt      DateTime?
-  rejectedAt      DateTime?
-  startDate       DateTime?
-  endDate         DateTime?
+  finalizedAt     DateTime? // Aceptada, rechazada o cancelada
   feedback        String?           @db.Text
   
   // Bloqueo por cambios en requisitos
@@ -307,40 +333,20 @@ model Application {
   
   user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   offer           Offer                 @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  documents       ApplicationDocument[]
+  attachments     DocumentAttachment[]
   
   @@unique([userId, offerId])
   @@index([userId])
   @@index([offerId])
   @@index([status])
-  @@index([status, updatedAt])
-  @@index([appliedAt])
 }
 
 enum ApplicationStatus {
   PENDING
-  REVIEWING
   BLOCKED      // Requiere acción del usuario (ej: documentos adicionales)
   ACCEPTED
   REJECTED
   CANCELLED
-}
-
-model ApplicationDocument {
-  applicationId   Int
-  documentId      Int
-  offerId         Int
-  documentTypeId  Int
-  uploadedAt      DateTime @default(now())
-  
-  application     Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  document        Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  required        RequiredDocument @relation(fields: [offerId, documentTypeId], references: [offerId, documentTypeId])
-  
-  @@id([applicationId, documentId])
-  @@unique([applicationId, offerId, documentTypeId])
-  @@index([applicationId])
-  @@index([documentId])
 }
 
 // ==========================================

@@ -1,0 +1,9 @@
+{
+    "files.exclude": {
+        "**/generated/": true,
+        "**/node_modules/": true,
+        "back/": true,
+        "odata/": true,
+        "ravyn/": true
+    }
+}

@@ -1,13 +1,43 @@
+import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
+import vine from '@vinejs/vine'
+import { checkDeleteRestrict, checkUnique } from '../../prisma/strategies.js'
+
+const idValidator = vine.compile(vine.object({
+    params: vine.object({
+        id: vine.number()
+    })
+}))
+
+const createValidator = vine.compile(vine.object({
+    name: vine.string().minLength(1).maxLength(200),
+    description: vine.string().optional()
+}))
+
+const updateValidator = vine.compile(vine.object({
+    params: vine.object({
+        id: vine.number()
+    }),
+    name: vine.string().minLength(1).maxLength(200).optional(),
+    description: vine.string().optional()
+}))
+
+const deleteValidator = vine.compile(vine.object({
+    params: vine.object({
+        id: vine.number()
+    }),
+    force: vine.boolean().optional()
+}))
 
 export default class SkillsController {
-    async list({}: HttpContext) {
+    async list({ auth }: HttpContext) {
         // TODO: Add pagination, filtering, etc.
+        const isNotAdmin = auth.user?.role !== 'ADMIN'
         const skills = await prisma.skill.findMany({
             omit: {
-                createdAt: true,
-                updatedAt: true
+                createdAt: isNotAdmin,
+                updatedAt: isNotAdmin
             }
         })
         return {
@@ -15,20 +45,64 @@ export default class SkillsController {
         }
     }
 
-    async get({ request, response }: HttpContext) {
-        const skillId = request.param('id')
-        const skill = await prisma.skill.findUnique({
-            where: { id: skillId },
+    async get({ request, auth }: HttpContext) {
+        const { params } = await request.validateUsing(idValidator)
+        const isNotAdmin = auth.user?.role !== 'ADMIN'
+        const skill = await prisma.skill.findUniqueOrThrow({
+            where: { id: params.id },
             omit: {
-                createdAt: true,
-                updatedAt: true
+                createdAt: isNotAdmin,
+                updatedAt: isNotAdmin
             }
         })
-        if (!skill) {
-            response.notFound({ error: 'Skill not found' })
-        }
         return {
             data: skill
+        }
+    }
+
+    async create({ request }: HttpContext) {
+        const validated = await request.validateUsing(createValidator)
+        const skill = await prisma.skill.guardedCreate({
+            data: validated
+        }, [checkUnique(['name'])])
+        return {
+            data: skill
+        }
+    }
+
+    async update({ request }: HttpContext) {
+        const { params, ...data } = await request.validateUsing(updateValidator)
+        const updatedSkill = await prisma.skill.guardedUpdate({
+            where: { id: params.id },
+            data
+        }, [checkUnique(['name'])])
+        return {
+            data: updatedSkill
+        }
+    }
+
+    async delete({ request }: HttpContext) {
+        const { params, force } = await request.validateUsing(deleteValidator)
+        if (force) {
+            // Disconnect all relations before deleting
+            await prisma.skill.update({
+                where: { id: params.id },
+                data: {
+                    users: {
+                        set: []
+                    },
+                    offers: {
+                        set: []
+                    }
+                }
+            })
+        }
+
+        await prisma.skill.guardedDelete({
+            where: { id: params.id }
+        }, [checkDeleteRestrict('Skill')])
+        return {
+            message: `Skill with id ${params.id} deleted successfully.`
         }
     }
 }

@@ -21,43 +21,74 @@ router.get('/', async () => {
 // router.get('courses', [coursesController, 'index'])
 router.group(() => {
   router.group(() => {
-    router.post('login', '#controllers/auth_controller.login').use(middleware.guest())
-    router.post('logout', '#controllers/auth_controller.logout').use(middleware.auth())
-    router.post('register', '#controllers/auth_controller.register').use(middleware.guest())
+    router.post('login', '#controllers/auth_controller.login').as('auth.login').use(middleware.guest())
+    router.post('logout', '#controllers/auth_controller.logout').as('auth.logout').use(middleware.auth())
+    router.post('register', '#controllers/auth_controller.register').as('auth.register').use(middleware.guest())
   }).prefix('/auth')
 
   // Non-admin routes
-  router.get('profile', '#controllers/profile_controller.get').use(middleware.auth())
+  router.get('profile', '#controllers/profile_controller.get').as('profile').use(middleware.auth())
 
-  router.get('courses', '#controllers/course_controller.list')
+  // Courses
+  router.get('courses', '#controllers/course_controller.list').as('courses')
   router.get('courses/:id', '#controllers/course_controller.get')
 
-  router.get('companies', '#controllers/company_controller.list')
+  // Companies
+  router.get('companies', '#controllers/company_controller.list').as('companies')
   router.get('companies/:id', '#controllers/company_controller.get')
   router.get('companies/:id/offers', '#controllers/company_controller.getOffers')
 
-  router.group(() => {
-    router.get('my-applications', '#controllers/application_controller.listUserApplications')
+  // Offers
+  router.get('offers', '#controllers/offer_controller.list').as('offers')
+  router.get('offers/:id', '#controllers/offer_controller.get').as('getOffer')
 
-    router.get('documents', '#controllers/document_controller.list')
-    router.get('documents/:id', '#controllers/document_controller.get')
-    router.post('documents', '#controllers/document_controller.upload')
-    router.delete('documents/:id', '#controllers/document_controller.delete')
+  // Application process
+  // router.post('offers/:id/apply', '#controllers/application_controller.apply').use(middleware.auth())
+
+  // Draft management
+  router.get('offers/:offerId/draft', '#controllers/draft_controller.get').use(middleware.auth())
+  router.patch('offers/:offerId/draft', '#controllers/draft_controller.save').use(middleware.auth())
+  router.post('offers/:offerId/draft/submit', '#controllers/draft_controller.submit').use(middleware.auth())
+
+  // Draft document management
+  router.put('offers/:offerId/draft/documents', '#controllers/draft_controller.uploadDocument').use(middleware.auth())
+  router.delete('offers/:offerId/draft/documents/:attachmentId', '#controllers/draft_controller.removeDocument').use(middleware.auth())
+  router.post('offers/:offerId/draft/documents/use-existing', '#controllers/draft_controller.useExistingDocument').use(middleware.auth())
+
+  router.get('skills', '#controllers/skill_controller.list').as('skills')
+  router.get('skills/:id', '#controllers/skill_controller.get').as('getSkill')
+  router.post('skills', '#controllers/skill_controller.create').as('createSkill')
+  router.patch('skills/:id', '#controllers/skill_controller.update').as('updateSkill')
+  router.delete('skills/:id', '#controllers/skill_controller.delete').as('deleteSkill')
+
+  router.put('test-document-upload', '#controllers/my_document_controller.uploadDocument')
+
+  router.group(() => {
+    router.get('my-applications', '#controllers/application_controller.listUserApplications').as('my-applications')
+
+    router.get('my-documents', '#controllers/my_document_controller.list').as('my-documents')
+    router.get('my-documents/:id', '#controllers/my_document_controller.get').as('my-documents.get')
+    router.delete('my-documents/:id', '#controllers/my_document_controller.hide')
+    router.post('my-documents/:id/download', '#controllers/my_document_controller.download')
   }).use(middleware.auth())
 
   // Admin routes
   router.group(() => {
-    router.post('courses', '#controllers/course_controller.create')
-    router.patch('courses/:id', '#controllers/course_controller.update')
-    router.delete('courses/:id', '#controllers/course_controller.delete')
+    router.post('courses', '#controllers/course_controller.create').as('createCourse')
+    router.patch('courses/:id', '#controllers/course_controller.update').as('updateCourse')
+    router.delete('courses/:id', '#controllers/course_controller.delete').as('deleteCourse')
 
-    router.post('companies', '#controllers/company_controller.create')
-    router.patch('companies/:id', '#controllers/company_controller.update')
-    router.delete('companies/:id', '#controllers/company_controller.delete')
+    router.post('companies', '#controllers/company_controller.create').as('createCompany')
+    router.patch('companies/:id', '#controllers/company_controller.update').as('updateCompany')
+    router.delete('companies/:id', '#controllers/company_controller.delete').as('deleteCompany')
 
-    router.post('offers', '#controllers/offer_controller.create')
-    router.patch('offers/:id', '#controllers/offer_controller.update')
-    router.delete('offers/:id', '#controllers/offer_controller.delete')
+    // router.get('documents', '#controllers/document_controller.listAllDocuments').as('listAllDocuments')
+    // router.get('documents/:id', '#controllers/document_controller.getDocumentDetails').as('getDocumentDetails')
+    // router.delete('documents/:id', '#controllers/document_controller.deleteDocument').as('deleteDocument')
+
+    router.post('offers', '#controllers/offer_controller.create').as('createOffer')
+    router.patch('offers/:id', '#controllers/offer_controller.update').as('updateOffer')
+    router.delete('offers/:id', '#controllers/offer_controller.delete').as('deleteOffer')
 
     // router.get('applications', '#controllers/application_controller.listAllApplications')
     // router.patch('applications/:id/status', '#controllers/application_controller.updateStatus')

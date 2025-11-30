@@ -1,0 +1,77 @@
+expression = {
+  term ~ (operator ~ term)*
+}
+
+term = {
+  constraint
+  | "(" ~ expression ~ ")"
+}
+
+operator = {
+  ";"
+  | ","
+}
+
+constraint = {
+  selector ~ (comparison ~ argument)?
+}
+
+selector = {
+  (unreserved | pct_encoded)+
+}
+
+comparison = {
+  (("=" ~ ALPHA+) | fiql_delim) ~ "="
+}
+
+argument = {
+  arg_char+
+}
+
+unreserved = {
+  ALPHA
+  | DIGIT
+  | "-"
+  | "."
+  | "_"
+  | "~"
+}
+
+pct_encoded = {
+  "%" ~ HEXDIG ~ HEXDIG
+}
+
+ALPHA = {
+  '\u{41}'..'\u{5a}'
+  | '\u{61}'..'\u{7a}'
+}
+
+fiql_delim = {
+  "!"
+  | "$"
+  | "'"
+  | "*"
+  | "+"
+}
+
+arg_char = {
+  unreserved
+  | pct_encoded
+  | fiql_delim
+  | "="
+}
+
+DIGIT = {
+  '\u{30}'..'\u{39}'
+}
+
+HEXDIG = {
+  DIGIT
+  | ^"A"
+  | ^"B"
+  | ^"C"
+  | ^"D"
+  | ^"E"
+  | ^"F"
+}
+

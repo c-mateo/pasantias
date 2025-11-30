@@ -1,0 +1,25 @@
+; Una expresion es un termino, seguido opcionalmente de mas terminos con operadores
+expression  = term *( operator term )
+
+; Un termino es o una restriccion concreta o una sub-expresion entre parentesis
+term        = constraint / "(" expression ")"
+
+operator    = ";" / ","
+
+constraint  = selector [ comparison argument ]
+
+; --- El resto se mantiene igual (asumiendo que tienes las definiciones base) ---
+selector    = 1*( unreserved / pct-encoded )
+comparison  = ( ( "=" 1*ALPHA ) / fiql-delim ) "="
+argument    = 1*arg-char
+arg-char    = unreserved / pct-encoded / fiql-delim / "="
+fiql-delim  = "!" / "$" / "'" / "*" / "+"
+
+; --- Reglas Nucleo y URI (RFC 3986 / RFC 5234) ---
+
+unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
+pct-encoded = "%" HEXDIG HEXDIG
+
+ALPHA       = %x41-5A / %x61-7A   ; A-Z / a-z
+DIGIT       = %x30-39             ; 0-9
+HEXDIG      = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"

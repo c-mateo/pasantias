@@ -1,10 +1,12 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
+import { checkUnique } from '../../prisma/strategies.js'
+import getRoute from '../../utils/getRoutes.js'
 
 export default class ProfilesController {
     // GET /profile
     async get({ request, auth }: HttpContext) {
-        const userData = await prisma.user.findUnique({
+        const userData = await prisma.user.findUniqueOrThrow({
             where: { id: auth.user!.id },
             include: {
                 courses: true,
@@ -16,8 +18,8 @@ export default class ProfilesController {
             links: [
                 { rel: 'self', href: request.url(), method : 'GET' },
                 { rel: 'update', href: request.url(), method : 'PATCH' },
-                { rel: 'documents', href: "/api/v1/documents", method : 'GET' },
-                { rel: 'applications', href: "/api/v1/my-applications", method : 'GET' },
+                { rel: 'documents', href: getRoute('my-documents'), method : 'GET' },
+                { rel: 'applications', href: getRoute('my-applications'), method : 'GET' },
             ]
         }
     }
@@ -25,7 +27,7 @@ export default class ProfilesController {
     async update({ request, auth }: HttpContext) {
         const data = request.only(['skillsIds', 'coursesIds'])
 
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await prisma.user.guardedUpdate({
             where: { id: auth.user!.id },
             data: {
                 skills: data.skillsIds ? {
@@ -39,16 +41,10 @@ export default class ProfilesController {
                 skills: true,
                 courses: true,
             }
-        })
+        }, [ checkUnique(['emailHash', 'dni', 'phone']) ])
 
         return {
-            data: updatedUser,
-            links: [
-                { rel: 'self', href: request.url(), method : 'GET' },
-                { rel: 'update', href: request.url(), method : 'PATCH' },
-                { rel: 'documents', href: "/api/v1/documents", method : 'GET' },
-                { rel: 'applications', href: "/api/v1/my-applications", method : 'GET' },
-            ]
+            data: updatedUser
         }
     }
 }
