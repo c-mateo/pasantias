@@ -1,90 +1,8 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import encryption from '@adonisjs/core/services/encryption'
 import vine from '@vinejs/vine'
-
-type PartialOrNullable<T> = {
-  [P in keyof T]?: T[P] | null
-}
-
-type SkipNullable<T> = {
-  [K in keyof T as null extends T[K] ? never : K]: T[K]
-}
-
-type NullableToOptional<T> = {
-  // Las propiedades que permiten null → se vuelven opcionales
-  [K in keyof T as null extends T[K] ? K : never]?: Exclude<T[K], null>
-} & {
-  // Las propiedades que NO permiten null → se dejan igual
-  [K in keyof T as null extends T[K] ? never : K]: T[K]
-}
-
-type UserData = {
-  email: string
-  firstName: string
-  lastName: string
-  dni: string
-  phone: string
-  address: string
-  province: string
-  city: string
-}
-
-// export function encryptUserData(data: Record<string, string>): UserData {
-//   for (const key in data) {
-//     data[key] = encryption.encrypt(data[key]!)
-//   }
-//   return data
-// }
-type UserDataKey = keyof UserData
-
-// Convierte las claves presentes en T ∩ UserData en REQUERIDAS
-type StrictUserSubset<T extends object> =
-  { [K in Extract<keyof T, UserDataKey>]: UserData[K] }
-
-  
-
-const userDataKeys = [
-  "email",
-  "firstName",
-  "lastName",
-  "dni",
-  "phone",
-  "address",
-  "province",
-  "city"
-]
-
-// Encripta solo las claves presentes en data que están en UserData
-export function encryptUserData<T extends UserData>(
-  data: T
-): StrictUserSubset<T> {
-
-  const result: any = {}
-
-  for (const key of userDataKeys) {
-    if (key in data) {
-      result[key] = encryption.encrypt(data[key as UserDataKey])
-    }
-  }
-
-  return result
-}
-
-
-export function decryptUserData<T extends PartialOrNullable<UserData>>(data: T): T {
-  const result: any = { ...data }
-  
-  for (const key of userDataKeys) {
-    if (key in data && data[key as UserDataKey]) {
-      const decrypted = encryption.decrypt<string>(data[key as UserDataKey])
-      if (!decrypted) throw new Error(`Failed to decrypt user data for key: ${key}`)
-      result[key] = decrypted
-    }
-  }
-
-  return result
-}
+import { preparePagination, buildWhere } from './pagination.js'
+import { decryptUserData } from '../utils/user.js'
 
 const idValidator = vine.compile(
   vine.object({
@@ -97,10 +15,19 @@ const idValidator = vine.compile(
 export default class UsersController {
   
   async list({ request }: HttpContext) {
-    const users = await prisma.user.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
+      id: 'number',
+      email: 'string',
+      firstName: 'string',
+      lastName: 'string',
+      role: 'string',
+    } })
+
+    const result = await prisma.user.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      where: buildWhere(filterWhere),
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         email: true,
@@ -110,11 +37,13 @@ export default class UsersController {
         dni: true,
         role: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     })
+
     return {
-      data: users.map(decryptUserData),
+      data: result.data.map(decryptUserData),
+      pagination: result.pagination,
     }
   }
 

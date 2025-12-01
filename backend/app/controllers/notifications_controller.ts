@@ -1,6 +1,18 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
+import { preparePagination, buildWhere } from './pagination.js'
+
+function getNotificationOrder(s?: string) {
+  switch (s) {
+    case 'createdAt':
+      return { createdAt: 'asc' } as const
+    case '-createdAt':
+      return { createdAt: 'desc' } as const
+    default:
+      return { createdAt: 'desc' } as const
+  }
+}
 
 
 const idValidator = vine.compile(
@@ -22,22 +34,26 @@ const broadcastValidator = vine.compile(
 export default class NotificationsController {
   
   async list({ auth }: HttpContext) {
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId: auth.user?.id,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+    // use shared pagination validator
+    // @ts-ignore
+    const request: any = arguments[0]?.request
+    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
+      id: 'number',
+      title: 'string',
+      message: 'string',
+      type: 'string',
+      createdAt: 'string'
+    } })
+
+    return await prisma.notification.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      where: buildWhere({ userId: auth.user?.id }, filterWhere),
+      orderBy: getNotificationOrder(query.sort as any),
       omit: {
         userId: true,
       },
     })
-
-    // TODO: implement pagination
-    return {
-      data: notifications,
-    }
   }
 
   async get({ request, auth }: HttpContext) {
@@ -53,7 +69,13 @@ export default class NotificationsController {
       },
     })
 
-    return notification
+    return {
+      data: notification,
+      links: [
+        { rel: 'self', href: request.url(), method: 'GET' },
+        { rel: 'mark-as-read', href: `${request.url()}/mark-as-read`, method: 'PATCH' },
+      ],
+    }
   }
   
   async markAsRead({ request, auth }: HttpContext) {

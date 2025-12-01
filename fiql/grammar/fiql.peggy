@@ -13,7 +13,7 @@ term
   / "(" expression ")"
 
 constraint
-  = selector number_comparison (number / date / datetime)
+  = selector number_comparison (datetime / date / number)
   / selector string_comparison ("*"? string "*"?)
   / selector list_comparison (number_list / string_list)
   
@@ -21,19 +21,8 @@ constraint
 selector
   = (unreserved / pct_encoded)+
 
-comparison
-  = "=eq=" / "=="
-  / "=ne=" / "!="
-  / "=lt=" / "<"
-  / "=le=" / "<="
-  / "=gt=" / ">"
-  / "=ge=" / "<="
-  / "=in=" / "=out="
-  / "=regex=" / "~="
-  / "=iregex=" / "=all=" / "=size=" / "=em="
-  
 number_comparison
-  = "==" / "!=" / "<" / ">" / "<=" / ">="
+  = "==" / "!=" / "<=" / ">=" / "<" / ">"
   
 string_comparison
   = "==" / "!="

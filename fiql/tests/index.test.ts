@@ -88,6 +88,6 @@ describe('FIQL to Prisma Parser', () => {
 
     test('Debe fallar si tipo es incorrecto', async () => {
         await expect(parse('age==veinte', testSchema))
-            .rejects.toThrow(/no es numérico/);
+            .rejects.toThrow(/no es número/);
     });
 });

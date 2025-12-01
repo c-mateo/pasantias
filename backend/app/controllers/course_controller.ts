@@ -1,116 +1,126 @@
-import { prisma } from "#start/prisma"
-import { createCourseValidator, idValidator, updateCourseValidator } from "#validators/course"
-import { HttpContext } from "@adonisjs/core/http"
-import { apiErrors } from "#exceptions/myExceptions"
-import { checkUnique } from "../../prisma/strategies.js"
-import { rsqlStringToQuery } from "rsql-prisma"
-import vine from "@vinejs/vine"
+import { prisma } from '#start/prisma'
+import { createCourseValidator, idValidator, updateCourseValidator } from '#validators/course'
+import { HttpContext } from '@adonisjs/core/http'
+import { apiErrors } from '#exceptions/myExceptions'
+import { checkUnique } from '../../prisma/strategies.js'
+import vine from '@vinejs/vine'
+import { preparePagination } from './pagination.js'
 
 enum CoursesSort {
-    NAME = 'name',
-    CREATED_AT = 'createdAt',
-    UPDATED_AT = 'updatedAt',
-    NAME_DESC = '-name',
-    CREATED_AT_DESC = '-createdAt',
-    UPDATED_AT_DESC = '-updatedAt',
+  NAME = 'name',
+  CREATED_AT = 'createdAt',
+  UPDATED_AT = 'updatedAt',
+  NAME_DESC = '-name',
+  CREATED_AT_DESC = '-createdAt',
+  UPDATED_AT_DESC = '-updatedAt',
 }
 
 function getOrder(sort?: CoursesSort) {
-    switch (sort) {
-        case CoursesSort.NAME:
-            return { name: 'asc' } as const
-        case CoursesSort.CREATED_AT:
-            return { createdAt: 'asc' } as const
-        case CoursesSort.UPDATED_AT:
-            return { updatedAt: 'asc' } as const
-        case CoursesSort.NAME_DESC:
-            return { name: 'desc' } as const
-        case CoursesSort.CREATED_AT_DESC:
-            return { createdAt: 'desc' } as const
-        case CoursesSort.UPDATED_AT_DESC:
-            return { updatedAt: 'desc' } as const
-        default:
-            return { name: 'asc' } as const
-    }
+  switch (sort) {
+    case CoursesSort.NAME:
+      return { name: 'asc' } as const
+    case CoursesSort.CREATED_AT:
+      return { createdAt: 'asc' } as const
+    case CoursesSort.UPDATED_AT:
+      return { updatedAt: 'asc' } as const
+    case CoursesSort.NAME_DESC:
+      return { name: 'desc' } as const
+    case CoursesSort.CREATED_AT_DESC:
+      return { createdAt: 'desc' } as const
+    case CoursesSort.UPDATED_AT_DESC:
+      return { updatedAt: 'desc' } as const
+    default:
+      return { name: 'asc' } as const
+  }
 }
 
-const schema = vine.compile(vine.object({
+const queryValidator = vine.compile(
+  vine.object({
     limit: vine.number().range([10, 100]).optional(),
     after: vine.number().optional(),
     sort: vine.enum(CoursesSort).optional(),
-    filter: vine.any().optional().transform(v => String(v)),
-}))
+    filter: vine
+      .any()
+      .optional()
+      .transform((v) => String(v)),
+  })
+)
 
 export default class CoursesController {
-    // GET /courses
+  // GET /courses
     async list({ auth, request }: HttpContext) {
-        const query = await schema.validate(request.qs())
-        const isNotAdmin = auth.user?.role !== 'ADMIN'
+    const { query, filterWhere } = await preparePagination(request, { sortEnum: CoursesSort, fieldMap: {
+      id: 'number',
+      name: 'string',
+      shortName: 'string'
+    } })
+    const isNotAdmin = auth.user?.role !== 'ADMIN'
 
-        // TODO: Fix package or implement own parser
-        const where = query.filter ? rsqlStringToQuery(query.filter, {
-            caseInsensitive: true,
-        }) as any : undefined
+    return await prisma.course.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      where: filterWhere,
+      orderBy: getOrder(query.sort),
+      omit: {
+        createdAt: isNotAdmin,
+        updatedAt: isNotAdmin,
+      },
+    })
+  }
 
-        return await prisma.course.paginate({
-            limit: query.limit ?? 20,
-            after: query.after,
-            where: where,
-            orderBy: getOrder(query.sort),
-            omit: {
-                createdAt: isNotAdmin,
-                updatedAt: isNotAdmin,
-            }
-        })
+  // POST /courses
+  async create({ request, response }: HttpContext) {
+    const data = await request.validateUsing(createCourseValidator)
+
+    const course = await prisma.course.guardedCreate({ data }, [checkUnique(['name'])])
+    response.created({ data: course })
+  }
+
+  // GET /courses/:id
+  async get({ request, auth }: HttpContext) {
+    const { params } = await request.validateUsing(idValidator, { meta: { throw: true } })
+    const isNotAdmin = auth.user?.role !== 'ADMIN'
+    const course = await prisma.course.findUniqueOrThrow({
+      where: { id: params.id },
+      omit: {
+        createdAt: isNotAdmin,
+        updatedAt: isNotAdmin,
+      },
+    })
+    return {
+      data: course,
+      links: [
+        { rel: 'self', href: request.url(), method: 'GET' }
+      ],
     }
+  }
 
-    // POST /courses
-    async create({ request, response }: HttpContext) {
-        const data = await request.validateUsing(createCourseValidator)
-        
-        const course = await prisma.course.guardedCreate({ data }, [ checkUnique(['name']) ])
-        response.created({ data: course })
+  // PATCH /courses/:id
+  async update({ request }: HttpContext) {
+    const { params, ...data } = await request.validateUsing(updateCourseValidator)
+    const course = await prisma.course.guardedUpdate(
+      {
+        where: { id: params.id },
+        data,
+      },
+      [checkUnique(['name'])]
+    )
+    if (!course) {
+      throw apiErrors.notFound('Course', params.id)
     }
-    
-    // GET /courses/:id
-    async get({ request, auth }: HttpContext) {
-        const { params } = await request.validateUsing(idValidator, { meta: { throw: true } })
-        const isNotAdmin = auth.user?.role !== 'ADMIN'
-        const course = await prisma.course.findUniqueOrThrow({
-            where: { id: params.id },
-            omit: {
-                createdAt: isNotAdmin,
-                updatedAt: isNotAdmin,
-            }
-        })
-        return {
-            data: course
-        }
+    return {
+      data: course,
     }
+  }
 
-    // PATCH /courses/:id
-    async update({ request }: HttpContext) {
-        const { params, ...data } = await request.validateUsing(updateCourseValidator)
-        const course = await prisma.course.guardedUpdate({
-            where: { id: params.id },
-            data
-        }, [ checkUnique(['name']) ])
-        if (!course) {
-            throw apiErrors.notFound("Course", params.id)
-        }
-        return {
-            data: course
-        }
-    }
+  // DELETE /courses/:id
+  async delete({ request, response }: HttpContext) {
+    const { params } = await request.validateUsing(idValidator)
 
-    // DELETE /courses/:id
-    async delete({ request, response }: HttpContext) {
-        const { params } = await request.validateUsing(idValidator)
+    await prisma.course.guardedDelete({
+      where: { id: params.id },
+    })
 
-        await prisma.course.guardedDelete({
-            where: { id: params.id },
-        })
-
-        response.noContent()
-    }
+    response.noContent()
+  }
 }

@@ -2,46 +2,40 @@ import { parse as peggyParse } from "./parser.mjs"; // Tu archivo generado
 import { astToPrisma, compactPrismaQuery } from "./transformer";
 import { Schema } from "./types";
 
-export async function parse(input: string, vars?: Schema): Promise<object> {
-    return new Promise((resolve, reject) => {
-        try {
-            // 1. Obtener AST crudo de Peggy
-            const rawAst = peggyParse(input);
-            
-            // 2. Transformar a estructura Prisma (incluye validación si hay vars)
-            const prismaObj = astToPrisma(rawAst, vars);
+export function parseFIQL(input: string, vars?: Schema): object {
+    // 1. Obtener AST crudo de Peggy
+    const rawAst = peggyParse(input);
+    
+    // 2. Transformar a estructura Prisma (incluye validación si hay vars)
+    const prismaObj = astToPrisma(rawAst, vars);
 
-            // 3. Compactar y limpiar (ANDs y equals)
-            const finalQuery = compactPrismaQuery(prismaObj);
+    // 3. Compactar y limpiar (ANDs y equals)
+    const finalQuery = compactPrismaQuery(prismaObj);
 
-            // 4. Asegurar que el resultado final sea válido para Prisma
-            // Prisma requiere un OR top-level si hay un array, o un objeto directo
-            // Nuestra función astToPrisma ya devuelve objetos con OR/AND, así que retornamos directo.
-            resolve(finalQuery);
-        } catch (error) {
-            reject(error);
-        }
-    });
+    // 4. Asegurar que el resultado final sea válido para Prisma
+    // Prisma requiere un OR top-level si hay un array, o un objeto directo
+    // Nuestra función astToPrisma ya devuelve objetos con OR/AND, así que retornamos directo.
+    return finalQuery;
 }
 
 
-// 1. Definimos un Enum real de TS
-enum Role {
-    ADMIN = 'ADMIN',
-    USER = 'USER'
-}
+// // 1. Definimos un Enum real de TS
+// enum Role {
+//     ADMIN = 'ADMIN',
+//     USER = 'USER'
+// }
 
-// 2. Tu esquema súper flexible
-const myVars: Schema = {
-    // Opción A: Enum pasando el objeto TS directamente
-    role: Role, 
+// // 2. Tu esquema súper flexible
+// const myVars: Schema = {
+//     // Opción A: Enum pasando el objeto TS directamente
+//     role: Role, 
 
-    // Opción B: Enum pasando lista de valores (Shorthand)
-    status: ['OPEN', 'CLOSED', 'PENDING'], 
+//     // Opción B: Enum pasando lista de valores (Shorthand)
+//     status: ['OPEN', 'CLOSED', 'PENDING'], 
 
-    // Opción C: Tipo básico
-    age: 'number',
-};
+//     // Opción C: Tipo básico
+//     age: 'number',
+// };
 
 // --- PRUEBAS ---
 

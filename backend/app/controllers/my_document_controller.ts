@@ -2,6 +2,18 @@ import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import fs, { stat } from 'fs/promises'
+import { preparePagination, buildWhere } from './pagination.js'
+
+function getDocumentOrder(s?: string) {
+    switch (s) {
+        case 'createdAt':
+            return { createdAt: 'asc' } as const
+        case '-createdAt':
+            return { createdAt: 'desc' } as const
+        default:
+            return { createdAt: 'desc' } as const
+    }
+}
 
 const select = {
     id: true,
@@ -42,16 +54,26 @@ export async function markOrphanDocuments(ids: number[]) {
 // TODO: Revisar
 export default class MyDocumentsController {
     async list({ request, auth }: HttpContext) {
-        // TODO: Add pagination, filtering, etc.
-        const documents = await prisma.document.findMany({
-            where: { userId: auth.user!.id, hiddenAt: null },
-            include: {
-                documentType: true,
-            },
-            select: select
+        const { query, filterWhere } = await preparePagination(request, { fieldMap: {
+            id: 'number',
+            originalName: 'string',
+            documentTypeId: 'number',
+            createdAt: 'string'
+        } })
+
+        const where = buildWhere({ userId: auth.user!.id, hiddenAt: null }, filterWhere)
+
+        const result = await prisma.document.paginate({
+            limit: query.limit ?? 20,
+            after: query.after,
+            where,
+            include: { documentType: true },
+            select: select as any,
+            orderBy: getDocumentOrder(query.sort as any),
         })
+
         return {
-            data: documents.map(doc => ({
+            data: result.data.map((doc: any) => ({
                 id: doc.id,
                 documentType: {
                     id: doc.documentType.id,
@@ -63,7 +85,8 @@ export default class MyDocumentsController {
                 },
                 createdAt: doc.createdAt,
                 lastUsedAt: doc.lastUsedAt,
-            }))
+            })),
+            pagination: result.pagination,
         }
     }
 

@@ -2,6 +2,22 @@ import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
+import { preparePagination, buildWhere } from './pagination.js'
+
+function getSkillOrder(sort?: string) {
+    switch (sort) {
+        case 'name':
+            return { name: 'asc' } as const
+        case '-name':
+            return { name: 'desc' } as const
+        case 'createdAt':
+            return { createdAt: 'asc' } as const
+        case '-createdAt':
+            return { createdAt: 'desc' } as const
+        default:
+            return { id: 'asc' } as const
+    }
+}
 import { checkDeleteRestrict, checkUnique } from '../../prisma/strategies.js'
 
 const idValidator = vine.compile(vine.object({
@@ -31,18 +47,26 @@ const deleteValidator = vine.compile(vine.object({
 }))
 
 export default class SkillsController {
-    async list({ auth }: HttpContext) {
-        // TODO: Add pagination, filtering, etc.
+    async list({ request, auth }: HttpContext) {
+        const { query, filterWhere } = await preparePagination(request, { fieldMap: {
+            id: 'number',
+            name: 'string',
+            description: 'string',
+            category: 'string'
+        } })
+
         const isNotAdmin = auth.user?.role !== 'ADMIN'
-        const skills = await prisma.skill.findMany({
+
+        return await prisma.skill.paginate({
+            limit: query.limit ?? 20,
+            after: query.after,
+            where: buildWhere(filterWhere),
+            orderBy: getSkillOrder(query.sort as any),
             omit: {
                 createdAt: isNotAdmin,
-                updatedAt: isNotAdmin
-            }
+                updatedAt: isNotAdmin,
+            },
         })
-        return {
-            data: skills
-        }
     }
 
     async get({ request, auth }: HttpContext) {

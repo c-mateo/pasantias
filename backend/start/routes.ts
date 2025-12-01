@@ -36,7 +36,7 @@ router.group(() => {
   // Companies
   router.get('companies', '#controllers/company_controller.list').as('companies')
   router.get('companies/:id', '#controllers/company_controller.get')
-  router.get('companies/:id/offers', '#controllers/company_controller.getOffers')
+  router.get('companies/:id/offers', '#controllers/company_controller.getOffers').as('companies.offers')
 
   // Offers
   router.get('offers', '#controllers/offer_controller.list').as('offers')

@@ -3,28 +3,39 @@ import { validateAndCast } from './validator';
 import { flattenString, deepMerge } from './utils';
 
 // Detecta si es contains, startsWith, etc. basado en los asteriscos
-function detectOperatorAndValue(valArr: any[]): { op: string, val: any } {
-    // Asumiendo estructura de Peggy: [prefix, chars, suffix] o similar
-    // Ajusta índices según tu output exacto si cambia
-    
-    // Si es lista (IN): ["(", list, ")"]
-    if (valArr[0] === "(" && valArr[valArr.length-1] === ")") {
-        // Aplanamos y limpiamos paréntesis para obtener array limpio
-        const rawStr = flattenString(valArr); 
+function detectOperatorAndValue(valArr: any): { op: string, val: any } {
+    // 1. Aplanamos TODO a un solo string primero.
+    // Esto corrige el bug donde "18" se trataba como array: index 0 ('1') se ignoraba y index 1 ('8') se usaba.
+    const rawStr = flattenString(valArr); 
+
+    // 2. Si es lista (IN): "(val1,val2)"
+    if (rawStr.startsWith('(') && rawStr.endsWith(')')) {
         const cleanList = rawStr.replace(/[()]/g, '').split(',');
         return { op: 'in', val: cleanList }; 
-        // Nota: El operador 'in' se reajustará abajo si el operador original era '=out='
     }
 
-    const prefix = valArr[0]; // "*" o null
-    const chars = flattenString(valArr[1]);
-    const suffix = valArr[2]; // "*" o null
+    // 3. Detectar Wildcards manualmnete en el string completo
+    let op = 'equals';
+    let val = rawStr;
     
-    if (prefix === '*' && suffix === '*') return { op: 'contains', val: chars };
-    if (prefix === '*') return { op: 'endsWith', val: chars };
-    if (suffix === '*') return { op: 'startsWith', val: chars };
-    
-    return { op: 'equals', val: chars };
+    const hasPrefix = rawStr.startsWith('*');
+    const hasSuffix = rawStr.endsWith('*');
+
+    if (hasPrefix && hasSuffix && rawStr.length > 1) {
+        // Caso: *texto* -> contains
+        op = 'contains';
+        val = rawStr.slice(1, -1);
+    } else if (hasPrefix && rawStr.length > 1) {
+        // Caso: *texto -> endsWith
+        op = 'endsWith';
+        val = rawStr.slice(1);
+    } else if (hasSuffix && rawStr.length > 1) {
+        // Caso: texto* -> startsWith
+        op = 'startsWith';
+        val = rawStr.slice(0, -1);
+    }
+
+    return { op, val };
 }
 
 // Función recursiva principal

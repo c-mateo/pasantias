@@ -2,6 +2,7 @@ import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import { checkFK } from '../../prisma/strategies.js'
+import { preparePagination, buildWhere } from './pagination.js'
 
 const validator = vine.compile(vine.object({
   params: vine.object({
@@ -44,13 +45,38 @@ const updateValidator = vine.compile(vine.object({
   requiredDocuments: vine.array(vine.number()).optional(),
 }))
 
+function getOfferOrder(s?: string) {
+  switch (s) {
+    case 'publishedAt':
+      return { publishedAt: 'asc' } as const
+    case '-publishedAt':
+      return { publishedAt: 'desc' } as const
+    case 'expiresAt':
+      return { expiresAt: 'asc' } as const
+    case '-expiresAt':
+      return { expiresAt: 'desc' } as const
+    default:
+      return { publishedAt: 'desc' } as const
+  }
+}
+
 export default class OffersController {
-  async list({}: HttpContext) {
-    // TODO: Add pagination, filtering, etc.
-    const offers = await prisma.offer.findMany({
-      where: {
-        status: 'ACTIVE',
-      },
+    async list({ request }: HttpContext) {
+    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
+      id: 'number',
+      title: 'string',
+      description: 'string',
+      status: 'string',
+      companyId: 'number',
+      publishedAt: 'string',
+      expiresAt: 'string'
+    } })
+
+    return await prisma.offer.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      where: buildWhere({ status: 'ACTIVE' }, filterWhere),
+      orderBy: getOfferOrder(query.sort as any),
       omit: {
         createdAt: true,
         updatedAt: true,
@@ -65,13 +91,15 @@ export default class OffersController {
             logo: true,
           },
         },
-        // TODO: Revisar
         skills: true,
       },
+      extra: (r) => ({
+        links: {
+          self: request.url(),
+          next: r.pagination.next ? `${request.url()}?after=${r.pagination.next}` : null,
+        }
+      })
     })
-    return {
-      data: offers,
-    }
   }
 
   async get({ request }: HttpContext) {

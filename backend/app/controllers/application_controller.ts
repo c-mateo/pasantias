@@ -2,6 +2,23 @@ import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
+import { preparePagination, buildWhere } from './pagination.js'
+
+function getApplicationOrder(s?: string) {
+  switch (s) {
+    case 'createdAt':
+      return { createdAt: 'asc' } as const
+    case '-createdAt':
+      return { createdAt: 'desc' } as const
+    default:
+      return { createdAt: 'desc' } as const
+  }
+}
+
+enum ApplicationSort {
+  CREATED_AT = 'createdAt',
+  CREATED_AT_DESC = '-createdAt',
+}
 
 const idValidator = vine.compile(
   vine.object({
@@ -24,14 +41,19 @@ const updateStatusValidator = vine.compile(
 
 export default class ApplicationController {
   // Para el usuario logeado solamente
-  async list({ request, auth }: HttpContext) {
-    const applications = await prisma.application.findMany({
-      where: {
-        userId: auth.user?.id,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+    async list({ request, auth }: HttpContext) {
+    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
+      id: 'number',
+      status: 'string',
+      createdAt: 'string',
+      finalizedAt: 'string',
+    } })
+
+    return await prisma.application.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      where: buildWhere({ userId: auth.user?.id }, filterWhere),
+      orderBy: getApplicationOrder(query.sort as any),
       select: {
         id: true,
         status: true,
@@ -51,42 +73,34 @@ export default class ApplicationController {
         },
       },
     })
-
-    return {
-      data: applications,
-      // TODO: implement pagination
-    }
   }
 
   async listAdmin({ request }: HttpContext) {
-     const applications = await prisma.application.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: {
-        id: true,
-        status: true,
-        createdAt: true,
-        finalizedAt: true,
-        offer: {
-          select: {
-            id: true,
-            title: true,
-            company: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    })
+     const { query } = await preparePagination(request, { sortEnum: ApplicationSort })
 
-    return {
-      data: applications,
-      // TODO: implement pagination
-    }
+     return await prisma.application.paginate({
+       limit: query.limit ?? 20,
+       after: query.after,
+       orderBy: getApplicationOrder(query.sort as any),
+       select: {
+         id: true,
+         status: true,
+         createdAt: true,
+         finalizedAt: true,
+         offer: {
+           select: {
+             id: true,
+             title: true,
+             company: {
+               select: {
+                 id: true,
+                 name: true,
+               },
+             },
+           },
+         },
+       },
+     })
   }
 
   async get({ request, auth }: HttpContext) {
