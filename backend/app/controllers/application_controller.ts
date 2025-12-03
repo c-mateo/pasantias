@@ -2,7 +2,7 @@ import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
-import { preparePagination, buildWhere } from './pagination.js'
+import { preparePagination, buildWhere } from '#utils/pagination'
 
 function getApplicationOrder(s?: string) {
   switch (s) {

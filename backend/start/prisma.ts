@@ -10,10 +10,10 @@ const port = env.get('DB_PORT')
 const database = env.get('DB_DATABASE')
 const databaseUrl = `postgresql://${user}:${password}@${host}:${port}/${database}`
 
-env.set('DATABASE_URL', databaseUrl)
+// env.set('DATABASE_URL', databaseUrl)
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: databaseUrl,
 })
 
 export const prisma = new PrismaClient({

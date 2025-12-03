@@ -1,10 +1,9 @@
 import { prisma } from '#start/prisma'
 import { createCourseValidator, idValidator, updateCourseValidator } from '#validators/course'
+import { preparePagination } from '#utils/pagination'
 import { HttpContext } from '@adonisjs/core/http'
 import { apiErrors } from '#exceptions/myExceptions'
 import { checkUnique } from '../../prisma/strategies.js'
-import vine from '@vinejs/vine'
-import { preparePagination } from './pagination.js'
 
 enum CoursesSort {
   NAME = 'name',
@@ -33,18 +32,6 @@ function getOrder(sort?: CoursesSort) {
       return { name: 'asc' } as const
   }
 }
-
-const queryValidator = vine.compile(
-  vine.object({
-    limit: vine.number().range([10, 100]).optional(),
-    after: vine.number().optional(),
-    sort: vine.enum(CoursesSort).optional(),
-    filter: vine
-      .any()
-      .optional()
-      .transform((v) => String(v)),
-  })
-)
 
 export default class CoursesController {
   // GET /courses

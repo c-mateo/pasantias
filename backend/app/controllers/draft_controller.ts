@@ -1,7 +1,7 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
-import { sha256 } from './auth_controller.js'
+import { validator, uploadValidator, deleteValidator, useExistingValidator, idValidator } from '#validators/draft'
+import { sha256 } from '#utils/hash'
 import fs, { stat } from 'fs/promises'
 import { apiErrors } from '#exceptions/myExceptions'
 import { createWriteStream } from 'fs'
@@ -10,56 +10,6 @@ import { randomUUID } from 'crypto'
 import path from 'path'
 import { checkFK, checkUnique } from '../../prisma/strategies.js'
 
-const validator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number(),
-    }),
-    customFieldsValues: vine.object({}).optional(),
-  })
-)
-
-const uploadValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      offerId: vine.number(),
-      // Es el tipo de documento requerido, no el id del documento requerido
-      reqDocId: vine.number(),
-    }),
-    headers: vine.object({
-      'content-type': vine.string(),
-      'content-length': vine.number(),
-      'x-original-filename': vine.string(),
-    }),
-  })
-)
-
-const deleteValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      offerId: vine.number(),
-      // Es el tipo de documento requerido, no el id del documento requerido
-      attachmentId: vine.number(),
-    }),
-  })
-)
-
-const useExistingValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      offerId: vine.number(),
-    }),
-    documentId: vine.number(),
-  })
-)
-
-const idValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      offerId: vine.number(),
-    }),
-  })
-)
 
 const uploadsFolder = 'uploads'
 const maxUploadFileSize = 10 * 1024 * 1024
@@ -85,15 +35,37 @@ export default class DraftsController {
     const { params, customFieldsValues } = await request.validateUsing(validator)
     console.log(customFieldsValues)
 
-    const existingDraft = await prisma.draft.findUnique({
+    const offerId = params.id
+
+    // Ensure the offer exists and is ACTIVE
+    const offer = await prisma.offer.findUnique({
+      where: { id: offerId },
+      select: { id: true, status: true },
+    })
+
+    if (!offer || offer.status !== 'ACTIVE') {
+      throw apiErrors.notFound('Offer', offerId)
+    }
+
+    // Upsert draft: create if not exists, otherwise update custom fields
+    const draft = await prisma.draft.upsert({
       where: {
-        userId_offerId: { userId: auth.user!.id, offerId: params.id },
-        offer: { status: 'ACTIVE' },
+        userId_offerId: { userId: auth.user!.id, offerId },
+      },
+      create: {
+        userId: auth.user!.id,
+        offerId,
+        customFieldsValues: customFieldsValues ?? undefined,
+      },
+      update: {
+        customFieldsValues: customFieldsValues ?? undefined,
+      },
+      include: {
+        attachments: true,
       },
     })
 
-    // TODO: Implement
-    throw apiErrors.internalError('Not implemented yet', '')
+    return { data: draft }
 
     // if (existingDraft) {
     //   const updatedDraft = await prisma.draft.update({
@@ -330,6 +302,18 @@ export default class DraftsController {
 
     // TODO: Notificar a la empresa y al usuario
 
+    // Enqueue notification and email jobs
+    // Notify applicant (user)
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { enqueue } = require('#utils/jobs')
+    enqueue('CreateNotificationsJob', { notifications: [{ userId: auth.user!.id, title: 'Application submitted', message: `Your application for offer ${params.offerId} was submitted.`, type: 'APPLICATION_SUBMITTED' }] }).catch(console.error)
+
+    // Notify company admins — for now create a notification for all company users with role ADMIN
+    const companyAdmins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } })
+    if (companyAdmins.length > 0) {
+      enqueue('CreateNotificationsJob', { notifications: companyAdmins.map((a) => ({ userId: a.id, title: 'New application', message: `A new application was submitted for offer ${params.offerId}.`, type: 'APPLICATION_SUBMITTED' })) }).catch(console.error)
+    }
+
     return {
       data: {
         applicationId: application.id,
@@ -337,6 +321,14 @@ export default class DraftsController {
         appliedAt: application.createdAt,
       },
     }
+  }
+
+  // Backwards-compatible alias: routes call `submit`, controller implemented `confirm`.
+  // Keep both names so existing routes remain functional.
+  async submit(context: HttpContext) {
+    // Delegate to `confirm` which implements the submission flow.
+    // `confirm` already accepts the HttpContext and performs validation.
+    return this.confirm(context)
   }
 }
 

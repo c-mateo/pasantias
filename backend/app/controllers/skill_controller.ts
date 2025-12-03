@@ -1,8 +1,7 @@
-import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
-import { preparePagination, buildWhere } from './pagination.js'
+import { idValidator, createValidator, updateValidator, deleteValidator } from '#validators/skill'
+import { preparePagination, buildWhere } from '#utils/pagination'
 
 function getSkillOrder(sort?: string) {
     switch (sort) {
@@ -20,31 +19,6 @@ function getSkillOrder(sort?: string) {
 }
 import { checkDeleteRestrict, checkUnique } from '../../prisma/strategies.js'
 
-const idValidator = vine.compile(vine.object({
-    params: vine.object({
-        id: vine.number()
-    })
-}))
-
-const createValidator = vine.compile(vine.object({
-    name: vine.string().minLength(1).maxLength(200),
-    description: vine.string().optional()
-}))
-
-const updateValidator = vine.compile(vine.object({
-    params: vine.object({
-        id: vine.number()
-    }),
-    name: vine.string().minLength(1).maxLength(200).optional(),
-    description: vine.string().optional()
-}))
-
-const deleteValidator = vine.compile(vine.object({
-    params: vine.object({
-        id: vine.number()
-    }),
-    force: vine.boolean().optional()
-}))
 
 export default class SkillsController {
     async list({ request, auth }: HttpContext) {

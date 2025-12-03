@@ -1,16 +1,9 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
-import { preparePagination, buildWhere } from './pagination.js'
-import { decryptUserData } from '../utils/user.js'
+import { idValidator } from '#validators/users'
+import { preparePagination, buildWhere } from '#utils/pagination'
+import { decryptUserData } from '#utils/user'
 
-const idValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number(),
-    }),
-  })
-)
 
 export default class UsersController {
   

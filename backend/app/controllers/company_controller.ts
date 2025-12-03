@@ -2,10 +2,10 @@
 
 import { prisma } from '#start/prisma'
 import { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
+import { validator, createValidator, updateValidator } from '#validators/company'
 import { checkUnique } from '../../prisma/strategies.js'
 import { apiErrors } from '#exceptions/myExceptions'
-import { buildWhere, preparePagination } from './pagination.js'
+import { buildWhere, preparePagination } from '#utils/pagination'
 
 enum CompanySort {
   NAME = 'name',
@@ -18,38 +18,6 @@ enum CompanySort {
 
 // pagination schema is provided by `validatePagination` helper
 
-const validator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number(),
-    }),
-  })
-)
-
-const createValidator = vine.compile(
-  vine.object({
-    name: vine.string().minLength(3).maxLength(200),
-    description: vine.string().optional(),
-    website: vine.string().url().optional(),
-    email: vine.string().email(),
-    phone: vine.string().optional(),
-    logo: vine.string().maxLength(500).url().optional(),
-  })
-)
-
-const updateValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number(),
-    }),
-    name: vine.string().minLength(3).maxLength(200).optional(),
-    description: vine.string().optional(),
-    website: vine.string().url().optional(),
-    email: vine.string().email().optional(),
-    phone: vine.string().optional(),
-    logo: vine.string().maxLength(500).url().optional(),
-  })
-)
 
 function getOrder(sort?: CompanySort) {
   switch (sort) {
@@ -102,7 +70,7 @@ export default class CompaniesController {
       },
     })
 
-    return await prisma.company.paginate({
+   return await prisma.company.paginate({
       limit: query.limit ?? 20,
       after: query.after,
       where: filterWhere,
@@ -112,12 +80,6 @@ export default class CompaniesController {
         updatedAt: true,
         deletedAt: true,
       },
-      extra: (result) => ({
-        links: {
-          self: request.url(),
-          next: result.pagination.next ? `${request.url()}?after=${result.pagination.next}` : null,
-        },
-      }),
     })
   }
 

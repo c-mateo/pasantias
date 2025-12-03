@@ -1,5 +1,5 @@
 import { parse as peggyParse } from "./parser.mjs"; // Tu archivo generado
-import { astToPrisma, compactPrismaQuery } from "./transformer";
+import { astToPrisma, compactPrismaQuery } from "./transformer.js";
 import { Schema } from "./types";
 
 export function parseFIQL(input: string, vars?: Schema): object {

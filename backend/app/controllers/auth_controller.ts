@@ -1,14 +1,13 @@
 import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import encryption from '@adonisjs/core/services/encryption'
 import hash from '@adonisjs/core/services/hash'
 import vine from '@vinejs/vine'
-import { BinaryLike, createHash } from 'crypto'
+import { sha256 } from '#utils/hash'
 import { checkUnique } from '../../prisma/strategies.js'
-import getRoute from '../../utils/getRoutes.js'
-import { decryptUserData, encryptUserData } from './users_controller.js'
+import getRoute from '#utils/getRoutes'
 import { User } from '../../generated/prisma/index.js'
+import { decryptUserData, encryptUserData } from '#utils/user'
 
 const registerValidator = vine.compile(vine.object({
     email: vine.string().email().unique({ table: 'user' }),
@@ -27,9 +26,6 @@ const loginValidator = vine.compile(vine.object({
     password: vine.string(),
 }))
 
-export const sha256 = (data: BinaryLike) => {
-    return createHash('sha256').update(data).digest('hex')
-}
 
 // TODO: Implement session management, email verification, password reset, etc.
 export default class AuthController {
@@ -58,8 +54,23 @@ export default class AuthController {
                 emailHash: sha256(validated.email),
             }
         }, [ checkUnique(['emailHash', 'dni', 'phone']) ])
+        
+        // TODO: Test this
+        // Enqueue verification email (job) and a welcome notification.
+        const verificationToken = sha256(`${id}-${Date.now()}`)
 
-        return response.created({ 
+        // Compose verification link (frontend should implement route to accept token)
+        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+
+        // Enqueue SendEmail job
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { enqueue } = require('#utils/jobs')
+        enqueue('SendEmail', { to: validated.email, subject: 'Verify your email', html: `<p>Please verify your email by clicking <a href="${verifyUrl}">here</a></p>`, text: `Verify your email: ${verifyUrl}` }).catch(console.error)
+
+        // Optionally create a notification for the user
+        enqueue('CreateNotificationsJob', { notifications: [{ userId: id, title: 'Welcome', message: 'Welcome to the platform. Please verify your email.' }] }).catch(console.error)
+
+        return response.created({
             data: {
                 id,
                 email: validated.email,
@@ -68,9 +79,8 @@ export default class AuthController {
                 lastName: validated.lastName,
             },
             links: [
-                // TODO: Resolve URL dynamically
-                { rel: 'login', href: getRoute('auth.login'), method: 'POST' }
-            ]
+                { rel: 'login', href: getRoute('auth.login'), method: 'POST' },
+            ],
         })
     }
 

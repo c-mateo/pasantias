@@ -2,7 +2,7 @@ import { apiErrors } from '#exceptions/myExceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import fs, { stat } from 'fs/promises'
-import { preparePagination, buildWhere } from './pagination.js'
+import { preparePagination, buildWhere } from '#utils/pagination'
 
 function getDocumentOrder(s?: string) {
     switch (s) {

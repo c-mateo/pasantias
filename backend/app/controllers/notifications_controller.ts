@@ -1,7 +1,7 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
-import { preparePagination, buildWhere } from './pagination.js'
+import { idValidator, broadcastValidator } from '#validators/notifications'
+import { preparePagination, buildWhere } from '#utils/pagination'
 
 function getNotificationOrder(s?: string) {
   switch (s) {
@@ -15,21 +15,6 @@ function getNotificationOrder(s?: string) {
 }
 
 
-const idValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number(),
-    }),
-  })
-)
-
-const broadcastValidator = vine.compile(
-  vine.object({
-    title: vine.string().minLength(1),
-    message: vine.string().minLength(1),
-    userIds: vine.array(vine.number()).optional(),
-  })
-)
 
 export default class NotificationsController {
   
@@ -118,37 +103,19 @@ export default class NotificationsController {
   async broadcast({ request, response }: HttpContext) {
     const { title, message, userIds } = await broadcastValidator.validate(request)
 
-    // TODO: encontrar una forma más eficiente de hacer esto para muchos usuarios.
-    // Tal vez con un job en segundo plano.
-
-    const users = userIds || await getEveryUserId()
-
-    const messages = users.map((userId) => ({
-      userId,
-      title,
-      message,
-      type: 'ADMIN_ANNOUNCEMENT' as const,
-    })) 
-    
-    const notifications = await prisma.notification.createMany({
-      data: messages,
+    // Enqueue a background job to perform the broadcast so large recipients lists
+    // do not block the request. The enqueue helper will use the queue when
+    // available and fall back to synchronous execution otherwise.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { enqueue } = require('#utils/jobs')
+    await enqueue('BroadcastNotificationsJob', { title, message, userIds }).catch((err: any) => {
+      console.error('Failed to enqueue broadcast job', err)
+      throw err
     })
 
-    response.created({
-      data: { notificationsSent: notifications.count },
-    })
+    // Return accepted response — job will process the broadcast asynchronously.
+    response.accepted({ data: { accepted: true } })
   }
 }
 
-async function getEveryUserId(): Promise<number[]> {
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-    },
-    where: {
-      role: 'STUDENT'
-    }
-  })
-
-  return users.map((user) => user.id)
-}
+// Broadcast job performs fetching of recipients; no local helper required.

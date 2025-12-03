@@ -1,7 +1,7 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import { checkUnique } from '../../prisma/strategies.js'
-import getRoute from '../../utils/getRoutes.js'
+import getRoute from '#utils/getRoutes'
 
 export default class ProfilesController {
     // GET /profile

@@ -1,6 +1,6 @@
 import { Schema } from './types';
-import { validateAndCast } from './validator';
-import { flattenString, deepMerge } from './utils';
+import { validateAndCast } from './validator.js';
+import { flattenString, deepMerge } from './utils.js';
 
 // Detecta si es contains, startsWith, etc. basado en los asteriscos
 function detectOperatorAndValue(valArr: any): { op: string, val: any } {

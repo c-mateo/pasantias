@@ -1,49 +1,9 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
 import { checkFK } from '../../prisma/strategies.js'
-import { preparePagination, buildWhere } from './pagination.js'
+import { validator, createValidator, updateValidator } from '#validators/offer'
+import { preparePagination, buildWhere } from '#utils/pagination'
 
-const validator = vine.compile(vine.object({
-  params: vine.object({
-    id: vine.number()
-  })
-}))
-
-const createValidator = vine.compile(vine.object({
-  title: vine.string(),
-  description: vine.string(),
-  companyId: vine.number(),
-  status: vine.enum(['DRAFT', 'ACTIVE']),
-  location: vine.string().optional().requiredWhen('status', '=', 'ACTIVE'),
-  salary: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-  durationWeeks: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-  startDate: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
-  expiresAt: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
-
-  skills: vine.array(vine.number()).optional(),
-  customFieldsSchema: vine.object({}).optional(),
-  requiredDocuments: vine.array(vine.number()).optional(),
-}))
-
-const updateValidator = vine.compile(vine.object({
-  params: vine.object({
-    id: vine.number()
-  }),
-  title: vine.string().optional(),
-  description: vine.string().optional(),
-  companyId: vine.number().optional(),
-  status: vine.enum(['DRAFT', 'ACTIVE', 'CLOSED']).optional(),
-  location: vine.string().optional().requiredWhen('status', '=', 'ACTIVE'),
-  salary: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-  durationWeeks: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-  startDate: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
-  expiresAt: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
-
-  skills: vine.array(vine.number()).optional(),
-  customFieldsSchema: vine.object({}).optional(),
-  requiredDocuments: vine.array(vine.number()).optional(),
-}))
 
 function getOfferOrder(s?: string) {
   switch (s) {
@@ -61,16 +21,18 @@ function getOfferOrder(s?: string) {
 }
 
 export default class OffersController {
-    async list({ request }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
-      id: 'number',
-      title: 'string',
-      description: 'string',
-      status: 'string',
-      companyId: 'number',
-      publishedAt: 'string',
-      expiresAt: 'string'
-    } })
+  async list({ request }: HttpContext) {
+    const { query, filterWhere } = await preparePagination(request, {
+      fieldMap: {
+        id: 'number',
+        title: 'string',
+        description: 'string',
+        status: 'string',
+        companyId: 'number',
+        publishedAt: 'string',
+        expiresAt: 'string',
+      },
+    })
 
     return await prisma.offer.paginate({
       limit: query.limit ?? 20,
@@ -93,12 +55,6 @@ export default class OffersController {
         },
         skills: true,
       },
-      extra: (r) => ({
-        links: {
-          self: request.url(),
-          next: r.pagination.next ? `${request.url()}?after=${r.pagination.next}` : null,
-        }
-      })
     })
   }
 
@@ -147,26 +103,30 @@ export default class OffersController {
     return {
       data: {
         ...offerData,
-        requiredDocuments: requiredDocs.map(rd => rd.documentType),
-      }
+        requiredDocuments: requiredDocs.map((rd) => rd.documentType),
+      },
     }
   }
 
   async create({ request }: HttpContext) {
     const { skills, requiredDocuments, ...validated } = await request.validateUsing(createValidator)
-    const offer = await prisma.offer.guardedCreate({
-      data: {
-        ...validated,
-        skills: {
-          connect: skills?.map(id => ({ id })) || [],
+
+    const offer = await prisma.offer.guardedCreate(
+      {
+        data: {
+          ...validated,
+          skills: {
+            connect: skills?.map((id) => ({ id })) || [],
+          },
+          requiredDocs: {
+            createMany: {
+              data: requiredDocuments?.map((docId) => ({ documentTypeId: docId })) || [],
+            },
+          },
         },
-        requiredDocs: {
-          createMany: {
-            data: requiredDocuments?.map(docId => ({ documentTypeId: docId })) || [],
-          }
-        }
       },
-    }, [ checkFK(['companyId']) ])
+      [checkFK(['companyId'])]
+    )
     return {
       data: offer,
     }
@@ -174,32 +134,62 @@ export default class OffersController {
 
   async update({ request }: HttpContext) {
     const { params, skills, requiredDocuments, ...validated } = await request.validateUsing(updateValidator)
-    const offer = await prisma.offer.findUniqueOrThrow({
-      where: { id: params.id },
-    })
 
-    const updatedOffer = await prisma.offer.guardedUpdate({
-      where: { id: params.id },
-      data: {
-        ...validated,
-        skills: {
-          set: skills?.map(id => ({ id })) || [],
+    const updatedOffer = await prisma.offer.guardedUpdate(
+      {
+        where: { id: params.id },
+        data: {
+          ...validated,
+          skills: {
+            set: skills?.map((id) => ({ id })) || [],
+          },
         },
-        requiredDocs: {
-          // TODO: Eliminar los documentos requeridos actuales y crear los nuevos
-          // deleteMany: {},
-          createMany: {
-            data: requiredDocuments?.map(docId => ({ documentTypeId: docId })) || [],
-          }
-        }
+        include: {
+          requiredDocs: true,
+        },
       },
-    }, [ checkFK(['companyId']) ])
+      [checkFK(['companyId'])]
+    )
 
-    // TODO: Notificar a los usuarios interesados sobre los cambios en la oferta
-    
-    // Chequear cambios en campos custom
+    // TODO: handle changes in custom fields and required docs as needed
 
     // Chequear cambios en documentos requeridos
+    const toDelete = updatedOffer.requiredDocs.filter(rd => {
+      return !requiredDocuments?.includes(rd.documentTypeId)
+    })
+
+    const toAdd = (requiredDocuments || []).filter(docId => {
+      return !updatedOffer.requiredDocs.some(rd => rd.documentTypeId === docId)
+    })
+
+    const batch = []
+    if (toDelete.length > 0) {
+      batch.push(prisma.requiredDocument.deleteMany({
+        where: {
+          offerId: params.id,
+          documentTypeId: {
+            in: toDelete.map(rd => rd.documentTypeId)
+          }
+        }
+      }))
+    }
+    if (toAdd.length > 0) {
+      batch.push(prisma.requiredDocument.createMany({
+        data: toAdd.map(docId => ({
+          offerId: params.id,
+          documentTypeId: docId
+        }))
+      }))
+    }
+
+    if (batch.length > 0) {
+      const result = await prisma.$transaction(batch)
+
+      const expectedCounts = [toDelete.length, toAdd.length]
+      if (result.some((r, i) => r.count != expectedCounts[i])) {
+        throw new Error('Error updating required documents for offer ' + params.id)
+      }
+    }
 
     return {
       data: updatedOffer,
@@ -208,9 +198,34 @@ export default class OffersController {
 
   async delete({ request, response }: HttpContext) {
     const { params } = await request.validateUsing(validator)
-    await prisma.offer.guardedDelete({
-      where: { id: params.id },
-    })
+    await prisma.offer.guardedDelete({ where: { id: params.id } })
     response.noContent()
   }
+
+  async getOffers({ request }: HttpContext) {
+    const { params } = await request.validateUsing(validator)
+    // Ensure the parent company exists — otherwise return 404 immediately.
+    const companyExists = await prisma.company.findUnique({ where: { id: params.id }, select: { id: true } })
+    if (!companyExists) throw new Error('Company not found')
+
+    const { query, filterWhere } = await preparePagination(request, {
+      fieldMap: {
+        id: 'number',
+        title: 'string',
+        status: 'string',
+        publishedAt: 'string',
+        expiresAt: 'string',
+      },
+    })
+
+    return await prisma.offer.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      where: buildWhere({ companyId: params.id }, filterWhere),
+      orderBy: getOfferOrder(query.sort),
+      omit: { createdAt: true, updatedAt: true, deletedAt: true, customFieldsSchema: true },
+      include: { company: true, skills: true },
+    })
+  }
 }
+

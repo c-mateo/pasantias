@@ -23,11 +23,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   | Variables for configuring database connection
   |----------------------------------------------------------
   */
-  // DB_HOST: Env.schema.string({ format: 'host' }),
-  // DB_PORT: Env.schema.number(),
-  // DB_USER: Env.schema.string(),
-  // DB_PASSWORD: Env.schema.string.optional(),
-  // DB_DATABASE: Env.schema.string(),
+  DB_HOST: Env.schema.string({ format: 'host' }),
+  DB_PORT: Env.schema.number(),
+  DB_USER: Env.schema.string(),
+  DB_PASSWORD: Env.schema.string.optional(),
+  DB_DATABASE: Env.schema.string(),
   DATABASE_URL: Env.schema.string(),
 
   /*
@@ -35,5 +35,15 @@ export default await Env.create(new URL('../', import.meta.url), {
   | Variables for configuring session package
   |----------------------------------------------------------
   */
-  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const)
+  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring the jobs package
+  |----------------------------------------------------------
+  */
+  REDIS_HOST: Env.schema.string(),
+  REDIS_PORT: Env.schema.number(),
+  REDIS_PASSWORD: Env.schema.string.optional(),
+  REDIS_QUEUE: Env.schema.string.optional()
 })

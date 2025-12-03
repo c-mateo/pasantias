@@ -24,41 +24,41 @@
 - Estructura: `{ data, pagination?, links? }`
 
 ### Paginación (Cursor-based)
+
+El backend devuelve directamente la salida de `prisma.<model>.paginate()` (forma actual). La respuesta contiene `data` y un objeto `pagination` con cursores. `prev`/paginación hacia atrás no está garantizada en todas las colecciones (puede ser `null` o ausente).
+
+Ejemplo (forma mínima actual):
 ```json
 {
-  "data": [...],
+  "data": [ /* objetos */ ],
   "pagination": {
     "limit": 20,
-    "hasNext": true,
-    "hasPrev": false,
-    "next": "cursor_string",
+    "next": 12345,
     "prev": null
   },
-  "links": [...]
+  "links": [ /* opcional */ ]
 }
 ```
 
 **Parámetros:**
 - `limit`: default 20, max 100
-- `after`: cursor para siguiente página
-- `before`: cursor para página anterior
+- `after`: cursor para siguiente página (se envía como `after=<cursor>`)
 - `sort`: campo de ordenamiento (ej: `createdAt`, `-createdAt`)
 
-### Filtrado (OData)
+Nota: si en el futuro se habilita paginación bidireccional, `pagination.prev` y `pagination.hasPrev` podrán aparecer.
+
+### Filtrado (FIQL)
+El servidor usa FIQL para `filter`. No existe el parámetro `q` de búsqueda libre; usa `filter` con expresiones FIQL y `preparePagination` validará campos según el `fieldMap` del endpoint.
+
+Ejemplos:
 ```
-?filter=field op 'value'
-?filter=status eq 'ACTIVE'
-?filter=title contains 'developer'
-?filter=salary gt 50000
+?filter=status==ACTIVE
+?filter=title==*developer*
+?filter=salary=gt=50000
+?filter=companyId==123;status==ACTIVE
 ```
 
-**Operadores**: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `contains`
-
-### Búsqueda simple
-```
-?q=texto
-```
-Busca en campos principales (title, description, name, etc.)
+Operadores comunes: `==`, `=ne=`, `=gt=`, `=lt=`, `=ge=`, `=le=` y comodines `*` para contains (según dialecto FIQL usado). La semántica exacta depende del parser FIQL del backend; usa el `fieldMap` del endpoint para tipos correctos.
 
 ### HATEOAS
 Responses incluyen `links` con acciones disponibles:
@@ -270,7 +270,7 @@ Responses incluyen `links` con acciones disponibles:
 **Query params:**
 - Paginación: `limit`, `after`, `before`
 - Filtrado: `filter=documentTypeId eq 1`
-- Búsqueda: `q=cv`
+- Búsqueda: usar `filter` en FIQL, por ejemplo `filter=title==*cv*`
 - Sort: `sort=-createdAt`
 
 **Response 200:**
@@ -385,7 +385,7 @@ Responses incluyen `links` con acciones disponibles:
 **Query params:**
 - Paginación: `limit`, `after`
 - Filtrado: `filter=category eq 'Frontend'`
-- Búsqueda: `q=react`
+- Búsqueda: usar `filter` en FIQL, por ejemplo `filter=name==*react*`
 
 **Response 200:**
 ```json
