@@ -235,7 +235,7 @@ export default class DraftsController {
     }
   }
 
-  async confirm({ request, auth }: HttpContext) {
+  async submit({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
 
     const draft = await prisma.draft.findUniqueOrThrow({
@@ -321,14 +321,6 @@ export default class DraftsController {
         appliedAt: application.createdAt,
       },
     }
-  }
-
-  // Backwards-compatible alias: routes call `submit`, controller implemented `confirm`.
-  // Keep both names so existing routes remain functional.
-  async submit(context: HttpContext) {
-    // Delegate to `confirm` which implements the submission flow.
-    // `confirm` already accepts the HttpContext and performs validation.
-    return this.confirm(context)
   }
 }
 

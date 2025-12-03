@@ -42,9 +42,6 @@ router.group(() => {
   router.get('offers', '#controllers/offer_controller.list').as('offers')
   router.get('offers/:id', '#controllers/offer_controller.get').as('getOffer')
 
-  // Application process
-  // router.post('offers/:id/apply', '#controllers/application_controller.apply').use(middleware.auth())
-
   // Draft management
   router.get('offers/:offerId/draft', '#controllers/draft_controller.get').use(middleware.auth())
   router.patch('offers/:offerId/draft', '#controllers/draft_controller.save').use(middleware.auth())
@@ -57,11 +54,6 @@ router.group(() => {
 
   router.get('skills', '#controllers/skill_controller.list').as('skills')
   router.get('skills/:id', '#controllers/skill_controller.get').as('getSkill')
-  router.post('skills', '#controllers/skill_controller.create').as('createSkill')
-  router.patch('skills/:id', '#controllers/skill_controller.update').as('updateSkill')
-  router.delete('skills/:id', '#controllers/skill_controller.delete').as('deleteSkill')
-
-  router.put('test-document-upload', '#controllers/my_document_controller.uploadDocument')
 
   router.group(() => {
     router.get('my-applications', '#controllers/application_controller.listUserApplications').as('my-applications')
@@ -81,15 +73,19 @@ router.group(() => {
     router.post('companies', '#controllers/company_controller.create').as('createCompany')
     router.patch('companies/:id', '#controllers/company_controller.update').as('updateCompany')
     router.delete('companies/:id', '#controllers/company_controller.delete').as('deleteCompany')
-
+    
     // router.get('documents', '#controllers/document_controller.listAllDocuments').as('listAllDocuments')
     // router.get('documents/:id', '#controllers/document_controller.getDocumentDetails').as('getDocumentDetails')
     // router.delete('documents/:id', '#controllers/document_controller.deleteDocument').as('deleteDocument')
-
+    
     router.post('offers', '#controllers/offer_controller.create').as('createOffer')
     router.patch('offers/:id', '#controllers/offer_controller.update').as('updateOffer')
     router.delete('offers/:id', '#controllers/offer_controller.delete').as('deleteOffer')
-
+    
+    router.post('skills', '#controllers/skill_controller.create').as('createSkill')
+    router.patch('skills/:id', '#controllers/skill_controller.update').as('updateSkill')
+    router.delete('skills/:id', '#controllers/skill_controller.delete').as('deleteSkill')
+    
     // router.get('applications', '#controllers/application_controller.listAllApplications')
     // router.patch('applications/:id/status', '#controllers/application_controller.updateStatus')
   }).prefix('/admin').use(middleware.hasRole({ role: UserRole.ADMIN }))

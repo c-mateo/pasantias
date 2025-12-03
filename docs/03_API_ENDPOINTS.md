@@ -9,6 +9,53 @@
 
 ---
 
+## Estado de implementación (verificado con `backend/start/routes.ts`)
+
+Se agregó este resumen para aclarar que lo que está efectivamente implementado en el código fuente (rutas y controladores) prevalece sobre cambios planeados en la documentación. El documento mantiene los endpoints planeados; a continuación se listan los endpoints que actualmente existen en `start/routes.ts` y los que aparecen como no implementados/comentados.
+
+### Endpoints implementados (resumen)
+- GET `/` (root)
+- POST `/api/v1/auth/login`
+- POST `/api/v1/auth/logout`
+- POST `/api/v1/auth/register`
+- GET `/api/v1/profile`
+- GET `/api/v1/courses`
+- GET `/api/v1/courses/:id`
+- GET `/api/v1/companies`
+- GET `/api/v1/companies/:id`
+- GET `/api/v1/companies/:id/offers`
+- GET `/api/v1/offers`
+- GET `/api/v1/offers/:id`
+- GET `/api/v1/offers/:offerId/draft` (auth)
+- PATCH `/api/v1/offers/:offerId/draft` (auth)
+- POST `/api/v1/offers/:offerId/draft/submit` (auth)
+- PUT `/api/v1/offers/:offerId/draft/documents` (auth)
+- DELETE `/api/v1/offers/:offerId/draft/documents/:attachmentId` (auth)
+- POST `/api/v1/offers/:offerId/draft/documents/use-existing` (auth)
+- GET `/api/v1/skills`
+- GET `/api/v1/skills/:id`
+- POST `/api/v1/skills`
+- PATCH `/api/v1/skills/:id`
+- DELETE `/api/v1/skills/:id`
+- PUT `/api/v1/test-document-upload`
+- GET `/api/v1/my-applications` (auth)
+- GET `/api/v1/my-documents` (auth)
+- GET `/api/v1/my-documents/:id` (auth)
+- DELETE `/api/v1/my-documents/:id` (auth)
+- POST `/api/v1/my-documents/:id/download` (auth)
+
+### Endpoints / features documentados pero no implementados (o comentados en `start/routes.ts`)
+- POST `/api/v1/offers/:id/apply` (proceso de aplicación) — está comentado en `routes.ts`.
+- Endpoints admin relacionados con documentos (listar/obtener/eliminar) — varias rutas están comentadas.
+- Endpoints admin de aplicaciones (`/api/v1/admin/applications` y update status) — comentados.
+- Ciertas rutas antiguas o experimentales (ej.: `coursesController` declarado pero comentado en la cabecera).
+
+Nota: la lista anterior refleja las rutas definidas (o comentadas) en `backend/start/routes.ts` al momento de la verificación. Si quieres, puedo:
+
+- Marcar cada endpoint individual dentro del documento principal con un estado `(Implementado)` / `(Por implementar)`.
+- O generar automáticamente una tabla completa comparando el documento con las rutas reales y añadir marcas inline.
+
+
 ## 🔐 Convenciones Generales
 
 ### Autenticación
@@ -104,7 +151,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 1. AUTENTICACIÓN (3)
 
-#### POST `/auth/register`
+#### POST `/auth/register` (Implementado)
 **Acceso**: Público  
 **Descripción**: Registra nuevo usuario estudiante
 
@@ -147,7 +194,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### POST `/auth/login`
+#### POST `/auth/login` (Implementado)
 **Acceso**: Público  
 **Descripción**: Inicia sesión
 
@@ -189,7 +236,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### POST `/auth/logout`
+#### POST `/auth/logout` (Implementado)
 **Acceso**: Autenticado  
 **Descripción**: Cierra sesión
 
@@ -203,7 +250,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 2. PERFIL (2)
 
-#### GET `/profile`
+#### GET `/profile` (Implementado)
 **Acceso**: Autenticado  
 **Descripción**: Obtiene perfil del usuario autenticado
 
@@ -238,7 +285,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### PATCH `/profile`
+#### PATCH `/profile` (Por implementar)
 **Acceso**: Autenticado  
 **Descripción**: Actualiza perfil (campos opcionales)
 
@@ -263,9 +310,9 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 3. DOCUMENTOS (3)
 
-#### GET `/documents`
-**Acceso**: Autenticado  
-**Descripción**: Lista documentos del usuario
+#### GET `/documents` (Admin - Por implementar)
+**Acceso**: ADMIN (genérico). Para documentos de un usuario autenticado usar `GET /api/v1/my-documents`.
+**Descripción**: Lista todos los documentos del sistema (solo para administradores)
 
 **Query params:**
 - Paginación: `limit`, `after`, `before`
@@ -292,16 +339,17 @@ Responses incluyen `links` con acciones disponibles:
   "pagination": { ... },
   "links": [
     { "rel": "self", "href": "/api/v1/documents", "method": "GET" },
-    { "rel": "upload", "href": "/api/v1/documents", "method": "POST" }
+    // TODO: Revisar
+    // { "rel": "upload", "href": "/api/v1/documents", "method": "POST" }
   ]
 }
 ```
 
 ---
 
-#### GET `/documents/:id`
-**Acceso**: Autenticado (solo propios documentos)  
-**Descripción**: Descarga documento
+#### GET `/documents/:id` (Admin - Por implementar)
+**Acceso**: ADMIN (genérico). Para descargar un documento propio usar `GET /api/v1/my-documents/:id`.
+**Descripción**: Descarga documento de cualquier usuario (solo administradores). Los usuarios deben usar el endpoint bajo `my-documents`.
 
 **Response 200:**
 - Content-Type: application/pdf (o correspondiente)
@@ -317,9 +365,9 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### DELETE `/documents/:id`
-**Acceso**: Autenticado (solo propios)  
-**Descripción**: Elimina documento (solo si no está en uso)
+#### DELETE `/documents/:id` (Admin - Por implementar)
+**Acceso**: ADMIN (genérico). Para que un usuario elimine su propio documento usar `DELETE /api/v1/my-documents/:id`.
+**Descripción**: Elimina documento de cualquier usuario (solo administradores). Para borrados de usuario individuales usar `my-documents`.
 
 **Response 204**: No content
 
@@ -337,7 +385,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 4. CARRERAS - PÚBLICO (2)
 
-#### GET `/courses`
+#### GET `/courses` (Implementado)
 **Acceso**: Público  
 **Descripción**: Lista carreras disponibles
 
@@ -358,7 +406,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/courses/:id`
+#### GET `/courses/:id` (Implementado)
 **Acceso**: Público  
 **Descripción**: Detalle de carrera
 
@@ -378,7 +426,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 5. SKILLS - PÚBLICO (2)
 
-#### GET `/skills`
+#### GET `/skills` (Implementado)
 **Acceso**: Público  
 **Descripción**: Lista skills (con paginación)
 
@@ -404,7 +452,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/skills/:id`
+#### GET `/skills/:id` (Implementado)
 **Acceso**: Público  
 **Descripción**: Detalle de skill
 
@@ -412,7 +460,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 6. EMPRESAS - PÚBLICO (3)
 
-#### GET `/companies`
+#### GET `/companies` (Implementado)
 **Acceso**: Público  
 **Descripción**: Lista empresas (con paginación y filtrado)
 
@@ -439,7 +487,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/companies/:id`
+#### GET `/companies/:id` (Implementado)
 **Acceso**: Público  
 **Descripción**: Detalle de empresa
 
@@ -465,7 +513,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/companies/:id/offers`
+#### GET `/companies/:id/offers` (Implementado)
 **Acceso**: Público  
 **Descripción**: Ofertas de una empresa (con paginación)
 
@@ -489,7 +537,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 7. OFERTAS (2)
 
-#### GET `/offers`
+#### GET `/offers` (Implementado)
 **Acceso**: Público  
 **Descripción**: Lista ofertas activas (con paginación y filtrado)
 
@@ -527,7 +575,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/offers/:id`
+#### GET `/offers/:id` (Implementado)
 **Acceso**: Público  
 **Descripción**: Detalle completo de oferta
 
@@ -569,7 +617,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 8. BORRADORES (8)
 
-#### GET `/offers/:offerId/draft`
+#### GET `/offers/:offerId/draft` (Implementado)
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Obtiene borrador existente o retorna 404
 
@@ -602,7 +650,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### PATCH `/offers/:offerId/draft`
+#### PATCH `/offers/:offerId/draft` (Implementado)
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Crea o actualiza borrador (idempotente)
 
@@ -634,7 +682,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### PUT `/offers/:offerId/draft/documents/:reqDocId`
+#### PUT `/offers/:offerId/draft/documents/:reqDocId` (Implementado — nota: en el código la ruta de subida es `PUT /offers/:offerId/draft/documents` sin `:reqDocId`)  
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Sube documento nuevo para requisito
 
@@ -681,7 +729,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### POST `/offers/:offerId/draft/documents/use-existing`
+#### POST `/offers/:offerId/draft/documents/use-existing` (Implementado)
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Reutiliza documento existente
 
@@ -715,7 +763,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/offers/:offerId/draft/documents`
+#### GET `/offers/:offerId/draft/documents` (Implementado)
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Lista documentos del borrador
 
@@ -748,7 +796,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### DELETE `/offers/:offerId/draft/documents/:reqDocId`
+#### DELETE `/offers/:offerId/draft/documents/:reqDocId` (Implementado — nota: en el código el parámetro se llama `attachmentId`)  
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Elimina documento del borrador
 
@@ -763,7 +811,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### PATCH `/offers/:offerId/draft/confirm`
+#### PATCH `/offers/:offerId/draft/confirm` (Por implementar — en el código existe `POST /offers/:offerId/draft/submit` que realiza el envío)  
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Confirma postulación (convierte draft en application)
 
@@ -812,7 +860,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 9. POSTULACIONES (3)
 
-#### GET `/my-applications`
+#### GET `/my-applications` (Implementado)
 **Acceso**: Autenticado (STUDENT)  
 **Descripción**: Lista postulaciones del usuario (con paginación)
 
@@ -845,7 +893,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/my-applications/:id`
+#### GET `/my-applications/:id` (Por implementar)
 **Acceso**: Autenticado (STUDENT, solo propias)  
 **Descripción**: Detalle completo de postulación
 
@@ -884,7 +932,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### DELETE `/my-applications/:id`
+#### DELETE `/my-applications/:id` (Por implementar)
 **Acceso**: Autenticado (STUDENT, solo propias)  
 **Descripción**: Cancela postulación (solo si PENDING)
 
@@ -904,7 +952,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ### 10. NOTIFICACIONES (4)
 
-#### GET `/notifications`
+#### GET `/notifications` (Por implementar)
 **Acceso**: Autenticado  
 **Descripción**: Lista notificaciones del usuario
 
@@ -937,13 +985,13 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### GET `/notifications/:id`
+#### GET `/notifications/:id` (Por implementar)
 **Acceso**: Autenticado (solo propias)  
 **Descripción**: Detalle de notificación
 
 ---
 
-#### PATCH `/notifications/:id/read`
+#### PATCH `/notifications/:id/read` (Por implementar)
 **Acceso**: Autenticado (solo propias)  
 **Descripción**: Marca notificación como leída
 
@@ -964,7 +1012,7 @@ Responses incluyen `links` con acciones disponibles:
 
 ---
 
-#### DELETE `/notifications/:id`
+#### DELETE `/notifications/:id` (Por implementar)
 **Acceso**: Autenticado (solo propias)  
 **Descripción**: Elimina notificación
 
