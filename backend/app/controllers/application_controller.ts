@@ -41,13 +41,15 @@ const updateStatusValidator = vine.compile(
 
 export default class ApplicationController {
   // Para el usuario logeado solamente
-    async list({ request, auth }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
-      id: 'number',
-      status: 'string',
-      createdAt: 'string',
-      finalizedAt: 'string',
-    } })
+  async listUser({ request, auth }: HttpContext) {
+    const { query, filterWhere } = await preparePagination(request, {
+      fieldMap: {
+        id: 'number',
+        status: 'string',
+        createdAt: 'string',
+        finalizedAt: 'string',
+      },
+    })
 
     return await prisma.application.paginate({
       limit: query.limit ?? 20,
@@ -76,40 +78,42 @@ export default class ApplicationController {
   }
 
   async listAdmin({ request }: HttpContext) {
-     const { query } = await preparePagination(request, { sortEnum: ApplicationSort })
+    const { query } = await preparePagination(request, { sortEnum: ApplicationSort })
 
-     return await prisma.application.paginate({
-       limit: query.limit ?? 20,
-       after: query.after,
-       orderBy: getApplicationOrder(query.sort as any),
-       select: {
-         id: true,
-         status: true,
-         createdAt: true,
-         finalizedAt: true,
-         offer: {
-           select: {
-             id: true,
-             title: true,
-             company: {
-               select: {
-                 id: true,
-                 name: true,
-               },
-             },
-           },
-         },
-       },
-     })
+    return await prisma.application.paginate({
+      limit: query.limit ?? 20,
+      after: query.after,
+      orderBy: getApplicationOrder(query.sort as any),
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        finalizedAt: true,
+        offer: {
+          select: {
+            id: true,
+            title: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    })
   }
 
   async get({ request, auth }: HttpContext) {
     const { params } = await idValidator.validate(request)
 
+    const extraWhere = auth.user?.role === 'ADMIN' ? {} : { userId: auth.user?.id }
+
     const application = await prisma.application.findUniqueOrThrow({
       where: {
         id: params.id,
-        userId: auth.user?.id,
+        ...extraWhere,
       },
       include: {
         offer: {
@@ -200,7 +204,7 @@ export default class ApplicationController {
         application.id,
         application.status,
         'CANCELLED',
-        [""]
+        ['']
       )
     }
 
@@ -214,17 +218,18 @@ export default class ApplicationController {
         finalizedAt: new Date(),
         attachments: {
           deleteMany: {
-            applicationId: application.id
+            applicationId: application.id,
           },
-        }
-      }
+        },
+      },
     })
 
     // TODO: Debería marcar los documentos huérfanos para eliminación aquí mismo?
   }
 
   async updateStatus({ request }: HttpContext) {
-    const { params, status, blockReason, feedback } = await request.validateUsing(updateStatusValidator)
+    const { params, status, blockReason, feedback } =
+      await request.validateUsing(updateStatusValidator)
 
     const application = await prisma.application.findUniqueOrThrow({
       where: {
@@ -260,10 +265,7 @@ export default class ApplicationController {
   }
 }
 
-function validateStatusTransition(
-  currentStatus: string,
-  newStatus: string
-) {
+function validateStatusTransition(currentStatus: string, newStatus: string) {
   const allowed = allowedTransitions[currentStatus] || []
   return allowed.includes(newStatus)
 }
@@ -274,12 +276,12 @@ function transition(status: string, applicationId: number, reason?: string, feed
       return {
         blockReason: reason || 'No reason provided',
         blockedAt: new Date(),
-        unblockedAt: null
+        unblockedAt: null,
       }
     case 'PENDING':
       return {
         blockReason: null,
-        unblockedAt: new Date()
+        unblockedAt: new Date(),
       }
     case 'ACCEPTED':
     case 'REJECTED':
@@ -289,9 +291,9 @@ function transition(status: string, applicationId: number, reason?: string, feed
         unblockedAt: null,
         attachments: {
           deleteMany: {
-            applicationId: applicationId
+            applicationId: applicationId,
           },
-        }
+        },
       }
     default:
       return {}
@@ -303,5 +305,5 @@ const allowedTransitions: Record<string, string[]> = {
   BLOCKED: ['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'],
   ACCEPTED: [],
   REJECTED: [],
-  CANCELLED: []
+  CANCELLED: [],
 }

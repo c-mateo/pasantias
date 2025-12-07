@@ -6,6 +6,8 @@ import { parseFIQL } from 'fiql'
 // longer referenced.
 const schemaCache: WeakMap<any, any> = new WeakMap()
 
+const noEnumKey = {}
+
 function compileSchema(sortEnum?: any) {
   const shape: Record<string, any> = {
     limit: vine.number().range([10, 100]).optional(),
@@ -23,13 +25,13 @@ function compileSchema(sortEnum?: any) {
   return vine.compile(vine.object(shape))
 }
 
-export async function validatePagination(request: any, sortEnum?: any) {
+export async function validatePagination(request: any, sortEnum: any = noEnumKey) {
   let schema: any
 
   schema = schemaCache.get(sortEnum)
   if (!schema) {
     schema = compileSchema(sortEnum)
-    schemaCache.set(sortEnum, schema)
+    schemaCache.set(sortEnum ?? noEnumKey, schema)
   }
 
   return await schema.validate(request.qs())

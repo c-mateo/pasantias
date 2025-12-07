@@ -56,7 +56,9 @@ router.group(() => {
   router.get('skills/:id', '#controllers/skill_controller.get').as('getSkill')
 
   router.group(() => {
-    router.get('my-applications', '#controllers/application_controller.listUserApplications').as('my-applications')
+    router.get('my-applications', '#controllers/application_controller.listUser').as('my-applications')
+    router.get('my-applications/:id', '#controllers/application_controller.get').as('my-applications.get')
+    router.delete('my-applications/:id', '#controllers/application_controller.delete').as('my-applications.delete')
 
     router.get('my-documents', '#controllers/my_document_controller.list').as('my-documents')
     router.get('my-documents/:id', '#controllers/my_document_controller.get').as('my-documents.get')
@@ -66,6 +68,10 @@ router.group(() => {
 
   // Admin routes
   router.group(() => {
+    router.get('applications', '#controllers/application_controller.listAdmin')
+    router.get('applications/:id', '#controllers/application_controller.get')
+    router.patch('applications/:id/status', '#controllers/application_controller.updateStatus')
+
     router.post('courses', '#controllers/course_controller.create').as('createCourse')
     router.patch('courses/:id', '#controllers/course_controller.update').as('updateCourse')
     router.delete('courses/:id', '#controllers/course_controller.delete').as('deleteCourse')
@@ -85,8 +91,10 @@ router.group(() => {
     router.post('skills', '#controllers/skill_controller.create').as('createSkill')
     router.patch('skills/:id', '#controllers/skill_controller.update').as('updateSkill')
     router.delete('skills/:id', '#controllers/skill_controller.delete').as('deleteSkill')
+
+    router.get('users', '#controllers/user_controller.list')
+    router.get('users/:id', '#controllers/user_controller.get')
+    router.delete('users/:id', '#controllers/user_controller.delete')
     
-    // router.get('applications', '#controllers/application_controller.listAllApplications')
-    // router.patch('applications/:id/status', '#controllers/application_controller.updateStatus')
   }).prefix('/admin').use(middleware.hasRole({ role: UserRole.ADMIN }))
 }).prefix('/api/v1')

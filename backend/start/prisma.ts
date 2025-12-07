@@ -9,6 +9,7 @@ const host = env.get('DB_HOST')
 const port = env.get('DB_PORT')
 const database = env.get('DB_DATABASE')
 const databaseUrl = `postgresql://${user}:${password}@${host}:${port}/${database}`
+console.log('Database URL:', databaseUrl)
 
 // env.set('DATABASE_URL', databaseUrl)
 
@@ -81,6 +82,8 @@ export const prisma = new PrismaClient({
 //   data: datos,
 //   skipDuplicates: true,
 // })
+
+// console.log(await prisma.course.findMany())
 
 process.on('beforeExit', async () => {
   await prisma.$disconnect()

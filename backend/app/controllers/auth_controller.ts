@@ -10,12 +10,12 @@ import { User } from '../../generated/prisma/index.js'
 import { decryptUserData, encryptUserData } from '#utils/user'
 
 const registerValidator = vine.compile(vine.object({
-    email: vine.string().email().unique({ table: 'user' }),
+    email: vine.string().email(),
     password: vine.string().minLength(8),
     firstName: vine.string(),
     lastName: vine.string(),
-    dni: vine.string().minLength(8).maxLength(10).unique({ table: 'user' }),
-    phone: vine.string().minLength(7).maxLength(15).unique({ table: 'user' }),
+    dni: vine.string().minLength(8).maxLength(10),
+    phone: vine.string().minLength(7).maxLength(15),
     address: vine.string(),
     province: vine.string(),
     city: vine.string(),

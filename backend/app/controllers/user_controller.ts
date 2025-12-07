@@ -4,17 +4,17 @@ import { idValidator } from '#validators/users'
 import { preparePagination, buildWhere } from '#utils/pagination'
 import { decryptUserData } from '#utils/user'
 
-
-export default class UsersController {
-  
+export default class UserController {
   async list({ request }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
-      id: 'number',
-      email: 'string',
-      firstName: 'string',
-      lastName: 'string',
-      role: 'string',
-    } })
+    const { query, filterWhere } = await preparePagination(request, {
+      fieldMap: {
+        id: 'number',
+        email: 'string',
+        firstName: 'string',
+        lastName: 'string',
+        role: 'string',
+      },
+    })
 
     const result = await prisma.user.paginate({
       limit: query.limit ?? 20,
@@ -60,10 +60,10 @@ export default class UsersController {
         role: true,
         createdAt: true,
         updatedAt: true,
-      }
+      },
     })
     return {
-      data: decryptUserData(user)
+      data: decryptUserData(user),
     }
   }
 
@@ -81,5 +81,4 @@ export default class UsersController {
 
     response.noContent()
   }
-  
 }

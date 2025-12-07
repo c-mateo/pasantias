@@ -12,7 +12,8 @@ export default class SilentAuthMiddleware {
     ctx: HttpContext,
     next: NextFn,
   ) {
-    await ctx.auth.check()
+    const result = await ctx.auth.check()
+    console.log(result)
 
     return next()
   }

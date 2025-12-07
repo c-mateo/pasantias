@@ -105,7 +105,6 @@ export const paginationExtension = Prisma.defineExtension({
 
         const items = await (model as any).findMany({
           cursor,
-          skip: after ? 1 : 0,
           take: limit + 1,
           ...rest,
         })
