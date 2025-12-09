@@ -35,12 +35,15 @@ function getOrder(sort?: CoursesSort) {
 
 export default class CoursesController {
   // GET /courses
-    async list({ auth, request }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, { sortEnum: CoursesSort, fieldMap: {
-      id: 'number',
-      name: 'string',
-      shortName: 'string'
-    } })
+  async list({ auth, request }: HttpContext) {
+    const { query, filterWhere } = await preparePagination(request, {
+      sortEnum: CoursesSort,
+      fieldMap: {
+        id: 'number',
+        name: 'string',
+        shortName: 'string',
+      },
+    })
     const isNotAdmin = auth.user?.role !== 'ADMIN'
 
     return await prisma.course.paginate({
@@ -76,9 +79,7 @@ export default class CoursesController {
     })
     return {
       data: course,
-      links: [
-        { rel: 'self', href: request.url(), method: 'GET' }
-      ],
+      links: [{ rel: 'self', href: request.url(), method: 'GET' }],
     }
   }
 

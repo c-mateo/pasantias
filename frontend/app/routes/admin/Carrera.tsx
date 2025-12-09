@@ -112,7 +112,8 @@ const toDatetimeLocal = (dateString: string) => {
   return localDate.toISOString().slice(0, 16);
 };
 
-const formatDateTimeLocal = (dateString: string) => {
+export const formatDateTimeLocal = (dateString?: string) => {
+  if (!dateString) return "N/A";
   const date = new Date(dateString);
   return Intl.DateTimeFormat(undefined, {
     timeStyle: "short",
@@ -120,6 +121,15 @@ const formatDateTimeLocal = (dateString: string) => {
     hour12: false,
   }).format(date);
 };
+
+// function diff<T extends Record<string, any>>(newValue: T, oldValue: T) {
+//   const result: any = {}
+//   for (const key in newValue) {
+//     if (newValue[key] != oldValue[key]) result[key] = newValue[key];    
+//   }
+//   Object.entries(newValue).filter(([k, v]) => oldValue[k] != v)
+//   return result;
+// };
 
 export default function Curso({ loaderData }: Route.ComponentProps) {
   const { data } = useLoaderData<typeof loader>();
@@ -148,8 +158,15 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
     setModal({
       isOpen: true,
       message: "¿Desea guardar los cambios?",
-      action: () => {
+      action: async () => {
         console.log("Cambios guardados.");
+        await fetch(`/api/v1/admin/courses/${course.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(course),
+        });
         setModal({ ...modal, isOpen: false });
         goBack();
       },

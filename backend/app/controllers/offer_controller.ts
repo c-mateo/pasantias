@@ -40,8 +40,6 @@ export default class OffersController {
       where: buildWhere({ status: 'ACTIVE' }, filterWhere),
       orderBy: getOfferOrder(query.sort as any),
       omit: {
-        createdAt: true,
-        updatedAt: true,
         deletedAt: true,
         customFieldsSchema: true,
       },
@@ -63,8 +61,6 @@ export default class OffersController {
     const offer = await prisma.offer.findUniqueOrThrow({
       where: { id: params.id },
       omit: {
-        createdAt: true,
-        updatedAt: true,
         deletedAt: true,
         customFieldsSchema: true,
       },

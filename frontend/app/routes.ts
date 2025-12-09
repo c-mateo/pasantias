@@ -10,6 +10,7 @@ export default [
         route("home", "routes/home.tsx"),
         route("usuarios", "routes/admin/Usuarios.tsx"),
         route("ofertas", "routes/admin/Ofertas.tsx"),
+        route("ofertas/:ofertaId", "routes/admin/Oferta.tsx"),
         route("carreras", "routes/admin/Carreras.tsx"),
         route("carreras/:carreraId", "routes/admin/Carrera.tsx"),
         route("empresas", "routes/admin/Empresas.tsx"),

@@ -192,6 +192,16 @@ const formatDateTimeLocal = (dateString: string) => {
   }).format(date);
 };
 
+const create = async (data: any) => {
+  await fetch('/api/v1/admin/companies', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+}
+
 export default function Empresa({ loaderData }: Route.ComponentProps) {
   const { data } = useLoaderData<typeof loader>();
 
@@ -212,6 +222,8 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
 
   const { setName, setDescription, setWebsite, setEmail, setPhone, setLogo } =
     useSettersForObject(setCompany);
+  
+    const isExistingCompany = company.id !== 0;
 
   const save = () => {
     // Lógica para guardar los cambios de la empresa
@@ -219,8 +231,14 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
     setModal({
       isOpen: true,
       message: "¿Desea guardar los cambios?",
-      action: () => {
+      action: async () => {
         console.log("Cambios guardados.");
+        if (isExistingCompany) {
+          // Lógica para actualizar la empresa existente
+        } else {
+          // Lógica para crear una nueva empresa
+          await create(company);
+        }
         setModal({ ...modal, isOpen: false });
         goBack();
       },
@@ -246,7 +264,6 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
     navigate("/admin/empresas");
   };
 
-  const isExistingCompany = company.id !== 0;
   return (
     <>
       <Modal

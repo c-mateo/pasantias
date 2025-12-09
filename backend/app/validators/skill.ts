@@ -23,7 +23,6 @@ export const updateValidator = vine.compile(
 
 export const deleteValidator = vine.compile(
   vine.object({
-    params: vine.object({ id: vine.number() }),
-    force: vine.boolean().optional(),
+    params: vine.object({ id: vine.number(), force: vine.boolean().optional() }),
   })
 )

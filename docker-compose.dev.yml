@@ -22,12 +22,13 @@ services:
     ports:
       - "5173:5173"
 
+  # Hot-reload doesn't work with WSL
   backend:
     build: ./backend
       # context: ./backend
       # additional_contexts:
       #   fiql: ../fiql
-    command: ["sh", "-c", "npm i fiql; npm run dev"]
+    command: ["sh", "-c", "npm i fiql; npm run dev -- --host 0.0.0.0"]
     restart: always
     volumes:
       - ./backend:/app

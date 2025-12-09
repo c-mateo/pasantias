@@ -4,6 +4,7 @@ import ActionButtons from "~/components/ActionButtons";
 import { Modal } from "../../components/Modal";
 import { useIntersectionObserver } from "../../hooks/useIntersectionObserver";
 import type { Route } from "./+types/Carreras";
+import { formatDateTimeLocal } from "./Carrera";
 
 // Public view of a course
 export type PublicCourse = {
@@ -235,7 +236,7 @@ export default function Cursos({ loaderData }: Route.ComponentProps) {
                 Nombre
               </th>
               <th className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300">
-                Nombre Corto
+                Sigla
               </th>
               <th className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300">
                 Creado
@@ -267,10 +268,10 @@ export default function Cursos({ loaderData }: Route.ComponentProps) {
                   {course.shortName || "N/A"}
                 </td>
                 <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">
-                  {new Date(course.createdAt).toLocaleDateString()}
+                  {formatDateTimeLocal(course.createdAt)}
                 </td>
                 <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">
-                  {new Date(course.updatedAt).toLocaleDateString()}
+                  {formatDateTimeLocal(course.updatedAt)}
                 </td>
                 <td className="px-3 py-2 text-sm text-gray-500 border-b border-gray-300">
                   <ActionButtons
