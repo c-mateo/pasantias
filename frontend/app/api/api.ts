@@ -11,6 +11,8 @@ import { UsersRepository } from './users'
 import { NotificationsRepository } from './notifications'
 import { CoursesRepository } from './courses'
 
+import wretch from "wretch"
+
 export function buildClient(baseURL = 'http://localhost:5173/api/v1') {
     const client = new AxiosAPIClient(baseURL)
 
@@ -33,3 +35,6 @@ export type ApiClient = ReturnType<typeof buildClient>
 
 // Default client for quick usage in app code (optional)
 export const defaultApi = buildClient()
+
+export const api = wretch("http://localhost:5173/api/v1")
+  .options({ mode: "cors", credentials: "include" })

@@ -1,4 +1,5 @@
 import { Field } from "../components/Field";
+import { Button } from "@heroui/button";
 
 
 
@@ -45,7 +46,7 @@ export function Form<T>({ fields, value, onSubmit }: FormProps<T>) {
           required={field.required}
         />
       ))}
-      <button type="submit">{submitText}</button>
+      <Button type="submit">{submitText}</Button>
     </form>
   );
 }

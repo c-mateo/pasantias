@@ -11,10 +11,10 @@ services:
       - frontend
       - backend
 
-  # TODO: Build first and then deploy
+  # Build first
   # frontend:
   #   build: ./frontend
-  #   command: ["npm", "run", "dev"]
+  #   command: ["npm", "run", "dev", "--", "--host"]
   #   networks:
   #     - devnet
   #   volumes:
@@ -23,15 +23,16 @@ services:
   #   ports:
   #     - "5173:5173"
 
-  # TODO: Build first and then deploy
   # backend:
-  #   build:
-  #     context: ./backend
-  #     additional_contexts:
-  #       fiql: ../fiql
-  #   command: ["npm", "run", "dev"]
+  #   build: ./backend
+  #     # context: ./backend
+  #     # additional_contexts:
+  #     #   fiql: ../fiql
+  #   command: ["sh", "-c", "npm i fiql; npm run dev -- --host 0.0.0.0"]
+  #   restart: always
   #   volumes:
   #     - ./backend:/app
+  #     - ./fiql:/fiql
   #     - /app/node_modules
   #   networks:
   #     - devnet
@@ -39,9 +40,12 @@ services:
   #     - "3333:3333"
   #   env_file:
   #     - ./backend/.env
+  #   environment:
+  #     - DB_HOST=db
+  #     - REDIS_HOST=redis
   #   depends_on:
   #     - db
-  #     - redis
+      - redis
 
   db:
     image: postgres:18

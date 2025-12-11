@@ -18,41 +18,41 @@ datasource db {
 // ==========================================
 
 model User {
-  id              Int      @id @default(autoincrement())
-  
+  id Int @id @default(autoincrement())
+
   // Autenticación
-  emailHash       String   @unique @db.VarChar(64)  // SHA256 para buscar sin desencriptar
-  email           String   @db.Text                 // Encriptado (AES-256-GCM)
-  password        String   @db.VarChar(255)         // Bcrypt hash
-  role            UserRole @default(STUDENT)
-  
+  emailHash String   @unique @db.VarChar(64) // SHA256 para buscar sin desencriptar
+  email     String   @db.Text // Encriptado (AES-256-GCM)
+  password  String   @db.VarChar(255) // Bcrypt hash
+  role      UserRole @default(STUDENT)
+
   // Perfil obligatorio
-  firstName       String   @db.Text                 // Encriptado
-  lastName        String   @db.Text                 // Encriptado
-  dni             String   @unique @db.Text         // Encriptado (8 dígitos)
-  phone           String?  @unique @db.Text         // Encriptado
-  address         String?  @db.Text                 // Encriptado (calle y número)
-  
+  firstName String  @db.Text // Encriptado
+  lastName  String  @db.Text // Encriptado
+  dni       String  @unique @db.Text // Encriptado (8 dígitos)
+  phone     String? @unique @db.Text // Encriptado
+  address   String? @db.Text // Encriptado (calle y número)
+
   // Ubicación (plain text para filtrar)
-  city           String?  @db.VarChar(100)         // Encriptado
-  province       String?  @db.VarChar(100)         // Encriptado
-  
+  city     String? @db.VarChar(100) // Encriptado
+  province String? @db.VarChar(100) // Encriptado
+
   // Metadata
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  deletedAt       DateTime?
-  anonymizedAt    DateTime?
-  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  anonymizedAt DateTime?
+
   // Relaciones
-  courses         Course[]                      // N-N: Usuario en múltiples carreras
-  skills          Skill[]
-  documents       Document[]
-  drafts          Draft[]
-  applications    Application[]
-  sessions        Session[]
-  notifications   Notification[]
-  authTokens      AuthToken[]
-  
+  courses       Course[] // N-N: Usuario en múltiples carreras
+  skills        Skill[]
+  documents     Document[]
+  drafts        Draft[]
+  applications  Application[]
+  sessions      Session[]
+  notifications Notification[]
+  authTokens    AuthToken[]
+
   @@index([emailHash])
   @@index([province, city])
 }
@@ -66,31 +66,31 @@ model Session {
   id             String   @id @default(cuid(2))
   userId         Int
   createdAt      DateTime @default(now())
-  lastActivityAt DateTime @default(now())  // Para sliding/renewal
+  lastActivityAt DateTime @default(now()) // Para sliding/renewal
   expiresAt      DateTime
-  ipAddress      String?  @db.VarChar(45)   // IPv6 compatible
+  ipAddress      String?  @db.VarChar(45) // IPv6 compatible
   userAgent      String?  @db.Text
-  
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([expiresAt])
   @@index([lastActivityAt])
 }
 
 model AuthToken {
-  id         String   @id @default(cuid(2))
-  userId     Int
-  tokenHash  String   @unique @db.VarChar(64) // SHA256 del token
-  type       AuthTokenType
-  createdAt  DateTime @default(now())
-  expiresAt  DateTime
-  
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id        String        @id @default(cuid(2))
+  userId    Int
+  tokenHash String        @unique @db.VarChar(64) // SHA256 del token
+  type      AuthTokenType
+  createdAt DateTime      @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
   @@index([userId])
   @@index([expiresAt])
-  @@unique([userId, type])
 }
 
 enum AuthTokenType {
@@ -103,39 +103,39 @@ enum AuthTokenType {
 // ==========================================
 
 model Course {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(200)
-  description String?  @db.Text
-  shortName   String?  @db.VarChar(20)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  users       User[]
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(200)
+  description String? @db.Text
+  shortName   String? @db.VarChar(20)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
 }
 
 model Skill {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(200)
-  description String?  @db.Text
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  users       User[]
-  offers      Offer[]
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(200)
+  description String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users  User[]
+  offers Offer[]
 }
 
 model DocumentType {
-  id              Int      @id @default(autoincrement())
-  name            String   @unique @db.VarChar(200)
-  description     String?  @db.Text
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  documents       Document[]
-  requiredDocs    RequiredDocument[]
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(200)
+  description String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents    Document[]
+  requiredDocs RequiredDocument[]
 }
 
 // ==========================================
@@ -143,51 +143,53 @@ model DocumentType {
 // ==========================================
 
 model Company {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(200)
-  description String?  @db.Text
-  website     String?  @db.VarChar(500)
-  email       String   @unique @db.VarChar(255)
-  phone       String?  @db.VarChar(50)
-  logo        String?  @db.VarChar(500)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
-  
-  offers      Offer[]
-  
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(200)
+  description String? @db.Text
+  website     String? @db.VarChar(500)
+  email       String  @unique @db.VarChar(255)
+  phone       String? @db.VarChar(50)
+  logo        String? @db.VarChar(500)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  offers Offer[]
+
   @@index([email])
 }
 
 model Offer {
-  id              Int         @id @default(autoincrement())
-  companyId       Int
-  title           String      @db.VarChar(200)
-  description     String      @db.Text
-  status          OfferStatus @default(DRAFT)
-  location        String?     @db.VarChar(200)
-  salary          Int?        // En moneda local
-  durationWeeks   Int?        // Duración estimada en semanas
-  startDate       DateTime?
-  
-  publishedAt     DateTime?
-  expiresAt       DateTime?
-  closedAt        DateTime?
-  
+  id            Int         @id @default(autoincrement())
+  companyId     Int
+  position      String      @db.VarChar(200)
+  description   String      @db.Text
+  status        OfferStatus @default(DRAFT)
+  vacancies     Int // Cantidad de puestos disponibles
+  requirements  String?      @db.Text
+  location      String?     @db.VarChar(200)
+  salary        Int? // En moneda local
+  durationWeeks Int? // Duración estimada en semanas
+  startDate     DateTime?
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  closedAt    DateTime?
+
   // Campos custom dinámicos (baja prioridad)
-  customFieldsSchema Json?    // Definición de campos adicionales
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  deletedAt       DateTime?
-  
-  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  requiredDocs    RequiredDocument[]
-  skills          Skill[]
-  drafts          Draft[]
-  applications    Application[]
-  
+  customFieldsSchema Json? // Definición de campos adicionales
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requiredDocs RequiredDocument[]
+  skills       Skill[]
+  drafts       Draft[]
+  applications Application[]
+
   @@index([companyId])
   @@index([status])
   @@index([status, publishedAt])
@@ -202,15 +204,15 @@ enum OfferStatus {
 }
 
 model RequiredDocument {
-  offerId         Int
-  documentTypeId  Int
-  
-  offer           Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  documentType    DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
-  
+  offerId        Int
+  documentTypeId Int
+
+  offer        Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+
   // TODO: Debería?
   // attachments     DocumentAttachment[]
-  
+
   @@id([offerId, documentTypeId])
   @@index([offerId])
   @@index([documentTypeId])
@@ -221,34 +223,34 @@ model RequiredDocument {
 // ==========================================
 
 model Document {
-  id                   Int      @id @default(autoincrement())
-  userId               Int
-  documentTypeId       Int
-  originalName         String   @db.VarChar(255)
-  size                 Int      // En bytes
-  
+  id             Int    @id @default(autoincrement())
+  userId         Int
+  documentTypeId Int
+  originalName   String @db.VarChar(255)
+  size           Int // En bytes
+
   // Path con UUID para anonimato
   // Ej: /uploads/documents/2025/11/a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf
-  path                 String   @unique @db.VarChar(500)
-  hash                 String   @db.VarChar(64)  // SHA256 del archivo para evitar duplicados
-  
-  createdAt            DateTime @default(now())
-  lastUsedAt           DateTime @default(now())
+  path String @unique @db.VarChar(500)
+  hash String @db.VarChar(64) // SHA256 del archivo para evitar duplicados
+
+  createdAt            DateTime  @default(now())
+  lastUsedAt           DateTime  @default(now())
   scheduledForDeletion DateTime?
   hiddenAt             DateTime? // Soft delete
-  
+
   // Integración universitaria (baja prioridad)
   // source               DocumentSource @default(USER_UPLOAD)
   // externalId           String?  @db.VarChar(200)
   // verifiedAt           DateTime?
   // verifiedBy           Int?
-  
-  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documentType         DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
   // verifier             User?        @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
-  
-  attachments          DocumentAttachment[]
-  
+
+  attachments DocumentAttachment[]
+
   @@index([userId])
   @@index([userId, documentTypeId])
   @@index([scheduledForDeletion])
@@ -256,19 +258,19 @@ model Document {
 
 // Representa la asociación de un documento con un borrador o una postulación (no ambas)
 model DocumentAttachment {
-  id            Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   documentId    Int
   draftId       Int?
   applicationId Int?
   // requiredDocumentId Int?
 
-  document      Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  draft         Draft?       @relation(fields: [draftId], references: [id], onDelete: SetNull)
-  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  document    Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  draft       Draft?       @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   // requiredDocument RequiredDocument? @relation(fields: [requiredDocumentId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([documentId, draftId])
   @@unique([documentId, applicationId])
@@ -277,34 +279,32 @@ model DocumentAttachment {
   @@index([documentId])
 }
 
-
-
 // ==========================================
 // BORRADORES DE POSTULACIÓN
 // ==========================================
 
 model Draft {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  offerId     Int
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  expiresAt   DateTime?
-  
+  id      Int @id @default(autoincrement())
+  userId  Int
+  offerId Int
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
+
   // Valores de campos custom en draft (baja prioridad)
   customFieldsValues Json?
-  
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  offer       Offer            @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offer       Offer                @relation(fields: [offerId], references: [id], onDelete: Cascade)
   attachments DocumentAttachment[]
-  
+
   @@unique([userId, offerId])
   @@index([userId])
   @@index([offerId])
   @@index([updatedAt])
   @@index([expiresAt])
-	@@map("ApplicationDraft")
+  @@map("ApplicationDraft")
 }
 
 // ==========================================
@@ -312,29 +312,29 @@ model Draft {
 // ==========================================
 
 model Application {
-  id              Int               @id @default(autoincrement())
-  userId          Int
-  offerId         Int
-  status          ApplicationStatus @default(PENDING)
-  
-  finalizedAt     DateTime? // Aceptada, rechazada o cancelada
-  feedback        String?           @db.Text
-  
+  id      Int               @id @default(autoincrement())
+  userId  Int
+  offerId Int
+  status  ApplicationStatus @default(PENDING)
+
+  finalizedAt DateTime? // Aceptada, rechazada o cancelada
+  feedback    String?   @db.Text
+
   // Bloqueo por cambios en requisitos
-  blockReason     String?           @db.VarChar(100)
-  blockedAt       DateTime?
-  unblockedAt     DateTime?
-  
+  blockReason String?   @db.VarChar(100)
+  blockedAt   DateTime?
+  unblockedAt DateTime?
+
   // Valores de campos custom (baja prioridad)
-  customFieldsValues Json?          // Valores completados por usuario
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  offer           Offer                 @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  attachments     DocumentAttachment[]
-  
+  customFieldsValues Json? // Valores completados por usuario
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offer       Offer                @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  attachments DocumentAttachment[]
+
   @@unique([userId, offerId])
   @@index([userId])
   @@index([offerId])
@@ -343,7 +343,7 @@ model Application {
 
 enum ApplicationStatus {
   PENDING
-  BLOCKED      // Requiere acción del usuario (ej: documentos adicionales)
+  BLOCKED // Requiere acción del usuario (ej: documentos adicionales)
   ACCEPTED
   REJECTED
   CANCELLED
@@ -354,19 +354,19 @@ enum ApplicationStatus {
 // ==========================================
 
 model Notification {
-  id         Int                @id @default(autoincrement())
-  userId     Int
-  type       NotificationType
-  title      String             @db.VarChar(200)
-  message    String             @db.Text
-  relatedId  Int?
-  
-  isRead     Boolean            @default(false)
-  readAt     DateTime?
-  createdAt  DateTime           @default(now())
-  
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  message   String           @db.Text
+  relatedId Int?
+
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, isRead])
   @@index([userId, createdAt])
 }

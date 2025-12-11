@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router";
+import { Button } from "@heroui/button";
 
 export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +40,7 @@ export default function Login() {
           </div>
 
           <div className="flex items-center justify-between">
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Entrar</button>
+            <Button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Entrar</Button>
             <Link to="/register" className="text-sm text-blue-600">Crear cuenta</Link>
           </div>
         </form>

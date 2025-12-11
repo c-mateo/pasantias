@@ -4,9 +4,12 @@ import { checkFK } from '../../prisma/strategies.js'
 import { validator, createValidator, updateValidator } from '#validators/offer'
 import { preparePagination, buildWhere } from '#utils/pagination'
 
-
 function getOfferOrder(s?: string) {
   switch (s) {
+    case 'position':
+      return { position: 'asc' } as const
+    case '-position':
+      return { position: 'desc' } as const
     case 'publishedAt':
       return { publishedAt: 'asc' } as const
     case '-publishedAt':
@@ -25,7 +28,7 @@ export default class OffersController {
     const { query, filterWhere } = await preparePagination(request, {
       fieldMap: {
         id: 'number',
-        title: 'string',
+        position: 'string',
         description: 'string',
         status: 'string',
         companyId: 'number',
@@ -40,6 +43,7 @@ export default class OffersController {
       where: buildWhere({ status: 'ACTIVE' }, filterWhere),
       orderBy: getOfferOrder(query.sort as any),
       omit: {
+        companyId: true,
         deletedAt: true,
         customFieldsSchema: true,
       },
@@ -129,7 +133,8 @@ export default class OffersController {
   }
 
   async update({ request }: HttpContext) {
-    const { params, skills, requiredDocuments, ...validated } = await request.validateUsing(updateValidator)
+    const { params, skills, requiredDocuments, ...validated } =
+      await request.validateUsing(updateValidator)
 
     const updatedOffer = await prisma.offer.guardedUpdate(
       {
@@ -150,39 +155,43 @@ export default class OffersController {
     // TODO: handle changes in custom fields and required docs as needed
 
     // Chequear cambios en documentos requeridos
-    const toDelete = updatedOffer.requiredDocs.filter(rd => {
+    const toDelete = updatedOffer.requiredDocs.filter((rd) => {
       return !requiredDocuments?.includes(rd.documentTypeId)
     })
 
-    const toAdd = (requiredDocuments || []).filter(docId => {
-      return !updatedOffer.requiredDocs.some(rd => rd.documentTypeId === docId)
+    const toAdd = (requiredDocuments || []).filter((docId) => {
+      return !updatedOffer.requiredDocs.some((rd) => rd.documentTypeId === docId)
     })
 
     const batch = []
     if (toDelete.length > 0) {
-      batch.push(prisma.requiredDocument.deleteMany({
-        where: {
-          offerId: params.id,
-          documentTypeId: {
-            in: toDelete.map(rd => rd.documentTypeId)
-          }
-        }
-      }))
+      batch.push(
+        prisma.requiredDocument.deleteMany({
+          where: {
+            offerId: params.id,
+            documentTypeId: {
+              in: toDelete.map((rd) => rd.documentTypeId),
+            },
+          },
+        })
+      )
     }
     if (toAdd.length > 0) {
-      batch.push(prisma.requiredDocument.createMany({
-        data: toAdd.map(docId => ({
-          offerId: params.id,
-          documentTypeId: docId
-        }))
-      }))
+      batch.push(
+        prisma.requiredDocument.createMany({
+          data: toAdd.map((docId) => ({
+            offerId: params.id,
+            documentTypeId: docId,
+          })),
+        })
+      )
     }
 
     if (batch.length > 0) {
       const result = await prisma.$transaction(batch)
 
       const expectedCounts = [toDelete.length, toAdd.length]
-      if (result.some((r, i) => r.count != expectedCounts[i])) {
+      if (result.some((r, i) => r.count !== expectedCounts[i])) {
         throw new Error('Error updating required documents for offer ' + params.id)
       }
     }
@@ -201,13 +210,16 @@ export default class OffersController {
   async getOffers({ request }: HttpContext) {
     const { params } = await request.validateUsing(validator)
     // Ensure the parent company exists — otherwise return 404 immediately.
-    const companyExists = await prisma.company.findUnique({ where: { id: params.id }, select: { id: true } })
+    const companyExists = await prisma.company.findUnique({
+      where: { id: params.id },
+      select: { id: true },
+    })
     if (!companyExists) throw new Error('Company not found')
 
     const { query, filterWhere } = await preparePagination(request, {
       fieldMap: {
         id: 'number',
-        title: 'string',
+        position: 'string',
         status: 'string',
         publishedAt: 'string',
         expiresAt: 'string',
@@ -224,4 +236,3 @@ export default class OffersController {
     })
   }
 }
-

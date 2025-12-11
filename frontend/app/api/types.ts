@@ -39,6 +39,8 @@ export type CompanyShort = {
   id: number
   name: string
   logo?: string | null
+  website?: string | null
+  description?: string | null
 }
 
 export type CompanyDTO = {
@@ -97,16 +99,17 @@ export type DraftDTO = {
 
 export type OfferShort = {
   id: number
-  title: string
+  position: string
   company?: CompanyShort
 }
 
 export type OfferDTO = {
   id: number
   companyId: number
-  title: string
+  position: string
   description: string
   status: OfferStatus
+  vacancies: number
   location?: string | null
   salary?: number | null
   durationWeeks?: number | null
@@ -114,8 +117,12 @@ export type OfferDTO = {
   publishedAt?: string | null
   expiresAt?: string | null
   closedAt?: string | null
+  requirements?: string | null
   skills?: SkillDTO[]
-  company?: CompanyDTO
+  company?: CompanyShort
+  requiredDocuments?: DocumentTypeDTO[]
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type OfferDetailedDTO = OfferDTO & {

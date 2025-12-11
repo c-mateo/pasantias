@@ -18,7 +18,6 @@ enum CompanySort {
 
 // pagination schema is provided by `validatePagination` helper
 
-
 function getOrder(sort?: CompanySort) {
   switch (sort) {
     case CompanySort.NAME:
@@ -65,12 +64,11 @@ export default class CompaniesController {
         website: 'string',
         email: 'string',
         phone: 'string',
-        verified: 'boolean',
         createdAt: 'string',
       },
     })
 
-   return await prisma.company.paginate({
+    return await prisma.company.paginate({
       limit: query.limit ?? 20,
       after: query.after,
       where: filterWhere,

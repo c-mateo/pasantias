@@ -8,15 +8,16 @@ export const validator = vine.compile(vine.object({
 
 export const createValidator = vine.compile(
   vine.object({
-    title: vine.string(),
+    position: vine.string(),
     description: vine.string(),
     companyId: vine.number(),
     status: vine.enum(['DRAFT', 'ACTIVE']),
-    location: vine.string().optional().requiredWhen('status', '=', 'ACTIVE'),
-    salary: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-    durationWeeks: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-    startDate: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
-    expiresAt: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
+    vacancies: vine.number(),
+    location: vine.string().optional(),
+    salary: vine.number().optional(),
+    durationWeeks: vine.number().optional(),
+    startDate: vine.date().optional(),
+    expiresAt: vine.date().optional(),
 
     skills: vine.array(vine.number()).optional(),
     requiredDocuments: vine.array(vine.number()).optional(),
@@ -26,15 +27,16 @@ export const createValidator = vine.compile(
 export const updateValidator = vine.compile(
   vine.object({
     params: vine.object({ id: vine.number() }),
-    title: vine.string().optional(),
+    position: vine.string().optional(),
     description: vine.string().optional(),
     companyId: vine.number().optional(),
     status: vine.enum(['DRAFT', 'ACTIVE', 'CLOSED']).optional(),
-    location: vine.string().optional().requiredWhen('status', '=', 'ACTIVE'),
-    salary: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-    durationWeeks: vine.number().optional().requiredWhen('status', '=', 'ACTIVE'),
-    startDate: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
-    expiresAt: vine.date().optional().requiredWhen('status', '=', 'ACTIVE'),
+    vacancies: vine.number().optional(),
+    location: vine.string().optional(),
+    salary: vine.number().optional(),
+    durationWeeks: vine.number().optional(),
+    startDate: vine.date().optional(),
+    expiresAt: vine.date().optional(),
 
     skills: vine.array(vine.number()).optional(),
     requiredDocuments: vine.array(vine.number()).optional(),

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ActionButtons from "~/components/ActionButtons";
+import { Button } from "@heroui/button";
 import type { Route } from "./+types/Empresas";
 import type { HTMLInputTypeAttribute } from "react";
 import { Modal } from "../../components/Modal";
@@ -217,13 +218,13 @@ export default function Empresas({ loaderData }: Route.ComponentProps) {
         <h2 className="text-2xl font-semibold">Administrar Empresas</h2>
         <div>
           {selected.size > 0 && (
-            <button className="mr-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onClick={onDeleteSelected}>
+            <Button className="mr-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onClick={onDeleteSelected}>
               Eliminar Seleccionados ({selected.size})
-            </button>
+            </Button>
           )}
-          <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onClick={() => navigate("/admin/empresas/nuevo")}>
+          <Button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onClick={() => navigate("/admin/empresas/nuevo") }>
             Crear Empresa
-          </button>
+          </Button>
         </div>
       </div>
       <div className="flex rounded-xl border border-gray-300 bg-white shadow-md overflow-y-auto max-h-[550px] scrollbar-none">

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ActionButtons from "~/components/ActionButtons";
+import { Button } from "@heroui/button";
 import type { Route } from "./+types/Usuarios";
 import { Modal } from "../../components/Modal";
 
@@ -199,9 +200,9 @@ export default function Usuarios({ loaderData }: Route.ComponentProps) {
         <h2 className="text-2xl font-semibold">Administrar Usuarios</h2>
         <div>
           {selected.size > 0 && (
-            <button className="mr-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onClick={onDeleteSelected}>
+            <Button className="mr-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" onClick={onDeleteSelected}>
               Eliminar Seleccionados ({selected.size})
-            </button>
+            </Button>
           )}
         </div>
       </div>

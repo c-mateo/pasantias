@@ -27,7 +27,7 @@ type SetterRecord<T> = {
     [K in keyof T as K extends string 
         ? `set${Capitalize<K>}` 
         : never
-    ]: (newValue: T[K]) => void
+    ]-?: (newValue: T[K]) => void
 };
 
 /**

@@ -25,6 +25,7 @@ export const prisma = new PrismaClient({
     { level: 'warn', emit: 'event' },]
 }).$extends(guardModelExtension).$extends(paginationExtension);
 
+// console.log(await prisma.company.findMany({}))
 
 // const datos = [
 //   // { name: "Licenciatura en Educación" },

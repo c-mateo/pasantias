@@ -1,53 +1,190 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/Oferta";
 import { act, useEffect, useRef, useState } from "react";
-import type { AdminOffer } from "./Ofertas";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
+import { api, defaultApi } from "~/api/api";
+import { type CompaniesListResponse, type OfferDTO, type Paginated, type SkillDTO, type SkillsListResponse } from "~/api/types";
+import { toDatetimeLocal } from "./Carrera";
+import { Autocomplete, AutocompleteItem, DateInput, DatePicker, Input, NumberInput, Select, SelectItem, Textarea } from "@heroui/react";
+import { Button } from "@heroui/button";
+import { parseDateTime } from "@internationalized/date";
+import { useLocale } from "@react-aria/i18n";
+import {useInfiniteScroll} from "@heroui/use-infinite-scroll";
+
+type DataType<T> = T extends Paginated<infer U> ? U : never;
+
+async function getAll<T extends Paginated<any>>(
+  endpoint: string,
+  headers?: Record<string, string>
+): Promise<DataType<T>[]> {
+  let next = 0;
+  const all = [];
+  while (true) {
+    const response = await api
+      .headers(headers ?? {})
+      .get(`${endpoint}?limit=100&after=${next}`)
+      .json<T>();
+    console.log(response);
+    all.push(...response.data);
+    if (!response.pagination.hasNext) break;
+    next = response.pagination.next as number;
+  }
+  return all;
+}
 
 export async function loader({ params, request }: Route.LoaderArgs) {
+  const companies = await getAll<CompaniesListResponse>("/companies", {
+    Cookie: request.headers.get("Cookie") ?? "",
+  });
+
   if (params.ofertaId === "nuevo") {
     return {
       data: {
         id: 0,
-        position: "",
         companyId: 0,
-        vacancies: 1,
-        applicationDeadline: new Date().toISOString(),
+        position: "",
         description: "",
-        requirements: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as AdminOffer,
+        status: "DRAFT",
+        location: "",
+        vacancies: 1,
+
+        skills: [],
+
+        requirements: ""
+      } as OfferDTO,
+      companies,
     };
   }
 
-  const response = await fetch(
-    `http://localhost:5173/api/v1/offers/${params.ofertaId}`,
-    {
-      credentials: "include",
-      headers: {
-        Cookie: request.headers.get("Cookie") ?? "",
-      },
+  const offer = await api
+    .headers({
+      Cookie: request.headers.get("Cookie") ?? "",
+    })
+    .get(`/offers/${params.ofertaId}`)
+    .json<OfferDTO>();
+
+  return { data: offer, companies };
+}
+
+export function usePokemonList({fetchDelay = 0} = {}) {
+  const [items, setItems] = useState([] as SkillDTO[]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const limit = 10; // Number of items per page, adjust as necessary
+
+  const loadPokemon = async (currentOffset: number) => {
+    const controller = new AbortController();
+    const {signal} = controller;
+
+    try {
+      setIsLoading(true);
+
+      if (offset > 0) {
+        // Delay to simulate network latency
+        await new Promise((resolve) => setTimeout(resolve, fetchDelay));
+      }
+
+      let res = await api.get(`/skills?after=${currentOffset}&limit=${limit}`).json<SkillsListResponse>()
+      
+      setHasMore(res.pagination.hasNext);
+      // Append new results to existing ones
+      setItems((prevItems) => [...prevItems, ...res.data]);
+    } catch (error) {
+      if (error.name === "AbortError") {
+        // eslint-disable-next-line no-console
+        console.log("Fetch aborted");
+      } else {
+        // eslint-disable-next-line no-console
+        console.error("There was an error with the fetch operation:", error);
+      }
+    } finally {
+      setIsLoading(false);
     }
-  );
+  };
 
-  if (!response.ok) {
-    throw new Response("Offer not found", { status: 404 });
+  useEffect(() => {
+    loadPokemon(offset);
+  }, []);
+
+  const onLoadMore = () => {
+    const newOffset = offset + limit;
+
+    setOffset(newOffset);
+    loadPokemon(newOffset);
+  };
+
+  return {
+    items,
+    hasMore,
+    isLoading,
+    onLoadMore,
+  };
+}
+
+function TransitionButtons({
+  status,
+  setStatus,
+}: {
+  status: OfferDTO["status"];
+  setStatus: (status: OfferDTO["status"]) => void;
+}) {
+  switch (status) {
+    case "DRAFT":
+      return (
+        <Button
+          color="secondary"
+          onPress={() => setStatus("ACTIVE")}
+        >
+          Publicar Oferta
+        </Button>
+      );
+    case "ACTIVE":
+      return (
+        <>
+          <Button
+            color="secondary"
+            onPress={() => setStatus("DRAFT")}
+          >
+            Poner Borrador
+          </Button>
+          <Button
+            color="danger"
+            onPress={() => setStatus("CLOSED")}
+          >
+            Cerrar Oferta
+          </Button>
+        </>
+      );
+    case "CLOSED":
+      return (
+        <>
+          <Button
+            color="primary"
+            onPress={() => setStatus("ACTIVE")}
+          >
+            Reabrir Oferta
+          </Button>
+          <Button
+            color="secondary"
+            onPress={() => setStatus("DRAFT")}
+          >
+            Poner Borrador
+          </Button>
+        </>
+      );
   }
-
-  const body = await response.json();
-  return { data: body.data as AdminOffer };
 }
 
 export default function Oferta({ loaderData }: Route.ComponentProps) {
-  const { data } = useLoaderData<typeof loader>();
+  const { data, companies } = useLoaderData<typeof loader>();
   const [offer, setOffer] = useState(data);
   const navigate = useNavigate();
 
   const metadata = {
-    createdAt: new Date(data.createdAt).toLocaleString(),
-    updatedAt: new Date(data.updatedAt).toLocaleString(),
+    createdAt: new Date(data.createdAt ?? "").toLocaleString(),
+    updatedAt: new Date(data.updatedAt ?? "").toLocaleString(),
   };
 
   const [modal, setModal] = useState({
@@ -61,20 +198,35 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     setDescription,
     setRequirements,
     setVacancies,
-    setApplicationDeadline,
+    setExpiresAt,
+    setStatus,
+    setCompanyId,
+    setLocation,
+    setSalary,
+    setSkills,
+    setDurationWeeks,
+    setStartDate,
   } = useSettersForObject(setOffer);
 
   const isExisting = offer.id !== 0;
 
-  const save = () => {
-    // TODO: call API to save or create offer
-    console.log("Saving offer:", offer);
+  const [isOpen, setIsOpen] = useState(false);
+  const skillList = usePokemonList({fetchDelay: 500});
+
+  const [, scrollerRef] = useInfiniteScroll({
+    hasMore: skillList.hasMore,
+    isEnabled: isOpen,
+    shouldUseLoader: false, // We don't want to show the loader at the bottom of the list
+    onLoadMore: skillList.onLoadMore,
+  });
+
+  const save = (status: OfferDTO["status"] = data.status) => {
     setModal({
       isOpen: true,
       message: "¿Desea guardar los cambios?",
-      action: () => {
-        console.log("Saved");
+      action: async () => {
         setModal({ ...modal, isOpen: false });
+        await api.post({ ...offer, status }, "/admin/offers");
         navigate("/admin/ofertas");
       },
     });
@@ -94,6 +246,40 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
 
   const goBack = () => navigate("/admin/ofertas");
 
+  const buttons = isExisting ? (
+    <>
+      <Button
+        color="primary"
+        onPress={() => save()}
+      >
+        Guardar Cambios
+      </Button>
+      <Button color="danger" onPress={del}>
+        Eliminar Oferta
+      </Button>
+      <TransitionButtons status={offer.status} setStatus={setStatus} />
+    </>
+  ) : (
+    <>
+      <Button
+        color="secondary"
+        onPress={() => {
+          save("ACTIVE");
+        }}
+      >
+        Crear Oferta
+      </Button>
+      <Button
+        color="default"
+        onPress={() => {
+          save("DRAFT");
+        }}
+      >
+        Crear Borrador
+      </Button>
+    </>
+  );  
+
   return (
     <>
       <Modal
@@ -107,65 +293,109 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
           <div className="flex flex-col mx-auto p-4 space-y-4">
             <h1 className="text-2xl font-bold">Detalles de la Oferta</h1>
 
-            <label className="font-medium">Empresa</label>
-            <select
-              className="border p-2 rounded"
-              value={offer.companyId}
-              onChange={(e) => setOffer({ ...offer, companyId: Number(e.target.value) })}
+            <Autocomplete
+              isVirtualized
+              isRequired
+              label="Empresa"
+              labelPlacement="outside"
+              placeholder="Seleccionar empresa"
+              defaultItems={companies || []}
+              selectedKey={offer.companyId}
+              onSelectionChange={(v) => setCompanyId(v as number)}
             >
-              <option value={0} disabled selected>Seleccione una empresa</option>
-              <option value={1}>Empresa A</option>
-              <option value={2}>Empresa B</option>
-              <option value={3}>Empresa C</option>
-            </select>
+              {(item) => <AutocompleteItem key={item.id}>{item.name}</AutocompleteItem>}
+            </Autocomplete>
 
-            <label className="font-medium">Puesto</label>
-            <input
-              className="border p-2 rounded"
+            <Input
+              isRequired
+              label="Puesto"
+              labelPlacement="outside"
+              placeholder="Ingrese el puesto"
               value={offer.position}
-              onChange={(e) => setPosition(e.target.value)}
+              onValueChange={setPosition}
             />
 
-            <label className="font-medium">Descripción</label>
-            <textarea
-              className="border p-2 rounded h-32"
+            <Textarea
+              isRequired
+              label="Descripción"
+              labelPlacement="outside"
+              placeholder="Describir en qué consiste el puesto y las tareas a realizar"
               value={offer.description ?? ""}
-              onChange={(e) => setDescription(e.target.value)}
+              onValueChange={setDescription}
             />
 
-            <label className="font-medium">Requisitos</label>
-            <textarea
-              className="border p-2 rounded h-24"
+            <Textarea
+              label="Requisitos"
+              labelPlacement="outside"
+              placeholder="Describir los requisitos necesarios para postular a la oferta"
               value={offer.requirements ?? ""}
-              onChange={(e) => setRequirements(e.target.value)}
+              onValueChange={setRequirements}
             />
 
-            <label className="font-medium">Vacantes</label>
-            <input
-              type="number"
-              className="border p-2 rounded"
+            <NumberInput
+              isRequired
+              label="Vacantes"
+              labelPlacement="outside"
               value={offer.vacancies ?? ""}
-              onChange={(e) =>
-                setVacancies(
-                  e.target.value === "" ? null : Number(e.target.value)
-                )
-              }
+              onValueChange={setVacancies}
               min={1}
             />
 
-            <label className="font-medium">Fecha Límite</label>
-            <input
-              type="datetime-local"
-              className="border p-2 rounded"
-              value={
-                offer.applicationDeadline
-                  ? new Date(offer.applicationDeadline)
-                      .toISOString()
-                      .slice(0, 16)
-                  : ""
-              }
-              onChange={(e) => setApplicationDeadline(e.target.value)}
+            <DatePicker
+              label="Fecha de Expiración"
+              labelPlacement="outside"
+              granularity="minute"
+              hourCycle={24}
+              value={offer.expiresAt ? parseDateTime(offer.expiresAt) : undefined}
+              onChange={(v) => setExpiresAt(v?.toString())}
             />
+
+            <Input
+              label="Ubicación"
+              labelPlacement="outside"
+              placeholder="Ingrese la ubicación del trabajo"
+              value={offer.location ?? ""}
+              onValueChange={setLocation}
+            />
+
+            <NumberInput
+              label="Remuneración"
+              labelPlacement="outside"
+              placeholder="Ingrese la remuneración ofrecida"
+              value={offer.salary ?? undefined}
+              minValue={0}
+              onValueChange={setSalary}
+            />
+
+            <NumberInput
+              label="Duración (semanas)"
+              labelPlacement="outside"
+              placeholder="Ingrese la duración estimada del puesto en semanas"
+              minValue={1}
+              value={offer.durationWeeks ?? undefined}
+              onValueChange={setDurationWeeks}
+            />
+            
+            <DatePicker
+              label="Fecha de Inicio"
+              labelPlacement="outside"
+              granularity="day"
+              value={offer.startDate ? parseDateTime(offer.startDate) : undefined}
+              onChange={(v) => setStartDate(v?.toString())}
+            />
+
+            <Select
+              // isVirtualized
+              label="Habilidades Requeridas"
+              labelPlacement="outside"
+              placeholder="Seleccionar habilidades"
+              scrollRef={scrollerRef}
+              selectionMode="multiple"
+              items={skillList.items}
+            >
+              {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
+            </Select>
+
           </div>
         </div>
         <div className="grow-3 basis-sm">
@@ -173,6 +403,9 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
             {isExisting && (
               <div>
                 <h2 className="text-xl font-bold">Información Adicional</h2>
+                <p>
+                  <span className="font-medium">Estado</span> {offer.status}
+                </p>
                 <p>
                   <span className="font-medium">Fecha de Creación:</span>{" "}
                   {metadata.createdAt}
@@ -185,26 +418,13 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
             )}
             <h2 className="text-xl font-bold">Acciones</h2>
             <div className="flex flex-row flex-wrap gap-4">
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-                onClick={save}
-              >
-                {isExisting ? "Guardar Cambios" : "Crear Oferta"}
-              </button>
-              {isExisting && (
-                <button
-                  className="bg-red-600 text-white px-4 py-2 rounded"
-                  onClick={del}
-                >
-                  Eliminar Oferta
-                </button>
-              )}
-              <button
-                className="bg-gray-600 text-white px-4 py-2 rounded"
-                onClick={goBack}
+              {buttons}
+              <Button
+                color="default"
+                onPress={goBack}
               >
                 Volver a la Lista de Ofertas
-              </button>
+              </Button>
             </div>
           </div>
         </div>

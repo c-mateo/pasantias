@@ -4,6 +4,7 @@ import { act, useState } from "react";
 import type { AdminCourse } from "./Carreras";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
+import type { CourseDTO } from "~/api/types";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   if (params.carreraId === "nuevo") {
@@ -15,7 +16,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         description: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      } as AdminCourse,
+      } as CourseDTO,
     };
   }
 
@@ -105,12 +106,20 @@ export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
 // const setItemValueId10 = setItemProp(10, 'value');
 // setItemValueId10('Nuevo texto'); // Actualiza 'value' del ítem con id 10
 
-const toDatetimeLocal = (dateString: string) => {
+export const toDatetimeLocal = (dateString: string | null | undefined) => {
+  if (!dateString) return "";
   const date = new Date(dateString);
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60 * 1000);
   return localDate.toISOString().slice(0, 16);
 };
+
+export const fromDatetimeLocal = (localDateString: string) => {
+  const localDate = new Date(localDateString);
+  const offset = localDate.getTimezoneOffset();
+  const utcDate = new Date(localDate.getTime() + offset * 60 * 1000);
+  return utcDate.toISOString();
+}
 
 export const formatDateTimeLocal = (dateString?: string) => {
   if (!dateString) return "N/A";

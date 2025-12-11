@@ -1,6 +1,7 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/Empresa";
 import { act, useEffect, useRef, useState } from "react";
+import { Button } from "@heroui/button";
 import type { AdminCompany } from "./Empresas";
 import { useSettersForObject } from "~/util/createPropertySetter";
 
@@ -165,18 +166,18 @@ export function Modal({
       <div className="max-w-xl bg-white p-6 rounded shadow-md">
         <p className="mb-4">{message}</p>
         <div className="flex justify-end space-x-4">
-          <button
+          <Button
             onClick={onCancel}
             className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onConfirm}
             className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-700"
           >
             Confirmar
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -354,26 +355,26 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
             )}
             <h2 className="text-xl font-bold">Acciones</h2>
             <div className="flex flex-row flex-wrap gap-4">
-              <button
+              <Button
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-max"
                 onClick={save}
               >
                 {isExistingCompany ? "Guardar Cambios" : "Crear Empresa"}
-              </button>
+              </Button>
               {isExistingCompany && (
-                <button
+                <Button
                   className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-max"
                   onClick={del}
                 >
                   Eliminar Empresa
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 w-max"
                 onClick={goBack}
               >
                 Volver a la Lista de Empresas
-              </button>
+              </Button>
             </div>
           </div>
         </div>

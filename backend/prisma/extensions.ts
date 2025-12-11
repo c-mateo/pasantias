@@ -1,5 +1,5 @@
 import { apiErrors } from '#exceptions/myExceptions'
-import { Prisma } from '../generated/prisma/index.js'
+import { Prisma } from '../generated/prisma/client.js'
 import { ErrorStrategy, executeGuarded } from './guard.js'
 
 export const guardModelExtension = Prisma.defineExtension({
