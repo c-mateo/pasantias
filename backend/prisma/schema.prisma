@@ -32,16 +32,16 @@ model User {
   dni       String  @unique @db.Text // Encriptado (8 dígitos)
   phone     String? @unique @db.Text // Encriptado
   address   String? @db.Text // Encriptado (calle y número)
+  // TODO: Deberia hacerlo no nullable?
 
   // Ubicación (plain text para filtrar)
-  city     String? @db.VarChar(100) // Encriptado
-  province String? @db.VarChar(100) // Encriptado
+  city     String? @db.Text // Encriptado
+  province String? @db.Text // Encriptado
 
   // Metadata
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
-  anonymizedAt DateTime?
 
   // Relaciones
   courses       Course[] // N-N: Usuario en múltiples carreras
@@ -62,6 +62,7 @@ enum UserRole {
   ADMIN
 }
 
+// No implementado
 model Session {
   id             String   @id @default(cuid(2))
   userId         Int
@@ -78,13 +79,14 @@ model Session {
   @@index([lastActivityAt])
 }
 
+// No implementado
 model AuthToken {
-  id        String        @id @default(cuid(2))
-  userId    Int
-  tokenHash String        @unique @db.VarChar(64) // SHA256 del token
-  type      AuthTokenType
-  createdAt DateTime      @default(now())
-  expiresAt DateTime
+  id         String         @id @default(cuid(2))
+  userId     Int
+  tokenHash  String         @unique @db.VarChar(64) // SHA256 del token
+  type       AuthTokenType
+  createdAt  DateTime       @default(now())
+  expiresAt  DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -111,7 +113,8 @@ model Course {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
+  users  User[]
+  offers Offer[]
 }
 
 model Skill {
@@ -167,7 +170,7 @@ model Offer {
   description   String      @db.Text
   status        OfferStatus @default(DRAFT)
   vacancies     Int // Cantidad de puestos disponibles
-  requirements  String?      @db.Text
+  requirements  String?     @db.Text
   location      String?     @db.VarChar(200)
   salary        Int? // En moneda local
   durationWeeks Int? // Duración estimada en semanas
@@ -185,6 +188,7 @@ model Offer {
   deletedAt DateTime?
 
   company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  courses      Course[]
   requiredDocs RequiredDocument[]
   skills       Skill[]
   drafts       Draft[]
@@ -210,9 +214,6 @@ model RequiredDocument {
   offer        Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade)
   documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
 
-  // TODO: Debería?
-  // attachments     DocumentAttachment[]
-
   @@id([offerId, documentTypeId])
   @@index([offerId])
   @@index([documentTypeId])
@@ -230,7 +231,6 @@ model Document {
   size           Int // En bytes
 
   // Path con UUID para anonimato
-  // Ej: /uploads/documents/2025/11/a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf
   path String @unique @db.VarChar(500)
   hash String @db.VarChar(64) // SHA256 del archivo para evitar duplicados
 
@@ -239,16 +239,9 @@ model Document {
   scheduledForDeletion DateTime?
   hiddenAt             DateTime? // Soft delete
 
-  // Integración universitaria (baja prioridad)
-  // source               DocumentSource @default(USER_UPLOAD)
-  // externalId           String?  @db.VarChar(200)
-  // verifiedAt           DateTime?
-  // verifiedBy           Int?
-
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
-  // verifier             User?        @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
-
+  
   attachments DocumentAttachment[]
 
   @@index([userId])
@@ -263,12 +256,10 @@ model DocumentAttachment {
   documentId    Int
   draftId       Int?
   applicationId Int?
-  // requiredDocumentId Int?
 
   document    Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
   draft       Draft?       @relation(fields: [draftId], references: [id], onDelete: SetNull)
   application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  // requiredDocument RequiredDocument? @relation(fields: [requiredDocumentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 

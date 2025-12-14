@@ -1,17 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ActionButtons from "~/components/ActionButtons";
+import AdminList from "~/components/AdminList"; 
 import { Button } from "@heroui/button";
 import type { Route } from "./+types/Ofertas";
 import type { HTMLInputTypeAttribute } from "react";
-import { Modal } from "../../components/Modal";
+// Modal handled by AdminList now
 import { useNavigate } from "react-router";
 import { api } from "~/api/api";
-import type { OffersListResponse } from "~/api/types";
+import type { OffersListResponse, OfferDTO } from "~/api/types";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const res = await api.headers({
-    Cookie: request.headers.get("Cookie") ?? "",
-  }).get("/offers?limit=10").json<OffersListResponse>();
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  const res = await api.get("/offers?limit=10").json<OffersListResponse>();
 
   return {
     initialData: res.data,
@@ -22,7 +20,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 function useIntersectionObserver<T extends HTMLElement>(
   ref: React.RefObject<T | null>,
   onVisible: () => void,
-  options: IntersectionObserverInit = {}
+  options: IntersectionObserverInit = {},
 ) {
   useEffect(() => {
     if (!ref?.current) return;
@@ -40,45 +38,13 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
   const [offers, setOffers] = useState(initialData || []);
   const [page, setPage] = useState(pagination.next);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState(() => new Set<number>());
-  const [selectAllActive, setSelectAllActive] = useState(false);
-  const [modal, setModal] = useState({
-    isOpen: false,
-    message: <></>,
-    action: () => {},
-  });
-
-  const headerRef = useRef<HTMLInputElement | null>(null);
+  // selection & modal handled by AdminList now
   const sentinelRef = useRef<HTMLTableRowElement | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!headerRef.current) return;
-    const total = offers.length;
-    headerRef.current.indeterminate =
-      selected.size > 0 && selected.size < total;
-  }, [selected, offers]);
+  // AdminList manages header checkbox state and selection
 
-  function toggleAll() {
-    if (selected.size === offers.length) {
-      setSelected(new Set());
-      setSelectAllActive(false);
-    } else {
-      const all = new Set(offers.map((o) => o.id));
-      setSelected(all);
-      setSelectAllActive(true);
-    }
-  }
-
-  function toggleOne(id: number, checked: boolean) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      if (!checked && selectAllActive) setSelectAllActive(false);
-      return next;
-    });
-  }
+  // selection handled by AdminList
 
   const loadMore = useCallback(async () => {
     if (!page || loading) return;
@@ -94,14 +60,11 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     const nextOffers = [...offers, ...body.data];
     setOffers(nextOffers);
 
-    if (selectAllActive && nextOffers.length) {
-      const all = new Set(nextOffers.map((o) => o.id));
-      setSelected(all);
-    }
+    // AdminList manages select all behavior correctly
 
     setPage(body.pagination.next);
     setLoading(false);
-  }, [page, loading, offers, selectAllActive]);
+  }, [page, loading, offers]);
 
   useIntersectionObserver(sentinelRef, loadMore);
 
@@ -114,155 +77,41 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     return () => observer.disconnect();
   }, [page, loading, loadMore]);
 
-  const onDelete = (offerId: number) => () => {
-    const pos = offers.find((o) => o.id === offerId)?.position;
-    setModal({
-      isOpen: true,
-      message: (
-        <>
-          {"¿Estás seguro de que deseas eliminar la oferta "}
-          <b>{pos}</b>
-          {"? Esta acción no se puede deshacer."}
-        </>
-      ),
-      action: () => {
-        setOffers((prev) => prev.filter((o) => o.id !== offerId));
-        setSelected((prev) => {
-          const next = new Set(prev);
-          next.delete(offerId);
-          return next;
-        });
-        setModal({ ...modal, isOpen: false });
-      },
-    });
-  };
+  const deleteOffer = (id: number) => setOffers((prev) => prev.filter((o) => o.id !== id));
+  const deleteOffers = (ids: number[]) => setOffers((prev) => prev.filter((o) => !ids.includes(o.id)));
 
-  const onDeleteSelected = () => {
-    setModal({
-      isOpen: true,
-      message: (
-        <>
-          {"¿Estás seguro de que deseas eliminar las "}
-          <b>{selected.size} ofertas seleccionadas</b>
-          {"? Esta acción no se puede deshacer."}
-        </>
-      ),
-      action: () => {
-        setOffers((prev) => prev.filter((o) => !selected.has(o.id)));
-        setSelected(new Set());
-        setModal({ ...modal, isOpen: false });
-      },
-    });
-  };
+  // AdminList will show delete confirmation modals
 
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
-      <Modal
-        isOpen={modal.isOpen}
-        message={modal.message}
-        onConfirm={modal.action}
-        onCancel={() => setModal({ ...modal, isOpen: false })}
-      />
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Administrar Ofertas</h2>
-        <div>
-          {selected.size > 0 && (
-            <Button
-              className="mr-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-              onClick={onDeleteSelected}
-            >
-              Eliminar Seleccionados ({selected.size})
-            </Button>
+      {/* AdminList handles its confirmation modals */}
+      {/* AdminList shows title and create button */}
+      <AdminList<OfferDTO>
+        headers={[
+          { label: 'Puesto' },
+          { label: "Puesto" },
+          { label: "Empresa", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },
+          { label: "Vacantes", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },
+          { label: "Fecha Límite", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },
+        ]}
+          items={offers}
+        loading={loading}
+        sentinelRef={sentinelRef}
+          getId={(o) => o.id}
+          getName={(o) => o.position}
+            renderCells={(offer) => (
+            <>
+              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300">{offer.position}</td>
+              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">{offer.company?.name ?? "N/A"}</td>
+              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">{offer.vacancies ?? "N/A"}</td>
+              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">{offer.expiresAt ? new Date(offer.expiresAt).toLocaleDateString() : "N/A"}</td>
+            </>
           )}
-          <Button
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            onClick={() => navigate("/admin/ofertas/nuevo")}
-          >
-            Crear Oferta
-          </Button>
-        </div>
-      </div>
-      <div className="flex rounded-xl border border-gray-300 bg-white shadow-md overflow-y-auto max-h-[550px] scrollbar-none">
-        <table className="w-full h-20 border-separate border-spacing-0">
-          <thead className="bg-gray-100 sticky top-0">
-            <tr>
-              <th className="px-4 pt-1 border-b border-gray-300">
-                <input
-                  ref={headerRef}
-                  type="checkbox"
-                  checked={selected.size === offers.length && offers.length > 0}
-                  onChange={() => toggleAll()}
-                  className="w-4 h-4"
-                  aria-label="Seleccionar todo"
-                />
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-b border-gray-300">
-                Puesto
-              </th>
-              <th className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300">
-                Empresa
-              </th>
-              <th className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300">
-                Vacantes
-              </th>
-              <th className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300">
-                Fecha Límite
-              </th>
-              <th className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {offers.map((offer) => (
-              <tr key={offer.id} className="border-t border-gray-300">
-                <td className="px-4 pt-1 border-b border-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(offer.id)}
-                    onChange={(e) => toggleOne(offer.id, e.target.checked)}
-                    className="w-4 h-4"
-                    aria-label={`Seleccionar oferta ${offer.position}`}
-                  />
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300">
-                  {offer.position}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">
-                  {offer.company?.name ?? "N/A"}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">
-                  {offer.vacancies ?? "N/A"}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">
-                  {offer.expiresAt
-                    ? new Date(offer.expiresAt).toLocaleDateString()
-                    : "N/A"}
-                </td>
-                <td className="px-3 py-2 text-sm text-gray-500 border-b border-gray-300">
-                  <ActionButtons
-                    onDelete={onDelete(offer.id)}
-                    editHref={`/admin/ofertas/${offer.id}`}
-                  />
-                </td>
-              </tr>
-            ))}
-            {loading && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="border-t border-gray-300 text-center py-4"
-                >
-                  Cargando…
-                </td>
-              </tr>
-            )}
-            <tr ref={sentinelRef}>
-              <td colSpan={6}></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          onDeleteItem={(id) => deleteOffer(id)}
+          onDeleteSelected={(ids) => deleteOffers(ids)}
+          title="Administrar Ofertas"
+          createHref="/admin/ofertas/nuevo"
+      />
     </div>
   );
 }

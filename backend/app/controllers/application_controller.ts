@@ -1,4 +1,4 @@
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
@@ -64,7 +64,7 @@ export default class ApplicationController {
         offer: {
           select: {
             id: true,
-            title: true,
+            position: true,
             company: {
               select: {
                 id: true,
@@ -92,7 +92,7 @@ export default class ApplicationController {
         offer: {
           select: {
             id: true,
-            title: true,
+            position: true,
             company: {
               select: {
                 id: true,
@@ -119,7 +119,7 @@ export default class ApplicationController {
         offer: {
           select: {
             id: true,
-            title: true,
+            position: true,
             company: {
               select: {
                 id: true,

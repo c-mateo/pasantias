@@ -4,7 +4,7 @@ import { prisma } from '#start/prisma'
 import { HttpContext } from '@adonisjs/core/http'
 import { validator, createValidator, updateValidator } from '#validators/company'
 import { checkUnique } from '../../prisma/strategies.js'
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { buildWhere, preparePagination } from '#utils/pagination'
 
 enum CompanySort {
@@ -54,7 +54,7 @@ function getOfferOrder(s?: string) {
 
 export default class CompaniesController {
   // GET /companies
-  async list({ request }: HttpContext) {
+  async list({ request, auth }: HttpContext) {
     const { query, filterWhere } = await preparePagination(request, {
       sortEnum: CompanySort,
       fieldMap: {
@@ -68,27 +68,33 @@ export default class CompaniesController {
       },
     })
 
+    const isNotAdmin = auth.user?.role !== 'ADMIN'
+
     return await prisma.company.paginate({
       limit: query.limit ?? 20,
       after: query.after,
       where: filterWhere,
       orderBy: getOrder(query.sort),
       omit: {
-        createdAt: true,
-        updatedAt: true,
+        createdAt: isNotAdmin, // Ocultar auditoría al estudiante
+        updatedAt: isNotAdmin,
         deletedAt: true,
+        email: isNotAdmin, // Ocultar email/phone en lista pública
+        phone: isNotAdmin,
       },
     })
   }
 
   // GET /companies/:id
-  async get({ request }: HttpContext) {
+  async get({ request, auth }: HttpContext) {
     const companyId = request.param('id')
+    const isNotAdmin = auth.user?.role !== 'ADMIN'
+
     const company = await prisma.company.findUniqueOrThrow({
       where: { id: companyId },
       omit: {
-        createdAt: true,
-        updatedAt: true,
+        createdAt: isNotAdmin, // Ocultar auditoría
+        updatedAt: isNotAdmin,
         deletedAt: true,
       },
     })
@@ -158,8 +164,16 @@ export default class CompaniesController {
       after: query.after,
       where: buildWhere({ companyId: params.id }, filterWhere),
       orderBy: getOfferOrder(query.sort),
-      omit: { createdAt: true, updatedAt: true, deletedAt: true, customFieldsSchema: true },
-      include: { company: true, skills: true },
+      omit: {
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        customFieldsSchema: true,
+        companyId: true, // Omitido: Redundante en este endpoint
+      },
+      include: {
+        skills: true,
+      },
     })
   }
 }

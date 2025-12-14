@@ -10,13 +10,14 @@ const authConfig = defineConfig({
     web: sessionGuard({
       useRememberMeTokens: false,
       provider: configProvider.create(async () => {
-        const { FakeUserProvider } = await import('#auth/session_user_provider')
-        return new FakeUserProvider({
-          id: 1,
-          email: 'fakeuser@example.com',
-          role: 'ADMIN',
-        } as User)
-      })
+        const { PrismaUserProvider } = await import('#auth/session_user_provider')
+        return new PrismaUserProvider()
+        // {
+        //   id: 1,
+        //   email: 'fakeuser@example.com',
+        //   role: 'ADMIN',
+        // } as User
+      }),
     }),
   },
 })

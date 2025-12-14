@@ -3,17 +3,17 @@ import { Welcome } from "../welcome/welcome";
 // import './form.css';
 import { CargarEmpresa } from "../components/CargarEmpresa";
 import { CursoListDemo } from "../components/Course";
-import UsersTable from "~/components/usuarios";
+import OffersListDemo from "~/components/OffersListDemo";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
+    { title: "Inicio - Ofertas recientes" },
     { name: "description", content: "Welcome to React Router!" },
   ];
 }
 
 export default function Home() {
-  return <UsersTable />
+  return <OffersListDemo />
     // value={{
     //   name: "Empresa Ejemplo",
     //   email: "email@a.com",

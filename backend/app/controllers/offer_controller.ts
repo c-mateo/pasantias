@@ -34,6 +34,8 @@ export default class OffersController {
         companyId: 'number',
         publishedAt: 'string',
         expiresAt: 'string',
+        // TODO: Support this
+        // courses: 'number[]',
       },
     })
 
@@ -48,14 +50,9 @@ export default class OffersController {
         customFieldsSchema: true,
       },
       include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            logo: true,
-          },
-        },
-        skills: true,
+        company: { select: { id: true, name: true, logo: true } },
+        skills: { select: { id: true, name: true } },
+        courses: { select: { id: true, name: true, shortName: true } },
       },
     })
   }
@@ -76,22 +73,20 @@ export default class OffersController {
             description: true,
             logo: true,
             website: true,
+            email: true,
+            phone: true,
           },
         },
         skills: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
+          select: { id: true, name: true, description: true },
+        },
+        courses: {
+          select: { id: true, name: true, shortName: true },
         },
         requiredDocs: {
           select: {
             documentType: {
-              select: {
-                id: true,
-                name: true,
-              },
+              select: { id: true, name: true }, // DocTypeRefDTO
             },
           },
         },
@@ -109,7 +104,8 @@ export default class OffersController {
   }
 
   async create({ request }: HttpContext) {
-    const { skills, requiredDocuments, ...validated } = await request.validateUsing(createValidator)
+    const { courses, skills, requiredDocuments, ...validated } =
+      await request.validateUsing(createValidator)
 
     const offer = await prisma.offer.guardedCreate(
       {
@@ -118,22 +114,60 @@ export default class OffersController {
           skills: {
             connect: skills?.map((id) => ({ id })) || [],
           },
+          courses: {
+            connect: courses?.map((id) => ({ id })) || [],
+          },
           requiredDocs: {
             createMany: {
               data: requiredDocuments?.map((docId) => ({ documentTypeId: docId })) || [],
             },
           },
         },
+        omit: {
+          companyId: true,
+          deletedAt: true,
+          customFieldsSchema: true,
+        },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              logo: true,
+              website: true,
+              email: true,
+              phone: true, // Company Detalle
+            },
+          },
+          skills: {
+            select: { id: true, name: true, description: true }, // Skill Detalle
+          },
+          courses: {
+            select: { id: true, name: true, shortName: true }, // Course Ref
+          },
+          requiredDocs: {
+            select: {
+              documentType: {
+                select: { id: true, name: true }, // DocTypeRefDTO
+              },
+            },
+          },
+        },
       },
       [checkFK(['companyId'])]
     )
+
     return {
-      data: offer,
+      data: {
+        ...offer,
+        requiredDocuments: offer.requiredDocs.map((rd) => rd.documentType),
+      },
     }
   }
 
   async update({ request }: HttpContext) {
-    const { params, skills, requiredDocuments, ...validated } =
+    const { params, courses, skills, requiredDocuments, ...validated } =
       await request.validateUsing(updateValidator)
 
     const updatedOffer = await prisma.offer.guardedUpdate(
@@ -141,6 +175,9 @@ export default class OffersController {
         where: { id: params.id },
         data: {
           ...validated,
+          courses: {
+            set: courses?.map((id) => ({ id })) || [],
+          },
           skills: {
             set: skills?.map((id) => ({ id })) || [],
           },

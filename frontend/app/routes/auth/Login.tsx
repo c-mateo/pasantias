@@ -1,49 +1,87 @@
-import React from "react";
-import { Link } from "react-router";
+import React, { useState } from "react";
 import { Button } from "@heroui/button";
+import { Form, Input, Link } from "@heroui/react";
+import { api, defaultApi } from "~/api/api";
+import {
+  auth,
+  isLogged,
+  loaderAccess,
+  login,
+  requireUser,
+  useAuth,
+} from "~/util/AuthContext";
+import type { LoginResponse } from "~/api/types";
+import { redirect, useNavigate } from "react-router";
+
+export async function clientLoader() {
+  const user = await requireUser();
+  if (user) throw redirect("/");
+}
 
 export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  //
+  // const ctx = useAuth();
+  // ctx.
+  //
+  // console.log("Login redraw");
+  // if (ctx.userData) {
+  //   console.log("Authenticated");
+  //   // navigate("/admin/carreras");
+  // }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const form = e.currentTarget as HTMLFormElement;
-    const data = Object.fromEntries(new FormData(form).entries());
+    // setIsLoading(true);
 
     try {
-      // Intentamos realizar un POST a /api/login (ajustar según backend)
-      const response = await fetch("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      console.log(await response.json());
-      // Redirigir o mostrar mensaje (simple ejemplo)
-    //   window.location.href = "/";
+      await login(email, password);
+      await navigate("/admin/carreras");
+      // window.location.href = "/";
     } catch (err) {
       console.error(err);
       alert("Error al iniciar sesión");
+    } finally {
+      // setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-20">
+    <div className="min-h-screen bg-gray-100 py-20">
       <main className="max-w-md mx-auto bg-white p-6 rounded shadow">
         <h2 className="text-2xl font-bold mb-4">Iniciar sesión</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1" htmlFor="email">Correo electrónico</label>
-            <input id="email" name="email" type="email" required className="w-full border px-3 py-2 rounded" />
-          </div>
+        <Form onSubmit={handleSubmit}>
+          <Input
+            id="email"
+            label="Correo electrónico"
+            labelPlacement="outside"
+            isRequired
+            value={email}
+            onValueChange={setEmail}
+            type="email"
+            placeholder="ejemplo@dominio.com"
+          />
+          <Input
+            id="password"
+            label="Contraseña"
+            labelPlacement="outside"
+            isRequired
+            value={password}
+            onValueChange={setPassword}
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+          />
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1" htmlFor="password">Contraseña</label>
-            <input id="password" name="password" type="password" required className="w-full border px-3 py-2 rounded" />
+          <div className="flex items-center justify-between w-full">
+            <Button type="submit" color="primary" disabled={isLoading}>
+              Entrar
+            </Button>
+            <Link href="/register">Crear cuenta</Link>
           </div>
-
-          <div className="flex items-center justify-between">
-            <Button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Entrar</Button>
-            <Link to="/register" className="text-sm text-blue-600">Crear cuenta</Link>
-          </div>
-        </form>
+        </Form>
       </main>
     </div>
   );

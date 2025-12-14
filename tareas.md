@@ -3,14 +3,14 @@ Frontend:
 - Interfaz de alumno:
   - Página principal
   - Pagina de usuario
-- Inicio de sesión:
-  - Redirigir
 - Recuperar contraseña
 # - Restablecer contraseña
 - Internacionalización (i18n) a español (es-AR)
 - Manejo de errores
+- Interfaz para dispositivos móviles
 
 Backend:
 - Validaciones de datos
 - TODOs sin completar
 - Campos custom
+- Reincorporar encriptación de datos

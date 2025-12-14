@@ -37,7 +37,7 @@ export default function UsersTable() {
       <table className="w-full">
         <thead className="bg-white">
             <tr>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">
+            <th className="px-4 py-2 text-center text-sm font-medium text-gray-900">
               <input
                 ref={headerRef}
                 type="checkbox"
@@ -47,17 +47,17 @@ export default function UsersTable() {
                 aria-label="Seleccionar todo"
               />
             </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Name</th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Email</th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Role</th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Status</th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Name</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Email</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Role</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Status</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Actions</th>
           </tr>
         </thead>
         <tbody>
             {users.map((user, i) => (
-            <tr key={i} className="border-t border-gray-300">
-              <td className="px-4 py-2 text-sm text-gray-900">
+            <tr key={i} className="border-b border-gray-300">
+              <td className="px-4 py-2 text-sm text-gray-900 text-center">
                 <input
                   type="checkbox"
                   checked={selected.has(i)}
@@ -67,7 +67,7 @@ export default function UsersTable() {
                 />
               </td>
               <td className="px-4 py-2 text-sm text-gray-900">{user.name}</td>
-              <td className="px-4 py-2 text-sm text-gray-500">{user.email}</td>
+              <td className="px-4 py-2 text-sm text-gray-500 text-center">{user.email}</td>
               <td className="px-4 py-2">
                 <span className="inline-block rounded-xl bg-gray-100 px-3 py-1 text-sm font-medium">
                   {user.role}

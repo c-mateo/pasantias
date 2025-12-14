@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { Button } from "@heroui/button";
 
 // const ask = (message: string, options: string[] = [], onConfirm?: () => void) => {
 //     const confirmation = window.confirm(message);
@@ -48,18 +49,8 @@ export function Modal({
       <div className="max-w-xl bg-white p-6 rounded shadow-md">
         <p className="mb-4">{message}</p>
         <div className="flex justify-end space-x-4">
-          <button
-            onClick={onCancel}
-            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-700"
-          >
-            Confirmar
-          </button>
+          <Button onClick={onCancel} color="default" className="px-4 py-2 rounded">Cancelar</Button>
+          <Button onClick={onConfirm} color="primary" className="px-4 py-2 rounded">Confirmar</Button>
         </div>
       </div>
     </div>

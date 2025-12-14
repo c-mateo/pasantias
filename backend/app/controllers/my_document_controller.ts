@@ -1,4 +1,4 @@
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import fs, { stat } from 'fs/promises'

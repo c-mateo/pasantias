@@ -10,6 +10,8 @@ type ApiErrorPayload = {
   meta?: Record<string, any>
 }
 
+const supportEmail = process.env.SUPPORT_EMAIL || 'admin@yourdomain.com'
+
 export class ApiException extends Error {
   constructor(private payload: ApiErrorPayload) {
     super(JSON.stringify(payload))
@@ -176,15 +178,12 @@ export const apiErrors = {
     })
   },
 
-  multipleUniqueConflicts(
-    resourceType: string,
-    conflicts: Array<{ field: string; value: any }>
-  ) {
+  multipleUniqueConflicts(resourceType: string, conflicts: Array<{ field: string; value: any }>) {
     return new ApiException({
-      type: "already-exists",
-      title: "Resource already exists",
+      type: 'already-exists',
+      title: 'Resource already exists',
       status: 409,
-      detail: "Some fields must be unique but are already in use",
+      detail: 'Some fields must be unique but are already in use',
       meta: { resourceType, conflicts },
     })
   },
@@ -323,7 +322,7 @@ export const apiErrors = {
   // 8. SERVER ERRORS (500 / 502 / 503)
   // ===========================
 
-  internalError(errorId: string, supportEmail: string) {
+  internalError(errorId: string) {
     return new ApiException({
       type: 'internal-error',
       title: 'Internal server error',

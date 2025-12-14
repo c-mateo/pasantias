@@ -1,39 +1,30 @@
-import { useLoaderData, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import type { Route } from "./+types/Carrera";
-import { act, useState } from "react";
-import type { AdminCourse } from "./Carreras";
+import { useState } from "react";
+import { Input, Textarea } from "@heroui/react";
+import { Button } from "@heroui/button";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
-import type { CourseDTO } from "~/api/types";
+import type { CourseDTO, CourseResponse } from "~/api/types";
+import { api } from "~/api/api";
 
-export async function loader({ params, request }: Route.LoaderArgs) {
+export async function clientLoader({
+  params,
+}: Route.ClientLoaderArgs) {
   if (params.carreraId === "nuevo") {
     return {
-      data: {
         id: 0,
         name: "",
         shortName: "",
         description: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      } as CourseDTO,
-    };
+    } as CourseDTO;
   }
 
-  const response = await fetch(
-    `http://localhost:5173/api/v1/courses/${params.carreraId}`,
-    {
-      credentials: "include",
-      headers: {
-        Cookie: request.headers.get("Cookie") ?? "",
-      },
-    }
-  );
-  if (!response.ok) {
-    throw new Response("Course not found", { status: 404 });
-  }
-  const course = await response.json();
-  return { data: course.data as AdminCourse };
+  const response = await api.get(`/courses/${params.carreraId}`).json<CourseResponse>();
+
+  return response.data;
 }
 
 /**
@@ -44,7 +35,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
  * @returns Una función que acepta la clave (K) y devuelve otra función para el nuevo valor.
  */
 export const setterBuilderObject = <T extends object, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T>>
+  setter: React.Dispatch<React.SetStateAction<T>>,
 ) => {
   // Retorna una función que espera la propiedad (K) a modificar
   return (prop: K) => {
@@ -82,7 +73,7 @@ type ItemWithId = { id: number; [key: string]: any };
  * @returns Una función que acepta id y clave (K), y devuelve otra función para el nuevo valor.
  */
 export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T[]>>
+  setter: React.Dispatch<React.SetStateAction<T[]>>,
 ) => {
   // Retorna una función que espera el ID y la propiedad (K) a modificar
   return (id: number, prop: K) => {
@@ -93,7 +84,7 @@ export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
         // Devolvemos el array mapeado (inmutabilidad)
         return prevArray.map((item) =>
           // Si el ID coincide, modificamos el elemento.
-          item.id === id ? { ...item, [prop]: newValue } : item
+          item.id === id ? { ...item, [prop]: newValue } : item,
         );
       });
     };
@@ -119,7 +110,7 @@ export const fromDatetimeLocal = (localDateString: string) => {
   const offset = localDate.getTimezoneOffset();
   const utcDate = new Date(localDate.getTime() + offset * 60 * 1000);
   return utcDate.toISOString();
-}
+};
 
 export const formatDateTimeLocal = (dateString?: string) => {
   if (!dateString) return "N/A";
@@ -134,14 +125,14 @@ export const formatDateTimeLocal = (dateString?: string) => {
 // function diff<T extends Record<string, any>>(newValue: T, oldValue: T) {
 //   const result: any = {}
 //   for (const key in newValue) {
-//     if (newValue[key] != oldValue[key]) result[key] = newValue[key];    
+//     if (newValue[key] != oldValue[key]) result[key] = newValue[key];
 //   }
 //   Object.entries(newValue).filter(([k, v]) => oldValue[k] != v)
 //   return result;
 // };
 
 export default function Curso({ loaderData }: Route.ComponentProps) {
-  const { data } = useLoaderData<typeof loader>();
+  const data = loaderData;
 
   const [course, setCourse] = useState(data);
 
@@ -169,13 +160,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
       message: "¿Desea guardar los cambios?",
       action: async () => {
         console.log("Cambios guardados.");
-        await fetch(`/api/v1/admin/courses/${course.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(course),
-        });
+        await api.patch(course, `/admin/courses/${course.id}`);
         setModal({ ...modal, isOpen: false });
         goBack();
       },
@@ -188,8 +173,9 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
     setModal({
       isOpen: true,
       message: "¿Está seguro de que desea eliminar este curso?",
-      action: () => {
+      action: async () => {
         console.log("Curso eliminado.");
+        await api.delete(`/admin/courses/${course.id}`);
         setModal({ ...modal, isOpen: false });
         goBack();
       },
@@ -216,32 +202,27 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
         <div className="grow-7 basis-md">
           <div className="flex flex-col mx-auto p-4 space-y-4">
             <h1 className="text-2xl font-bold">Detalles de la Carrera</h1>
-            <label htmlFor="name" className="font-medium">
-              Nombre:
-            </label>
-            <input
-              name="name"
-              className="border p-2 rounded bg-white"
+            <Input
+              isRequired
+              label="Nombre"
+              labelPlacement="outside"
+              placeholder="Ingrese el nombre de la carrera"
               value={course.name}
-              onChange={(e) => setName(e.target.value)}
+              onValueChange={setName}
             />
-            <label htmlFor="shortName" className="font-medium">
-              Nombre Corto:
-            </label>
-            <input
-              name="shortName"
-              className="border p-2 rounded bg-white"
+            <Input
+              label="Nombre Corto"
+              labelPlacement="outside"
+              placeholder="Ingrese nombre corto (sigla)"
               value={course.shortName ?? ""}
-              onChange={(e) => setShortName(e.target.value)}
+              onValueChange={setShortName}
             />
-            <label htmlFor="description" className="font-medium">
-              Descripción:
-            </label>
-            <textarea
-              name="description"
-              className="border p-2 rounded bg-white max-h-40"
+            <Textarea
+              label="Descripción"
+              labelPlacement="outside"
+              placeholder="Describir la carrera"
               value={course.description ?? ""}
-              onChange={(e) => setDescription(e.target.value)}
+              onValueChange={setDescription}
             />
           </div>
         </div>
@@ -262,26 +243,17 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
             )}
             <h2 className="text-xl font-bold">Acciones</h2>
             <div className="flex flex-row flex-wrap gap-4">
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-max"
-                onClick={save}
-              >
+              <Button color="primary" className="px-4 py-2 rounded" onClick={save}>
                 {isExistingCourse ? "Guardar Cambios" : "Crear Carrera"}
-              </button>
+              </Button>
               {isExistingCourse && (
-                <button
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-max"
-                  onClick={del}
-                >
+                <Button color="danger" className="px-4 py-2 rounded" onClick={del}>
                   Eliminar Carrera
-                </button>
+                </Button>
               )}
-              <button
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 w-max"
-                onClick={goBack}
-              >
+              <Button color="default" className="px-4 py-2 rounded" onClick={goBack}>
                 Volver a la Lista de Carreras
-              </button>
+              </Button>
             </div>
           </div>
         </div>

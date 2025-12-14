@@ -22,48 +22,66 @@ export const prisma = new PrismaClient({
   log: [
     { level: 'query', emit: 'event' },
     { level: 'info', emit: 'event' },
-    { level: 'warn', emit: 'event' },]
-}).$extends(guardModelExtension).$extends(paginationExtension);
+    { level: 'warn', emit: 'event' },
+  ],
+})
+  .$extends(guardModelExtension)
+  .$extends(paginationExtension)
 
-// console.log(await prisma.company.findMany({}))
+// console.group(await prisma.user.findMany({}))
 
 // const datos = [
-//   // { name: "Licenciatura en Educación" },
-//   { name: "Licenciatura en Industrias Alimentarias" },
-//   { name: "Licenciatura en Gestión de la Tecnología" },
-//   { name: "Licenciatura en Administración y gestión de la información" },
-//   { name: "Licenciatura en Ciencias del Entretenimiento" },
-//   { name: "Licenciatura en Automatización y Robótica" },
-//   { name: "Licenciatura en Diseño Industrial" },
-//   { name: "Licenciatura en Medios Audiovisuales y Digitales" },
-//   { name: "Licenciatura en Producción de Videojuegos y entretenimiento digital" },
-//   { name: "Licenciatura en Relaciones del Trabajo" },
-//   { name: "Licenciatura en Administración y gestión de la información" },
-//   { name: "Licenciatura en Bioinformática" },
-//   { name: "Licenciatura en Agroinformática" },
-//   { name: "Licenciatura en Tecnología Ambiental y Energías Renovables" },
-//   { name: "Licenciatura en Gestión de la Tecnología aplicada a Logística" },
-//   { name: "Licenciatura en Industrias Creativas" },
-//   { name: "Tecnicatura en Mecatrónica" },
-//   { name: "Tecnicatura en Entrenamiento Deportivo" },
-//   { name: "Tecnicatura en Análisis de Datos" },
-//   { name: "Tecnicatura en Biotecnología" },
-//   { name: "Tecnicatura en Industria y Tecnología de la Maquinaria Agrícola" },
-//   { name: "Ingeniería en Computación" },
-//   { name: "Especialización en docencia universitaria" },
-//   { name: "Maestría en Administración de Empresas" },
-//   { name: "Maestría en Energías Renovables" },
-//   { name: "Maestría en Gestión de la Información" },
-//   { name: "Maestría en Educación y Tecnologías Digitales" },
-//   { name: "Diplomatura en Ciencias del Entrenamiento" },
-//   { name: "Diplomatura en promoción deportiva" },
-//   { name: "Diplomatura en Acompañamiento y abordaje territorial de situaciones por violencia por razones de género" },
-//   { name: "Diplomatura universitaria en innovación y creatividad" },
-//   { name: "Diplomatura universitaria en teatro para docentes" },
-//   { name: "Diplomatura universitaria en estudios latinoamericanos" },
-//   { name: "Diplomatura universitaria en eficiencia energética y energías renovables" },
-//   { name: "Diplomatura en Desarrollo Eco sistémico y Economía Circular" },
-//   { name: "Diplomatura en Movilidad Eléctrica Sustentable" },
+//   { name: 'Licenciatura en Educación', shortName: 'EDU' },
+//   {
+//     name: 'Licenciatura en Industrias Alimentarias',
+//     shortName: 'LIA',
+//   },
+//   {
+//     name: 'Licenciatura en Gestión de la Tecnología',
+//     shortName: 'GT',
+//   },
+//   {
+//     name: 'Licenciatura en Administración y gestión de la información',
+//     shortName: 'AGI',
+//   },
+//   {
+//     name: 'Licenciatura en Ciencias del Entretenimiento',
+//     shortName: 'CE',
+//   },
+//   {
+//     name: 'Licenciatura en Automatización y Robótica',
+//     shortName: 'BOT',
+//   },
+//   {
+//     name: 'Licenciatura en Diseño Industrial',
+//     shortName: 'DI',
+//   },
+//   {
+//     name: 'Licenciatura en Medios Audiovisuales y Digitales',
+//     shortName: 'MAD',
+//   },
+//   {
+//     name: 'Licenciatura en Producción de Videojuegos y entretenimiento digital',
+//     shortName: 'LPVED',
+//   },
+//   { name: 'Licenciatura en Relaciones del Trabajo', shortName: 'RRTT' },
+//   { name: 'Licenciatura en Bioinformática', shortName: 'BIO' },
+//   { name: 'Licenciatura en Agroinformática', shortName: 'AGRO' },
+//   { name: 'Licenciatura en Tecnología Ambiental y Energías Renovables', shortName: 'TAM' },
+//   { name: 'Licenciatura en Gestión de la Tecnología aplicada a Logística', shortName: 'LOGI' },
+//   { name: 'Licenciatura en Industrias Creativas', shortName: 'CREA' },
+//   { name: 'Tecnicatura en Mecatrónica', shortName: 'MEC' },
+//   { name: 'Tecnicatura en Entrenamiento Deportivo', shortName: 'DEP' },
+//   { name: 'Tecnicatura en Análisis de Datos', shortName: 'DATA' },
+//   { name: 'Tecnicatura en Biotecnología', shortName: 'BIOTECNO' },
+//   { name: 'Tecnicatura en Industria y Tecnología de la Maquinaria Agrícola', shortName: 'MAQ' },
+//   { name: 'Ingeniería en Computación', shortName: 'IC' },
+//   { name: 'Especialización en docencia universitaria', shortName: 'UNI' },
+//   { name: 'Maestría en Administración de Empresas', shortName: 'MBA' },
+//   { name: 'Maestría en Energías Renovables', shortName: 'MER' },
+//   { name: 'Maestría en Gestión de la Información', shortName: 'MGI' },
+//   { name: 'Maestría en Educación y Tecnologías Digitales', shortName: 'EDUTEC' },
+//   { name: 'Maestría en Tecnología e Innovación Alimentaria', shortName: 'TEIA' },
 // ]
 
 // const fakeCompanies = [

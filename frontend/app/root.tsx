@@ -5,11 +5,22 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useHref,
+  useNavigate,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { HeroUIProvider } from "@heroui/react";
+import {
+  AuthProvider,
+  checkSession,
+  checkSessionOnce,
+  requireUser,
+  useAuthState,
+  useSession,
+} from "./util/AuthContext";
+import { use, useEffect, useState } from "react";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -43,11 +54,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const navigate = useNavigate();
+
   return (
-    <HeroUIProvider locale="es-AR">
+    <HeroUIProvider locale="es-AR" navigate={navigate} useHref={useHref}>
       <Outlet />
     </HeroUIProvider>
-  )
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

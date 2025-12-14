@@ -1,10 +1,12 @@
 import vine from '@vinejs/vine'
 
-export const validator = vine.compile(vine.object({
-  params: vine.object({
-    id: vine.number(),
-  }),
-}))
+export const validator = vine.compile(
+  vine.object({
+    params: vine.object({
+      id: vine.number(),
+    }),
+  })
+)
 
 export const createValidator = vine.compile(
   vine.object({
@@ -19,6 +21,7 @@ export const createValidator = vine.compile(
     startDate: vine.date().optional(),
     expiresAt: vine.date().optional(),
 
+    courses: vine.array(vine.number()).optional(),
     skills: vine.array(vine.number()).optional(),
     requiredDocuments: vine.array(vine.number()).optional(),
   })
@@ -38,6 +41,7 @@ export const updateValidator = vine.compile(
     startDate: vine.date().optional(),
     expiresAt: vine.date().optional(),
 
+    courses: vine.array(vine.number()).optional(),
     skills: vine.array(vine.number()).optional(),
     requiredDocuments: vine.array(vine.number()).optional(),
   })

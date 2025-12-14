@@ -8,38 +8,32 @@ type Props = {
 };
 
 export default function ActionButtons({ onEdit, onDelete, editHref }: Props) {
+  const handleEdit = () => {
+    if (editHref) {
+      window.location.href = editHref;
+    } else if (onEdit) onEdit();
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      {editHref ? (
-        <a
-          href={editHref}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-600 hover:bg-gray-100"
-          aria-label="Editar"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.313l-4 1 1-4L16.862 3.487z" />
-          </svg>
-        </a>
-      ) : (
-        <Button
-          type="button"
-          onClick={onEdit}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-600 hover:bg-gray-100"
-          aria-label="Editar"
-          isIconOnly
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.313l-4 1 1-4L16.862 3.487z" />
-          </svg>
-        </Button>
-      )}
+    <div className="flex items-center justify-center gap-2">
+      <Button
+        isIconOnly
+        aria-label="Editar"
+        onPress={handleEdit}
+        color="default"
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-600">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.313l-4 1 1-4L16.862 3.487z" />
+        </svg>
+      </Button>
 
       <Button
-        type="button"
-        onClick={onDelete}
-        className="inline-flex items-center justify-center w-8 h-8 rounded-full text-red-600 hover:bg-red-100"
-        aria-label="Eliminar"
         isIconOnly
+        aria-label="Eliminar"
+        onPress={onDelete}
+        color="danger"
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18" />

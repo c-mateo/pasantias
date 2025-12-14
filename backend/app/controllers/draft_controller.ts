@@ -1,15 +1,20 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import { validator, uploadValidator, deleteValidator, useExistingValidator, idValidator } from '#validators/draft'
+import {
+  validator,
+  uploadValidator,
+  deleteValidator,
+  useExistingValidator,
+  idValidator,
+} from '#validators/draft'
 import { sha256 } from '#utils/hash'
 import fs, { stat } from 'fs/promises'
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { createWriteStream } from 'fs'
 import router from '@adonisjs/core/services/router'
 import { randomUUID } from 'crypto'
 import path from 'path'
 import { checkFK, checkUnique } from '../../prisma/strategies.js'
-
 
 const uploadsFolder = 'uploads'
 const maxUploadFileSize = 10 * 1024 * 1024
@@ -306,12 +311,31 @@ export default class DraftsController {
     // Notify applicant (user)
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { enqueue } = require('#utils/jobs')
-    enqueue('CreateNotificationsJob', { notifications: [{ userId: auth.user!.id, title: 'Application submitted', message: `Your application for offer ${params.offerId} was submitted.`, type: 'APPLICATION_SUBMITTED' }] }).catch(console.error)
+    enqueue('CreateNotificationsJob', {
+      notifications: [
+        {
+          userId: auth.user!.id,
+          title: 'Application submitted',
+          message: `Your application for offer ${params.offerId} was submitted.`,
+          type: 'APPLICATION_SUBMITTED',
+        },
+      ],
+    }).catch(console.error)
 
     // Notify company admins — for now create a notification for all company users with role ADMIN
-    const companyAdmins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } })
+    const companyAdmins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { id: true },
+    })
     if (companyAdmins.length > 0) {
-      enqueue('CreateNotificationsJob', { notifications: companyAdmins.map((a) => ({ userId: a.id, title: 'New application', message: `A new application was submitted for offer ${params.offerId}.`, type: 'APPLICATION_SUBMITTED' })) }).catch(console.error)
+      enqueue('CreateNotificationsJob', {
+        notifications: companyAdmins.map((a) => ({
+          userId: a.id,
+          title: 'New application',
+          message: `A new application was submitted for offer ${params.offerId}.`,
+          type: 'APPLICATION_SUBMITTED',
+        })),
+      }).catch(console.error)
     }
 
     return {
@@ -391,8 +415,7 @@ async function linkDocumentToDraft(
     (att) => att.document.id !== document.id
   )
 
-  if (!isLinked)
-    throw apiErrors.internalError('Document was not linked to draft', 'support@yourdomain.com')
+  if (!isLinked) throw apiErrors.internalError('Document was not linked to draft')
 
   if (otherLinkedDocsOfSameType.length > 0) {
     // TODO: Creo que no debería haber ningún error sin manejar

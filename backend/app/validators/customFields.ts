@@ -1,4 +1,4 @@
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 
 export function validateCustomFieldsSchema(schema: any) {
   if (schema === undefined || schema === null) return

@@ -3,14 +3,15 @@ export type UserData = {
   firstName: string
   lastName: string
   dni: string
-  phone: string
-  address: string
-  province: string
-  city: string
+  phone: string | null
+  address: string | null
+  province: string | null
+  city: string | null
 }
 
 export type UserDataKey = keyof UserData
 
 // Convierte las claves presentes en T ∩ UserData en REQUERIDAS
-export type StrictUserSubset<T extends object> =
-  { [K in Extract<keyof T, UserDataKey>]: UserData[K] }
+export type StrictUserSubset<T extends object> = {
+  [K in Extract<keyof T, UserDataKey>]: UserData[K]
+}

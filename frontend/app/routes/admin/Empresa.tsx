@@ -1,14 +1,18 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/Empresa";
-import { act, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Input, Textarea } from "@heroui/react";
 import { Button } from "@heroui/button";
+import { Modal } from "../../components/Modal";
 import type { AdminCompany } from "./Empresas";
 import { useSettersForObject } from "~/util/createPropertySetter";
 
-export async function loader({ params, request }: Route.LoaderArgs) {
+export async function clientLoader({
+  params,
+  request,
+}: Route.ClientLoaderArgs) {
   if (params.empresaId === "nuevo") {
     return {
-      data: {
         id: 0,
         name: "",
         description: "",
@@ -18,8 +22,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         logo: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      } as AdminCompany,
-    };
+    } as AdminCompany;
   }
 
   const response = await fetch(
@@ -29,13 +32,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       headers: {
         Cookie: request.headers.get("Cookie") ?? "",
       },
-    }
+    },
   );
   if (!response.ok) {
     throw new Response("Company not found", { status: 404 });
   }
   const company = await response.json();
-  return { data: company.data as AdminCompany };
+  return company.data as AdminCompany;
 }
 
 /**
@@ -46,7 +49,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
  * @returns Una función que acepta la clave (K) y devuelve otra función para el nuevo valor.
  */
 export const setterBuilderObject = <T extends object, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T>>
+  setter: React.Dispatch<React.SetStateAction<T>>,
 ) => {
   // Retorna una función que espera la propiedad (K) a modificar
   return (prop: K) => {
@@ -84,7 +87,7 @@ type ItemWithId = { id: number; [key: string]: any };
  * @returns Una función que acepta id y clave (K), y devuelve otra función para el nuevo valor.
  */
 export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T[]>>
+  setter: React.Dispatch<React.SetStateAction<T[]>>,
 ) => {
   // Retorna una función que espera el ID y la propiedad (K) a modificar
   return (id: number, prop: K) => {
@@ -95,7 +98,7 @@ export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
         // Devolvemos el array mapeado (inmutabilidad)
         return prevArray.map((item) =>
           // Si el ID coincide, modificamos el elemento.
-          item.id === id ? { ...item, [prop]: newValue } : item
+          item.id === id ? { ...item, [prop]: newValue } : item,
         );
       });
     };
@@ -122,67 +125,7 @@ const toDatetimeLocal = (dateString: string) => {
 //     }
 // };
 
-export function Modal({
-  isOpen,
-  message,
-  onConfirm,
-  onCancel,
-}: {
-  isOpen: boolean;
-  message: React.ReactNode;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  if (!isOpen) return null;
-
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      ref.current?.focus();
-    }
-  }, [isOpen]);
-
-  const onClickOutside = (e: React.MouseEvent) => {
-    if (ref.current === e.target) {
-      onCancel();
-    }
-  };
-
-  const onKeyUp = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onCancel();
-    }
-  };
-
-  return (
-    <div
-      ref={ref}
-      onClick={onClickOutside}
-      className="fixed z-10 inset-0 bg-black/25 backdrop-blur-xs flex items-center justify-center"
-      onKeyUp={onKeyUp}
-      tabIndex={-1}
-    >
-      <div className="max-w-xl bg-white p-6 rounded shadow-md">
-        <p className="mb-4">{message}</p>
-        <div className="flex justify-end space-x-4">
-          <Button
-            onClick={onCancel}
-            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={onConfirm}
-            className="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-700"
-          >
-            Confirmar
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Use shared Modal component from components/Modal
 
 const formatDateTimeLocal = (dateString: string) => {
   const date = new Date(dateString);
@@ -194,17 +137,17 @@ const formatDateTimeLocal = (dateString: string) => {
 };
 
 const create = async (data: any) => {
-  await fetch('/api/v1/admin/companies', {
-    method: 'POST',
+  await fetch("/api/v1/admin/companies", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-}
+};
 
 export default function Empresa({ loaderData }: Route.ComponentProps) {
-  const { data } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof clientLoader>();
 
   const [company, setCompany] = useState(data);
 
@@ -223,8 +166,8 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
 
   const { setName, setDescription, setWebsite, setEmail, setPhone, setLogo } =
     useSettersForObject(setCompany);
-  
-    const isExistingCompany = company.id !== 0;
+
+  const isExistingCompany = company.id !== 0;
 
   const save = () => {
     // Lógica para guardar los cambios de la empresa
@@ -251,7 +194,8 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
     console.log("Eliminando empresa con ID:", company.id);
     setModal({
       isOpen: true,
-      message: "¿Está seguro de que desea eliminar esta empresa? Esta acción no se puede deshacer.",
+      message:
+        "¿Está seguro de que desea eliminar esta empresa? Esta acción no se puede deshacer.",
       action: () => {
         console.log("Empresa eliminada.");
         setModal({ ...modal, isOpen: false });
@@ -279,62 +223,52 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
         <div className="grow-7 basis-md">
           <div className="flex flex-col mx-auto p-4 space-y-4">
             <h1 className="text-2xl font-bold">Detalles de la Empresa</h1>
-            <label htmlFor="name" className="font-medium">
-              Nombre:
-            </label>
-            <input
-              name="name"
-              className="border p-2 rounded bg-white"
+            <Input
+              isRequired
+              label="Nombre"
+              labelPlacement="outside"
+              placeholder="Ingrese el nombre de la empresa"
               value={company.name}
-              onChange={(e) => setName(e.target.value)}
+              onValueChange={setName}
             />
-            <label htmlFor="email" className="font-medium">
-              Email:
-            </label>
-            <input
-              name="email"
+            <Input
+              isRequired
+              label="Email"
+              labelPlacement="outside"
               type="email"
-              className="border p-2 rounded bg-white"
+              placeholder="Ingrese el email de la empresa"
               value={company.email}
-              onChange={(e) => setEmail(e.target.value)}
+              onValueChange={setEmail}
             />
-            <label htmlFor="phone" className="font-medium">
-              Teléfono:
-            </label>
-            <input
-              name="phone"
-              className="border p-2 rounded bg-white"
+            <Input
+              label="Teléfono"
+              labelPlacement="outside"
+              placeholder="Ingrese el teléfono"
               value={company.phone ?? ""}
-              onChange={(e) => setPhone(e.target.value)}
+              onValueChange={setPhone}
             />
-            <label htmlFor="website" className="font-medium">
-              Sitio Web:
-            </label>
-            <input
-              name="website"
+            <Input
+              label="Sitio Web"
+              labelPlacement="outside"
               type="url"
-              className="border p-2 rounded bg-white"
+              placeholder="https://example.com"
               value={company.website ?? ""}
-              onChange={(e) => setWebsite(e.target.value)}
+              onValueChange={setWebsite}
             />
-            <label htmlFor="description" className="font-medium">
-              Descripción:
-            </label>
-            <textarea
-              name="description"
-              className="border p-2 rounded bg-white max-h-40"
+            <Textarea
+              label="Descripción"
+              labelPlacement="outside"
+              placeholder="Describir la empresa"
               value={company.description ?? ""}
-              onChange={(e) => setDescription(e.target.value)}
+              onValueChange={setDescription}
             />
-            <label htmlFor="logo" className="font-medium">
-              Logo URL:
-            </label>
-            <input
-              name="logo"
+            <Input
+              label="Logo URL"
+              labelPlacement="outside"
               type="url"
-              className="border p-2 rounded bg-white"
+              placeholder="https://example.com/logo.png"
               value={company.logo ?? ""}
-              onChange={(e) => setLogo(e.target.value)}
+              onValueChange={setLogo}
             />
           </div>
         </div>
@@ -355,24 +289,15 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
             )}
             <h2 className="text-xl font-bold">Acciones</h2>
             <div className="flex flex-row flex-wrap gap-4">
-              <Button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-max"
-                onClick={save}
-              >
+              <Button color="primary" className="px-4 py-2 rounded" onClick={save}>
                 {isExistingCompany ? "Guardar Cambios" : "Crear Empresa"}
               </Button>
               {isExistingCompany && (
-                <Button
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-max"
-                  onClick={del}
-                >
+                <Button color="danger" className="px-4 py-2 rounded" onClick={del}>
                   Eliminar Empresa
                 </Button>
               )}
-              <Button
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 w-max"
-                onClick={goBack}
-              >
+              <Button color="default" className="px-4 py-2 rounded" onClick={goBack}>
                 Volver a la Lista de Empresas
               </Button>
             </div>

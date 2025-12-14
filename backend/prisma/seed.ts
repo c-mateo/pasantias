@@ -1,24 +1,23 @@
-import hashService from '@adonisjs/core/services/hash'
 import { sha256 } from '#utils/hash'
-import { encryptUserData } from '#utils/user'
-import { env } from 'prisma/config'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client.js'
+// import { env } from 'prisma/config'
+// import { PrismaPg } from '@prisma/adapter-pg'
+// import { PrismaClient } from '../generated/prisma/client.js'
 
-const adapter = new PrismaPg({
-  connectionString: env('DATABASE_URL'),
-})
+// const adapter = new PrismaPg({
+//   connectionString: env('DATABASE_URL'),
+// })
 
-export const prisma = new PrismaClient({
-  adapter,
-  log: [
-    { level: 'query', emit: 'event' },
-    { level: 'info', emit: 'event' },
-    { level: 'warn', emit: 'event' },
-  ],
-})
+// export const prisma = new PrismaClient({
+//   adapter,
+//   log: [
+//     { level: 'query', emit: 'event' },
+//     { level: 'info', emit: 'event' },
+//     { level: 'warn', emit: 'event' },
+//   ],
+// })
 
-async function seed() {
+export async function seed(prisma: PrismaClient) {
   console.log('Starting seed...')
 
   // Courses (some sample courses)
@@ -102,114 +101,115 @@ async function seed() {
   // Create users (admin + a few students)
   // We use the project's hash driver for consistency
 
-  const passwordPlain = 'password123'
-  const hashed = await hashService.make(passwordPlain)
+  // 'password123'
+  // const hashed =
+  //   '$argon2id$v=19$m=65536,t=3,p=4$DazQAuQ6DKGjMZzWGJdnsg$giabZw9lNT6HY+0XN4ENYcD9VQqjuQgxcm8BvvzggFI'
 
-  const usersToCreate: Array<{
-    email: string
-    password: string
-    role: 'ADMIN' | 'STUDENT'
-    firstName: string
-    lastName: string
-    dni: string
-    phone: string
-    address: string
-    province: string
-    city: string
-  }> = [
-    {
-      email: 'admin@example.com',
-      password: hashed,
-      role: 'ADMIN',
-      firstName: 'Admin',
-      lastName: 'User',
-      dni: '11111111',
-      phone: '555-0001',
-      address: 'Av. Principal 123',
-      province: 'Buenos Aires',
-      city: 'Ciudad',
-    },
-    {
-      email: 'student1@example.com',
-      password: hashed,
-      role: 'STUDENT',
-      firstName: 'Student1',
-      lastName: 'One',
-      dni: '22222222',
-      phone: '555-0002',
-      address: 'Calle 2 45',
-      province: 'Buenos Aires',
-      city: 'Olivos',
-    },
-    {
-      email: 'student2@example.com',
-      password: hashed,
-      role: 'STUDENT',
-      firstName: 'Student2',
-      lastName: 'Two',
-      dni: '33333333',
-      phone: '555-0003',
-      address: 'Calle 3 87',
-      province: 'Córdoba',
-      city: 'Córdoba',
-    },
-  ]
+  // const usersToCreate: Array<{
+  //   email: string
+  //   password: string
+  //   role: 'ADMIN' | 'STUDENT'
+  //   firstName: string
+  //   lastName: string
+  //   dni: string
+  //   phone: string
+  //   address: string
+  //   province: string
+  //   city: string
+  // }> = [
+  //   {
+  //     email: 'admin@example.com',
+  //     password: hashed,
+  //     role: 'ADMIN',
+  //     firstName: 'Admin',
+  //     lastName: 'User',
+  //     dni: '11111111',
+  //     phone: '555-0001',
+  //     address: 'Av. Principal 123',
+  //     province: 'Buenos Aires',
+  //     city: 'Ciudad',
+  //   },
+  //   {
+  //     email: 'student1@example.com',
+  //     password: hashed,
+  //     role: 'STUDENT',
+  //     firstName: 'Student1',
+  //     lastName: 'One',
+  //     dni: '22222222',
+  //     phone: '555-0002',
+  //     address: 'Calle 2 45',
+  //     province: 'Buenos Aires',
+  //     city: 'Olivos',
+  //   },
+  //   {
+  //     email: 'student2@example.com',
+  //     password: hashed,
+  //     role: 'STUDENT',
+  //     firstName: 'Student2',
+  //     lastName: 'Two',
+  //     dni: '33333333',
+  //     phone: '555-0003',
+  //     address: 'Calle 3 87',
+  //     province: 'Córdoba',
+  //     city: 'Córdoba',
+  //   },
+  // ]
 
-  for (const u of usersToCreate) {
-    const encrypted = encryptUserData(u as any)
-    const where = { emailHash: sha256(u.email) }
-    await prisma.user.upsert({
-      where,
-      update: {
-        ...(encrypted as any),
-        password: u.password,
-        role: u.role,
-      } as any,
-      create: {
-        ...(encrypted as any),
-        password: u.password,
-        emailHash: sha256(u.email),
-        role: u.role,
-      } as any,
-    })
-  }
+  // for (const u of usersToCreate) {
+  //   const encrypted = encryptUserData(u as any)
+  //   const where = { emailHash: sha256(u.email) }
+  //   await prisma.user.upsert({
+  //     where,
+  //     update: {
+  //       ...(encrypted as any),
+  //       password: u.password,
+  //       role: u.role,
+  //     } as any,
+  //     create: {
+  //       ...(encrypted as any),
+  //       password: u.password,
+  //       emailHash: sha256(u.email),
+  //       role: u.role,
+  //     } as any,
+  //   })
+  // }
 
-  console.log('Users seeded')
+  // console.log('Users seeded')
 
-  // Documents (Attach a CV for student 1 and student 2)
-  const docTypes = await prisma.documentType.findMany()
-  const cvType = docTypes.find((d) => d.name === 'CV')
-  // const dniType = docTypes.find((d) => d.name === 'DNI')
+  // // Documents (Attach a CV for student 1 and student 2)
+  // const docTypes = await prisma.documentType.findMany()
+  // const cvType = docTypes.find((d) => d.name === 'CV')
+  // // const dniType = docTypes.find((d) => d.name === 'DNI')
 
-  const users = await prisma.user.findMany()
-  const student1 = users.find((u) => u.emailHash === sha256('student1@example.com'))
-  const student2 = users.find((u) => u.emailHash === sha256('student2@example.com'))
+  // const users = await prisma.user.findMany()
+  // const student1 = users.find((u) => u.emailHash === sha256('student1@example.com'))
+  // const student2 = users.find((u) => u.emailHash === sha256('student2@example.com'))
 
-  if (student1 && cvType) {
-    await prisma.document.create({
-      data: {
-        userId: student1.id,
-        documentTypeId: cvType.id,
-        originalName: 'student1_cv.pdf',
-        size: 12345,
-        path: '/uploads/documents/2025/seed/student1_cv.pdf',
-        hash: sha256(student1.id + '-cv'),
-      },
-    })
-  }
-  if (student2 && cvType) {
-    await prisma.document.create({
-      data: {
-        userId: student2.id,
-        documentTypeId: cvType.id,
-        originalName: 'student2_cv.pdf',
-        size: 23456,
-        path: '/uploads/documents/2025/seed/student2_cv.pdf',
-        hash: sha256(student2.id + '-cv'),
-      },
-    })
-  }
-  console.log('Documents seeded')
+  // if (student1 && cvType) {
+  //   await prisma.document.create({
+  //     data: {
+  //       userId: student1.id,
+  //       documentTypeId: cvType.id,
+  //       originalName: 'student1_cv.pdf',
+  //       size: 12345,
+  //       path: '/uploads/documents/2025/seed/student1_cv.pdf',
+  //       hash: sha256(student1.id + '-cv'),
+  //     },
+  //   })
+  // }
+  // if (student2 && cvType) {
+  //   await prisma.document.create({
+  //     data: {
+  //       userId: student2.id,
+  //       documentTypeId: cvType.id,
+  //       originalName: 'student2_cv.pdf',
+  //       size: 23456,
+  //       path: '/uploads/documents/2025/seed/student2_cv.pdf',
+  //       hash: sha256(student2.id + '-cv'),
+  //     },
+  //   })
+  // }
+  // console.log('Documents seeded')
 
   // Offers: create 2 offers per company; connect some skills and requiredDocs
   const skills = await prisma.skill.findMany()
@@ -293,10 +293,10 @@ async function seed() {
   console.log('Seeding completed')
 }
 
-seed()
-  .catch((err) => {
-    console.error('Seed error', err)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+// seed()
+//   .catch((err) => {
+//     console.error('Seed error', err)
+//   })
+//   .finally(async () => {
+//     await prisma.$disconnect()
+//   })

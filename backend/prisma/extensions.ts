@@ -1,4 +1,4 @@
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { Prisma } from '../generated/prisma/client.js'
 import { ErrorStrategy, executeGuarded } from './guard.js'
 
@@ -91,12 +91,11 @@ export const paginationExtension = Prisma.defineExtension({
     $allModels: {
       async paginate<T, A, R>(
         this: T,
-        args: 
-          Omit<Prisma.Args<T, 'findMany'>, 'skip' | 'take'> & {
-            limit?: number
-            after?: number | string
-            extra?: (ctx: PaginationContext<T, A>) => R
-          }
+        args: Omit<Prisma.Args<T, 'findMany'>, 'skip' | 'take'> & {
+          limit?: number
+          after?: number | string
+          extra?: (ctx: PaginationContext<T, A>) => R
+        }
       ): Promise<PaginationContext<T, A> & R> {
         const { limit = 20, after, extra, ...rest } = args as any
 

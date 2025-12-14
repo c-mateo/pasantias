@@ -2,7 +2,7 @@ import { prisma } from '#start/prisma'
 import { createCourseValidator, idValidator, updateCourseValidator } from '#validators/course'
 import { preparePagination } from '#utils/pagination'
 import { HttpContext } from '@adonisjs/core/http'
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { checkUnique } from '../../prisma/strategies.js'
 
 enum CoursesSort {

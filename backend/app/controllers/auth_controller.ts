@@ -1,12 +1,13 @@
-import { apiErrors } from '#exceptions/myExceptions'
+import { apiErrors } from '#exceptions/my_exceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import hash from '@adonisjs/core/services/hash'
 import vine from '@vinejs/vine'
-import { sha256 } from '#utils/hash'
-import { checkUnique } from '../../prisma/strategies.js'
+import { sha256, sha256Buffer } from '#utils/hash'
+import { checkUnique, FieldContext } from '../../prisma/strategies.js'
 import getRoute from '#utils/getRoutes'
 import { User } from '../../generated/prisma/client.js'
+import SendEmail from '#jobs/send_email'
 import { decryptUserData, encryptUserData } from '#utils/user'
 
 const registerValidator = vine.compile(
@@ -30,6 +31,12 @@ const loginValidator = vine.compile(
   })
 )
 
+const emailHashUnique = (email: string): FieldContext => ({
+  name: 'emailHash',
+  launchCustomException(_) {
+    throw apiErrors.emailAlreadyRegistered(email)
+  },
+})
 // TODO: Implement session management, email verification, password reset, etc.
 export default class AuthController {
   async register({ request, response, auth }: HttpContext) {
@@ -46,19 +53,16 @@ export default class AuthController {
     const validated = await request.validateUsing(registerValidator)
     const hashedPassword = await hash.make(validated.password)
 
-    const encryptedData = encryptUserData(validated)
-
     const { id, role } = await prisma.user.guardedCreate(
       {
         data: {
+          ...encryptUserData(validated),
+
           password: hashedPassword,
-
-          ...encryptedData,
-
           emailHash: sha256(validated.email),
         },
       },
-      [checkUnique(['emailHash', 'dni', 'phone'])]
+      [checkUnique(['dni', 'phone', emailHashUnique(validated.email)])]
     )
 
     // TODO: Test this
@@ -69,25 +73,20 @@ export default class AuthController {
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
 
     // Enqueue SendEmail job
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { enqueue } = require('#utils/jobs')
-    enqueue('SendEmail', {
+    await SendEmail.dispatch({
       to: validated.email,
       subject: 'Verify your email',
       html: `<p>Please verify your email by clicking <a href="${verifyUrl}">here</a></p>`,
       text: `Verify your email: ${verifyUrl}`,
     }).catch(console.error)
 
-    // Optionally create a notification for the user
-    enqueue('CreateNotificationsJob', {
-      notifications: [
-        {
-          userId: id,
-          title: 'Welcome',
-          message: 'Welcome to the platform. Please verify your email.',
-        },
-      ],
-    }).catch(console.error)
+    // TODO: Enqueue welcome notification job
+    // await CreateNotifications.dispatch({
+    //   users: [ id ],
+    //   title: 'Welcome',
+    //   message: 'Welcome to the platform. Please verify your email.',
+    //   type: ''
+    // }).catch(console.error)
 
     return response.created({
       data: {
