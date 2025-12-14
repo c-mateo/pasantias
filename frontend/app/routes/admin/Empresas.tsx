@@ -1,112 +1,43 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AdminList from "~/components/AdminList";
-import { Button } from "@heroui/button";
 import type { Route } from "./+types/Empresas";
-import type { HTMLInputTypeAttribute } from "react";
-import { useNavigate, useNavigation } from "react-router";
+import { api } from "~/api/api";
+import type { AdminCompanyListResponse } from "~/api/types";
+import { useIntersectionObserver } from "~/hooks/useIntersectionObserver";
 
-// Public view of a company
-export type PublicCompany = {
-  id: number;
-  name: string;
-  description: string | null;
-  website: string | null;
-  email: string;
-  phone: string | null;
-  logo: string | null;
-};
-
-// Admin are supposed to see this data
-export type AdminCompany = {
-  id: number;
-  name: string;
-  description: string | null;
-  website: string | null;
-  email: string;
-  phone: string | null;
-  logo: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  const res = await fetch("http://localhost:5173/api/v1/companies?limit=10", {
-    credentials: "include",
-    headers: {
-      Cookie: request.headers.get("Cookie") ?? "",
-    },
-  });
+  const res = await api.get("/companies?limit=10").json<AdminCompanyListResponse>();
 
-  // console.log("Companies fetch response:", res);
-  if (!res.ok) {
-    throw new Response("Failed to fetch companies", { status: res.status });
-  }
-
-  // console.log("Companies fetch JSON:", await res.clone().json());
-
-  const data = await res.json();
   return {
-    initialData: data.data as AdminCompany[],
-    pagination: data.pagination,
+    initialData: res?.data ?? [],
+    pagination: res?.pagination ?? { next: null, prev: null },
   };
-}
-
-function useIntersectionObserver<T extends HTMLElement>(
-  ref: React.RefObject<T | null>,
-  onVisible: () => void,
-  options: IntersectionObserverInit = {},
-): boolean {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (!ref?.current) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        onVisible();
-      }
-      setIsVisible(entry.isIntersecting);
-    }, options);
-
-    const el = ref.current;
-    if (el) observer.observe(el);
-    return () => el && observer.unobserve(el);
-  }, [ref, options, onVisible]);
-
-  return isVisible;
 }
 
 export default function Empresas({ loaderData }: Route.ComponentProps) {
   const { initialData, pagination } = loaderData;
 
-  const [companies, setCompanies] = useState<AdminCompany[]>(initialData || []);
+  const [companies, setCompanies] = useState(initialData || []);
   const [page, setPage] = useState(pagination.next);
   const [loading, setLoading] = useState(false);
-  // modal and selection state are handled by AdminList now
 
   const sentinelRef = useRef<HTMLTableRowElement>(null);
-
-  // selection handled by AdminList
 
   const loadMore = async () => {
     if (!page || loading) return;
     setLoading(true);
 
-    const res = await fetch(`/api/v1/companies?limit=10&after=${page}`, {
-      credentials: "include",
-    });
-    const body = await res.json();
+    const res = await api.get(`/companies?limit=10&after=${page}`).json<AdminCompanyListResponse>();
 
     // Calcular la nueva lista de empresas a partir del estado actual y aplicar
     // la extensión de selección inmediatamente para minimizar parpadeos.
-    const nextCompanies = [...companies, ...body.data];
-    setCompanies(nextCompanies);
+    const next = res?.data ?? [];
+    setCompanies((prev) => [...prev, ...next]);
 
     // AdminList handles selection state; we only update companies on loadMore
 
-    setPage(body.pagination.next); // null si no hay más
+    setPage(res?.pagination?.next ?? null); // null si no hay más
 
     setLoading(false);
   };
@@ -137,13 +68,11 @@ export default function Empresas({ loaderData }: Route.ComponentProps) {
     setCompanies((prev) => prev.filter((company) => !ids.includes(company.id)));
   };
 
-  const navigate = useNavigate();
-
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
       {/* Modal handled internally by AdminList */}
       {/* AdminList handles title, create and delete selected actions */}
-      <AdminList<AdminCompany>
+      <AdminList
         headers={[
           { label: "Nombre" },
           { label: "Email", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },

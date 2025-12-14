@@ -11,7 +11,7 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { HeroUIProvider } from "@heroui/react";
+import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import {
   AuthProvider,
   checkSession,
@@ -56,8 +56,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    checkSessionOnce();
+  }, []);
+
   return (
     <HeroUIProvider locale="es-AR" navigate={navigate} useHref={useHref}>
+      <ToastProvider />
       <Outlet />
     </HeroUIProvider>
   );

@@ -70,6 +70,7 @@ export default class ProfilesController {
         ])
       }
     }
+    
     const updatedUser = await prisma.user.guardedUpdate(
       {
         where: { id: auth.user!.id },

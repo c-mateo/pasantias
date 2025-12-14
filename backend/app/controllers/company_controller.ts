@@ -6,6 +6,7 @@ import { validator, createValidator, updateValidator } from '#validators/company
 import { checkUnique } from '../../prisma/strategies.js'
 import { apiErrors } from '#exceptions/my_exceptions'
 import { buildWhere, preparePagination } from '#utils/pagination'
+import vine from '@vinejs/vine'
 
 enum CompanySort {
   NAME = 'name',
@@ -52,6 +53,14 @@ function getOfferOrder(s?: string) {
   }
 }
 
+const idValidator = vine.compile(
+  vine.object({
+    params: vine.object({
+      id: vine.number().positive(),
+    }),
+  })
+)
+
 export default class CompaniesController {
   // GET /companies
   async list({ request, auth }: HttpContext) {
@@ -87,11 +96,11 @@ export default class CompaniesController {
 
   // GET /companies/:id
   async get({ request, auth }: HttpContext) {
-    const companyId = request.param('id')
+    const { params } = await request.validateUsing(idValidator)
     const isNotAdmin = auth.user?.role !== 'ADMIN'
 
     const company = await prisma.company.findUniqueOrThrow({
-      where: { id: companyId },
+      where: { id: params.id },
       omit: {
         createdAt: isNotAdmin, // Ocultar auditoría
         updatedAt: isNotAdmin,

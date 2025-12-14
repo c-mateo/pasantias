@@ -22,11 +22,15 @@ export default function ProfilePage() {
   const [cuil, setCuil] = useState<string | null>(null);
   const [cuilInput, setCuilInput] = useState("");
 
-  // For email/password UI (backend not implemented yet)
+  // Email/password UI
   const [newEmail, setNewEmail] = useState("");
+  const [isEmailSaving, setIsEmailSaving] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -76,65 +80,53 @@ export default function ProfilePage() {
   };
 
   const handleChangeEmail = async () => {
-    if (!newEmail) return alert("Ingrese un correo");
+    if (!newEmail) return setEmailMessage("Ingrese un correo");
+    setIsEmailSaving(true);
+    setEmailMessage(null);
     try {
-      // Try calling backend endpoint (may not exist yet)
       const res = await api.patch({ email: newEmail }, "/profile/email").res();
       if (res.ok) {
-        // Successful server update
         setEmail(newEmail);
         setNewEmail("");
         await checkSession();
-        return alert("Correo actualizado");
+        setEmailMessage("Correo actualizado");
+        return;
       }
-      // If not implemented, fallback to simulation
-      if (res.status === 404 || res.status === 405) {
-        localStorage.setItem("profile:email", newEmail);
-        setEmail(newEmail);
-        setNewEmail("");
-        return alert("Correo actualizado localmente (endpoint no implementado aún)");
-      }
-      const body = await res.text().catch(() => "");
+      const body = await res.json().catch(() => null);
+      const msg = body?.detail || body?.message || `Error ${res.status}`;
       console.error("Change email failed", res.status, body);
-      alert("No se pudo cambiar el correo: " + res.status);
-    } catch (err) {
+      setEmailMessage(String(msg));
+    } catch (err: any) {
       console.error(err);
-      // Network error or endpoint missing -> simulate
-      localStorage.setItem("profile:email", newEmail);
-      setEmail(newEmail);
-      setNewEmail("");
-      alert("Correo actualizado localmente (demo)");
+      setEmailMessage(err?.message ?? "Error de red");
+    } finally {
+      setIsEmailSaving(false);
     }
   };
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword) return alert("Complete todos los campos");
-    if (newPassword !== confirmPassword) return alert("La nueva contraseña no coincide");
+    if (!currentPassword || !newPassword) return setPasswordMessage("Complete todos los campos");
+    if (newPassword !== confirmPassword) return setPasswordMessage("La nueva contraseña no coincide");
+    setIsPasswordSaving(true);
+    setPasswordMessage(null);
     try {
-      // Try real endpoint (not implemented yet)
       const res = await api.post({ currentPassword, newPassword }, "/profile/change-password").res();
       if (res.ok) {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
-        return alert("Contraseña actualizada");
+        setPasswordMessage("Contraseña actualizada");
+        return;
       }
-      if (res.status === 404 || res.status === 405) {
-        // Simulate locally
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        return alert("Contraseña cambiada localmente (endpoint no implementado aún)");
-      }
-      const body = await res.text().catch(() => "");
+      const body = await res.json().catch(() => null);
+      const msg = body?.detail || body?.message || `Error ${res.status}`;
       console.error("Change password failed", res.status, body);
-      alert("No se pudo cambiar la contraseña: " + res.status);
-    } catch (err) {
+      setPasswordMessage(String(msg));
+    } catch (err: any) {
       console.error(err);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      alert("Contraseña cambiada localmente (demo)");
+      setPasswordMessage(err?.message ?? "Error de red");
+    } finally {
+      setIsPasswordSaving(false);
     }
   };
 
@@ -208,15 +200,9 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-700 mb-3">Correo actual: <strong>{email}</strong></div>
               <Input label="Nuevo correo" value={newEmail} onValueChange={setNewEmail} />
               <div className="flex items-center gap-3 mt-3">
-                <Button onClick={() => handleChangeEmail()}>
-                  Guardar
-                </Button>
-                <Button color="secondary" onClick={() => {
-                  // fallback simulate UI
-                  handleChangeEmail();
-                }}>Simular</Button>
+                <Button onClick={() => handleChangeEmail()} color="primary" disabled={isEmailSaving}>{isEmailSaving ? 'Guardando...' : 'Guardar'}</Button>
               </div>
-              <div className="text-xs text-gray-500 mt-2">El cambio real de correo requiere el endpoint correspondiente.</div>
+              {emailMessage && <div className="text-sm mt-2 text-gray-700">{emailMessage}</div>}
             </div>
 
             <div className="bg-white p-4 rounded shadow">
@@ -225,12 +211,10 @@ export default function ProfilePage() {
               <Input type="password" label="Nueva contraseña" value={newPassword} onValueChange={setNewPassword} className="mt-2" />
               <Input type="password" label="Confirmar nueva contraseña" value={confirmPassword} onValueChange={setConfirmPassword} className="mt-2" />
               <div className="flex items-center gap-3 mt-3">
-                <Button onClick={() => handleChangePassword()}>
-                  Guardar
-                </Button>
-                <Button color="secondary" onClick={() => handleChangePassword()}>Simular</Button>
+                <Button onClick={() => handleChangePassword()} color="primary" disabled={isPasswordSaving}>{isPasswordSaving ? 'Guardando...' : 'Guardar'}</Button>
               </div>
-              <div className="text-xs text-gray-500 mt-2">La contraseña se gestiona desde el backend; esto es una interfaz de prueba.</div>
+              {passwordMessage && <div className="text-sm mt-2 text-gray-700">{passwordMessage}</div>}
+              <div className="text-xs text-gray-500 mt-2">La contraseña se gestiona desde el backend.</div>
             </div>
           </aside>
         </div>

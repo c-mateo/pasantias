@@ -32,10 +32,9 @@ export async function clientLoader(data: Route.ClientLoaderArgs) {
   const res = await api
     .get("/courses?limit=10")
     .json<AdminCourseListResponse>();
-
   return {
-    initialData: res.data,
-    pagination: res.pagination,
+    initialData: res?.data ?? [],
+    pagination: res?.pagination ?? { next: null, prev: null },
   };
 }
 
@@ -52,23 +51,16 @@ export default function Cursos({ loaderData }: Route.ComponentProps) {
   const loadMore = async () => {
     if (!page || loading) return;
     setLoading(true);
-
-    const res = await fetch(`/api/v1/courses?limit=10&after=${page}`, {
-      credentials: "include",
-    });
-    const body = await res.json();
-
-    // Calcular la nueva lista de cursos a partir del estado actual y aplicar
-    // la extensión de selección inmediatamente para minimizar parpadeos.
-    const nextCourses = [...courses, ...body.data];
-    setCourses(nextCourses);
-
-    // Si el modo "seleccionar todo" estaba activo, extender la selección
-    // AdminList handles 'select all' extension on pagination
-
-    setPage(body.pagination.next); // null si no hay más
-
-    setLoading(false);
+    try {
+      const res = await api.get(`/courses?limit=10&after=${page}`).json<AdminCourseListResponse>();
+      const next = res?.data ?? [];
+      setCourses((prev) => [...prev, ...next]);
+      setPage(res?.pagination?.next ?? null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useIntersectionObserver(sentinelRef, loadMore);

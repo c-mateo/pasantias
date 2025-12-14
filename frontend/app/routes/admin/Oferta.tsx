@@ -6,7 +6,7 @@ import { Modal } from "../../components/Modal";
 import { api, defaultApi } from "~/api/api";
 import { type CompaniesListResponse, type OfferDTO, type Paginated, type SkillDTO, type SkillsListResponse } from "~/api/types";
 import { toDatetimeLocal } from "./Carrera";
-import { Autocomplete, AutocompleteItem, DateInput, DatePicker, Input, NumberInput, Select, SelectItem, Textarea } from "@heroui/react";
+import { Autocomplete, AutocompleteItem, DateInput, DatePicker, Input, NumberInput, Select, SelectItem, Textarea, addToast } from "@heroui/react";
 import { Button } from "@heroui/button";
 import { parseDateTime } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
@@ -26,17 +26,15 @@ async function getAll<T extends Paginated<any>>(
       .get(`${endpoint}?limit=100&after=${next}`)
       .json<T>();
     console.log(response);
-    all.push(...response.data);
-    if (!response.pagination.hasNext) break;
-    next = response.pagination.next as number;
+    all.push(...(response.data ?? []));
+    if (!response.pagination?.hasNext) break;
+    next = response.pagination?.next as number;
   }
   return all;
 }
 
-export async function loader({ params, request }: Route.LoaderArgs) {
-  const companies = await getAll<CompaniesListResponse>("/companies", {
-    Cookie: request.headers.get("Cookie") ?? "",
-  });
+export async function clientLoader({ params, request }: Route.ClientLoaderArgs) {
+  const companies = await getAll<CompaniesListResponse>("/companies");
 
   if (params.ofertaId === "nuevo") {
     return {
@@ -88,9 +86,10 @@ export function usePokemonList({fetchDelay = 0} = {}) {
 
       let res = await api.get(`/skills?after=${currentOffset}&limit=${limit}`).json<SkillsListResponse>()
       
-      setHasMore(res.pagination.hasNext);
+      setHasMore(res?.pagination?.hasNext ?? false);
       // Append new results to existing ones
-      setItems((prevItems) => [...prevItems, ...res.data]);
+      const items = res?.data ?? [];
+      setItems((prevItems) => [...prevItems, ...items]);
     } catch (error) {
       if (error.name === "AbortError") {
         // eslint-disable-next-line no-console
@@ -208,6 +207,17 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     setStartDate,
   } = useSettersForObject(setOffer);
 
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+
+  const validate = (o: typeof offer) => {
+    const e: Record<string, string> = {};
+    if (!o.companyId || o.companyId === 0) e.companyId = "Seleccione una empresa";
+    if (!o.position || o.position.trim() === "") e.position = "El puesto es requerido";
+    if (!o.description || o.description.trim() === "") e.description = "La descripción es requerida";
+    if (!o.vacancies || Number(o.vacancies) < 1) e.vacancies = "Ingrese al menos 1 vacante";
+    return e;
+  };
+
   const isExisting = offer.id !== 0;
 
   const [isOpen, setIsOpen] = useState(false);
@@ -221,13 +231,41 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
   });
 
   const save = (status: OfferDTO["status"] = data.status) => {
+    const e = validate(offer);
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      addToast({ title: "Corrige los errores del formulario" });
+      return;
+    }
+
     setModal({
       isOpen: true,
       message: "¿Desea guardar los cambios?",
       action: async () => {
-        setModal({ ...modal, isOpen: false });
-        await api.post({ ...offer, status }, "/admin/offers");
-        navigate("/admin/ofertas");
+        try {
+          const opPromise = api.post({ ...offer, status }, "/admin/offers");
+
+          addToast({
+            title: "Guardando oferta",
+            description: "Guardando la oferta en el servidor...",
+            promise: opPromise,
+          });
+
+          await opPromise;
+
+          addToast({ title: "Oferta guardada", description: "La oferta se guardó correctamente." });
+          setModal({ ...modal, isOpen: false });
+          navigate("/admin/ofertas");
+        } catch (err) {
+          console.error(err);
+          const apiErrors = (err as any)?.errors ?? (err as any)?.response?.data?.errors;
+          if (Array.isArray(apiErrors)) {
+            const map: Record<string, string> = {};
+            apiErrors.forEach((it: any) => (map[it.field] = it.message));
+            setErrors(map);
+          }
+          addToast({ title: "Error al guardar", description: "No se pudo guardar la oferta." });
+        }
       },
     });
   };
@@ -238,6 +276,8 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
       message: "¿Está seguro de que desea eliminar esta oferta?",
       action: () => {
         console.log("Offer deleted", offer.id);
+        // show a toast and navigate back
+        addToast({ title: "Oferta eliminada" });
         setModal({ ...modal, isOpen: false });
         navigate("/admin/ofertas");
       },
@@ -301,7 +341,15 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
               placeholder="Seleccionar empresa"
               defaultItems={companies || []}
               selectedKey={offer.companyId}
-              onSelectionChange={(v) => setCompanyId(v as number)}
+              onSelectionChange={(v) => {
+                setCompanyId(v as number);
+                setErrors((prev) => ({ ...prev, companyId: undefined }));
+              }}
+              isInvalid={!!errors.companyId}
+              errorMessage={({ validationDetails }) => {
+                if (validationDetails?.valueMissing) return "Seleccione una empresa";
+                return errors.companyId ?? null;
+              }}
             >
               {(item) => <AutocompleteItem key={item.id}>{item.name}</AutocompleteItem>}
             </Autocomplete>
@@ -312,7 +360,15 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
               labelPlacement="outside"
               placeholder="Ingrese el puesto"
               value={offer.position}
-              onValueChange={setPosition}
+              onValueChange={(v) => {
+                setPosition(v);
+                setErrors((prev) => ({ ...prev, position: undefined }));
+              }}
+              isInvalid={!!errors.position}
+              errorMessage={({ validationDetails }) => {
+                if (validationDetails?.valueMissing) return "El puesto es requerido";
+                return errors.position ?? null;
+              }}
             />
 
             <Textarea
@@ -321,7 +377,15 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
               labelPlacement="outside"
               placeholder="Describir en qué consiste el puesto y las tareas a realizar"
               value={offer.description ?? ""}
-              onValueChange={setDescription}
+              onValueChange={(v) => {
+                setDescription(v);
+                setErrors((prev) => ({ ...prev, description: undefined }));
+              }}
+              isInvalid={!!errors.description}
+              errorMessage={({ validationDetails }) => {
+                if (validationDetails?.valueMissing) return "La descripción es requerida";
+                return errors.description ?? null;
+              }}
             />
 
             <Textarea
@@ -337,9 +401,15 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
               label="Vacantes"
               labelPlacement="outside"
               value={offer.vacancies ?? ""}
-              onValueChange={setVacancies}
+              onValueChange={(v) => {
+                setVacancies(v as any);
+                setErrors((prev) => ({ ...prev, vacancies: undefined }));
+              }}
+              isInvalid={!!errors.vacancies}
+              errorMessage={() => errors.vacancies ?? null}
               min={1}
             />
+            
 
             <DatePicker
               label="Fecha de Expiración"

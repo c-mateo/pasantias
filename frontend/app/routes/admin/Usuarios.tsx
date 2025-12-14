@@ -25,8 +25,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const res = await api.get("/admin/users?limit=10").json<UserListResponse>();
 
   return {
-    initialData: res.data,
-    pagination: res.pagination,
+    initialData: res?.data ?? [],
+    pagination: res?.pagination ?? { next: null, prev: null },
   };
 }
 
@@ -47,22 +47,16 @@ export default function Usuarios({ loaderData }: Route.ComponentProps) {
   const loadMore = async () => {
     if (!page || loading) return;
     setLoading(true);
-
-    const res = await fetch(`/api/v1/users?limit=10&after=${page}`, {
-      credentials: "include",
-    });
-    const body = await res.json();
-
-    // Calcular la nueva lista de usuarios a partir del estado actual y aplicar
-    // la extensión de selección inmediatamente para minimizar parpadeos.
-    const nextUsers = [...users, ...body.data];
-    setUsers(nextUsers);
-
-    // AdminList handles select all behaviour
-
-    setPage(body.pagination.next); // null si no hay más
-
-    setLoading(false);
+    try {
+      const res = await api.get(`/users?limit=10&after=${page}`).json<UserListResponse>();
+      const next = res?.data ?? [];
+      setUsers((prev) => [...prev, ...next]);
+      setPage(res?.pagination?.next ?? null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useIntersectionObserver(sentinelRef, loadMore);

@@ -179,10 +179,13 @@ export type CompanyDetailsResponse = DetailResponse<Omit<CompanyDTO, keyof Audit
 export type CompanyCreateResponse = DetailResponse<CompanyDTO>
 export type CompanyUpdateResponse = DetailResponse<CompanyDTO>
 export type CompanyDeleteResponse = NoContent
+export type AdminCompanyListResponse = Paginated<CompanyDTO>
+export type AdminCompanyDetailsResponse = DetailResponse<CompanyDTO>
 
 // Offer
 export interface OfferListDTO extends OfferDTO { company: CompanyRefDTO; skills: SkillRefDTO[]; courses: CourseRefDTO[]; }
 export type OfferListResponse = Paginated<OfferListDTO>
+export type AdminOfferListResponse = Paginated<OfferListDTO & AuditFields>
 
 export interface OfferDetailsDTO extends OfferDTO {
     company: Pick<CompanyDTO, 'id' | 'name' | 'description' | 'logo' | 'website' | 'email' | 'phone'> 
@@ -191,6 +194,7 @@ export interface OfferDetailsDTO extends OfferDTO {
     requiredDocuments: DocTypeRefDTO[]
 }
 export type OfferDetailsResponse = DetailResponse<OfferDetailsDTO>
+export type AdminOfferDetailsResponse = DetailResponse<OfferDetailsDTO & AuditFields>
 
 export interface OfferCompanyDTO extends OfferDTO { skills: SkillRefDTO[]; }
 export type CompanyOffersResponse = Paginated<OfferCompanyDTO>
@@ -201,12 +205,26 @@ export type SkillDetailsResponse = DetailResponse<PublicSkillDTO>
 export type SkillCreateResponse = DetailResponse<SkillDTO>
 export type SkillUpdateResponse = DetailResponse<SkillDTO>
 export type SkillDeleteResponse = NoContent
+export type AdminSkillDetailsResponse = DetailResponse<SkillDTO>
+export type AdminSkillCreateResponse = DetailResponse<SkillDTO>
+
 
 export type CourseListResponse = Paginated<PublicCourseDTO>
 export type CourseDetailsResponse = DetailResponse<PublicCourseDTO>
 export type CourseCreateResponse = DetailResponse<CourseDTO>
 export type CourseUpdateResponse = DetailResponse<CourseDTO>
 export type CourseDeleteResponse = NoContent
+export type AdminCourseListResponse = Paginated<CourseDTO>
+export type AdminCourseDetailsResponse = DetailResponse<CourseDTO>
+
+// Document Types
+export type DocumentTypeListResponse = Paginated<PublicDocumentTypeDTO>
+export type DocumentTypeDetailsResponse = DetailResponse<PublicDocumentTypeDTO>
+export type DocumentTypeCreateResponse = DetailResponse<DocumentTypeDTO>
+export type DocumentTypeUpdateResponse = DetailResponse<DocumentTypeDTO>
+export type DocumentTypeDeleteResponse = NoContent
+export type AdminDocumentTypeListResponse = Paginated<DocumentTypeDTO>
+export type AdminDocumentTypeDetailsResponse = DetailResponse<DocumentTypeDTO>
 
 // Applications
 export interface ApplicationOfferDTO { id: number; position: string; company: ApplicationCompanyRefDTO; }
@@ -256,19 +274,3 @@ export type NotificationsListResponse = Paginated<NotificationDTO>
 
 export type NotificationUpdateResponse = DetailResponse<Pick<NotificationDTO, 'id' | 'title' | 'readAt'> & { isRead: boolean }>
 export type NotificationDeleteResponse = NoContent
-
-// Admin-specific List Responses (incluyen AuditFields)
-// Nota: UserListResponse ya existe y usa UserAdminDTO completo.
-
-/** Respuesta de listado de Cursos para el rol ADMIN (incluye AuditFields) */
-export type AdminCourseListResponse = Paginated<CourseDTO>
-
-/** Respuesta de listado de Skills para el rol ADMIN (incluye AuditFields) */
-export type AdminSkillListResponse = Paginated<SkillDTO>
-
-/** Respuesta de listado de Documentos para el rol ADMIN (incluye AuditFields) */
-export type AdminDocumentTypeListResponse = Paginated<DocumentTypeDTO> 
-
-/** Respuesta de listado de Empresas para el rol ADMIN (incluye AuditFields, email y phone) */
-// Nota: La respuesta pública oculta email y phone. Aquí mostramos el DTO completo.
-export type AdminCompanyListResponse = Paginated<CompanyDTO>

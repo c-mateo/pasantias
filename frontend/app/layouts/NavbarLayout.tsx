@@ -20,14 +20,10 @@ export default function NavbarLayout({}: Route.ComponentProps) {
   const location = useLocation();
   const title = titles[location.pathname] || "Panel de Control";
 
-  useEffect(() => {
-    checkSessionOnce();
-  }, []);
-
   const auth = useAuthState();
 
   if (!auth.checked) return;
-  if (auth.user?.role !== "ADMIN") return <Navigate to="/not-found" replace />;
+  if (auth.user?.role !== "ADMIN") return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-gray-100">

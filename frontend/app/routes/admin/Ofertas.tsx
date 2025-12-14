@@ -10,10 +10,9 @@ import type { OffersListResponse, OfferDTO } from "~/api/types";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const res = await api.get("/offers?limit=10").json<OffersListResponse>();
-
   return {
-    initialData: res.data,
-    pagination: res.pagination,
+    initialData: res?.data ?? [],
+    pagination: res?.pagination ?? { next: null, prev: null },
   };
 }
 
@@ -49,22 +48,17 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
   const loadMore = useCallback(async () => {
     if (!page || loading) return;
     setLoading(true);
-    const res = await fetch(`/api/v1/offers?limit=10&after=${page}`, {
-      credentials: "include",
-    });
-    if (!res.ok) {
+    try {
+      const res = await api.get(`/offers?limit=10&after=${page}`).json<OffersListResponse>();
+      const next = res?.data ?? [];
+      setOffers((prev) => [...prev, ...next]);
+      setPage(res?.pagination?.next ?? null);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-      return;
     }
-    const body = await res.json();
-    const nextOffers = [...offers, ...body.data];
-    setOffers(nextOffers);
-
-    // AdminList manages select all behavior correctly
-
-    setPage(body.pagination.next);
-    setLoading(false);
-  }, [page, loading, offers]);
+  }, [page, loading]);
 
   useIntersectionObserver(sentinelRef, loadMore);
 

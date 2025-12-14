@@ -122,7 +122,7 @@ export async function checkSession() {
     const checkPromise = api.get("/profile").json<ProfileResponse>();
     const res = await checkPromise;
     const auth = useAuthState.getState();
-    auth.setUser(res.data);
+    auth.setUser(res?.data ?? null);
   } catch {
   } finally {
     checkPromise = null;
@@ -144,11 +144,14 @@ export async function login(email: string, password: string) {
 
   // TODO: Fix
   const auth = useAuthState.getState();
-  auth.setUser(res.data.user as UserData);
+  auth.setUser(res?.data?.user as UserData ?? null);
 }
 
-export async function logout() {
-  const res = await api.post({}, "/auth/logout").json();
+export async function logout(skip: boolean = false) {
+  if (!skip) {
+    console.log("Logging out");
+    const res = await api.post({}, "/auth/logout").json();
+  }
   const auth = useAuthState.getState();
   auth.setUser(null);
 }
@@ -208,7 +211,7 @@ export const AuthProvider = ({
       try {
         const res = await api.get("/profile").json<ProfileResponse>();
         const auth = useAuthState();
-        auth.setUser(res.data);
+        auth.setUser(res?.data ?? null);
       } catch {
       } finally {
         checkPromise = null;

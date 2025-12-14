@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/Carrera";
 import { useState } from "react";
-import { Input, Textarea } from "@heroui/react";
+import { Input, Textarea, addToast } from "@heroui/react";
 import { Button } from "@heroui/button";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
@@ -152,17 +152,66 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
   const { setName, setShortName, setDescription } =
     useSettersForObject(setCourse);
 
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+
+  const validate = (c: typeof course) => {
+    const e: Record<string, string> = {};
+    if (!c.name || c.name.trim() === "") e.name = "El nombre es requerido";
+    return e;
+  };
+
   const save = () => {
     // Lógica para guardar los cambios del curso
     console.log("Guardando curso:", course);
+    const e = validate(course);
+    setErrors(e);
+    if (Object.keys(e).length > 0) {
+      addToast({ title: "Corrige los errores del formulario" });
+      return;
+    }
+
     setModal({
       isOpen: true,
       message: "¿Desea guardar los cambios?",
       action: async () => {
-        console.log("Cambios guardados.");
-        await api.patch(course, `/admin/courses/${course.id}`);
-        setModal({ ...modal, isOpen: false });
-        goBack();
+        try {
+          const isExisting = course.id !== 0;
+          const opPromise = isExisting
+            ? api.patch(course, `/admin/courses/${course.id}`)
+            : api.post(course, "/admin/courses");
+
+          addToast({
+            title: isExisting ? "Actualizando carrera" : "Creando carrera",
+            description: isExisting
+              ? "Actualizando la carrera en el servidor..."
+              : "Creando la carrera en el servidor...",
+            promise: opPromise,
+          });
+
+          await opPromise;
+
+          addToast({
+            title: isExisting ? "Carrera actualizada" : "Carrera creada",
+            description: isExisting
+              ? "La carrera se actualizó correctamente."
+              : "La carrera se creó correctamente.",
+          });
+
+          setModal({ ...modal, isOpen: false });
+          goBack();
+        } catch (err) {
+          console.error(err);
+          const apiErrors = (err as any)?.errors ?? (err as any)?.response?.data?.errors;
+          if (Array.isArray(apiErrors)) {
+            const map: Record<string, string> = {};
+            apiErrors.forEach((it: any) => (map[it.field] = it.message));
+            setErrors(map);
+          }
+          addToast({
+            title: "Error al guardar",
+            description: "Ocurrió un error al guardar la carrera. Intente nuevamente.",
+          });
+        }
       },
     });
   };
@@ -174,10 +223,24 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
       isOpen: true,
       message: "¿Está seguro de que desea eliminar este curso?",
       action: async () => {
-        console.log("Curso eliminado.");
-        await api.delete(`/admin/courses/${course.id}`);
-        setModal({ ...modal, isOpen: false });
-        goBack();
+        try {
+          const opPromise = api.delete(`/admin/courses/${course.id}`);
+
+          addToast({
+            title: "Eliminando carrera",
+            description: "Eliminando la carrera...",
+            promise: opPromise,
+          });
+
+          await opPromise;
+
+          addToast({ title: "Carrera eliminada" });
+          setModal({ ...modal, isOpen: false });
+          goBack();
+        } catch (err) {
+          console.error(err);
+          addToast({ title: "Error al eliminar", description: "No se pudo eliminar la carrera." });
+        }
       },
     });
   };
@@ -208,7 +271,15 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
               labelPlacement="outside"
               placeholder="Ingrese el nombre de la carrera"
               value={course.name}
-              onValueChange={setName}
+              onValueChange={(v) => {
+                setName(v);
+                setErrors((prev) => ({ ...prev, name: undefined }));
+              }}
+              isInvalid={!!errors.name}
+              errorMessage={({ validationDetails }) => {
+                if (validationDetails?.valueMissing) return "El nombre es requerido";
+                return errors.name ?? null;
+              }}
             />
             <Input
               label="Nombre Corto"

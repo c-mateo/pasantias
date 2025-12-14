@@ -2,7 +2,7 @@ import app from '@adonisjs/core/services/app'
 import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
 import { StatusPageRange } from '@adonisjs/core/types/http'
 import { ValidationError } from '@vinejs/vine'
-import { ApiException } from './my_exceptions.js'
+import { apiErrors, ApiException } from './my_exceptions.js'
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -15,7 +15,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * The method is used for handling errors and returning
    * response to the client
    */
-  async handle(error: unknown, ctx: HttpContext) {
+  async handle(error: any, ctx: HttpContext) {
     // console.log("Handle", error)
     // if (error instanceof ValidationError) {
     //   if (error.messages.some((msg => msg.rule === 'exists'))) {
@@ -25,19 +25,20 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     //   }
     // }
 
+    if (error.code === 'E_UNAUTHORIZED_ACCESS') {
+      const customError = apiErrors.sessionExpired('absolute')
+      const formattedError = customError.format({ instance: ctx.request.url() })
+      return ctx.response.status(formattedError.status).json(formattedError)
+    }
+
+    console.log('Error handled by HttpExceptionHandler:', error)
+
     if (error instanceof ApiException) {
       const formattedError = error.format({ instance: ctx.request.url() })
-      return ctx.response.status(error.status).json(formattedError)
+      return ctx.response.status(formattedError.status).json(formattedError)
     }
-    
+
     return super.handle(error, ctx)
-    // return ctx.response.status(400).json({
-    //   "type": "https://pasantias.unraf.edu.ar/errors/{error-type}",
-    //   "title": "Human-readable summary",
-    //   "status": 400,
-    //   "detail": "Specific explanation of this error occurrence",
-    //   "instance": ctx.request.url(),
-    // })
   }
 
   /**
