@@ -16,11 +16,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [dni, setDni] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [province, setProvince] = useState("");
-  const [city, setCity] = useState("");
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,13 +30,7 @@ export default function Register() {
       password,
       firstName,
       lastName,
-      dni,
-      phone,
-      address,
-      province,
-      city,
     };
-
     try {
       const result = await api.post(data, "/auth/register").json();
       console.log(result);
@@ -52,8 +42,8 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-20">
-      <main className="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <div className="min-h-screen py-20">
+      <main className="max-w-md mx-auto bg-white p-6 rounded-lg overflow-hidden border border-gray-200 shadow-sm transition-shadow duration-150 hover:shadow-md">
         <h2 className="text-2xl font-bold mb-4">Crear cuenta</h2>
         <Form onSubmit={handleSubmit}>
           <Input
@@ -115,57 +105,7 @@ export default function Register() {
             placeholder="Reescriba la contraseña"
             autoComplete="new-password"
           />
-
-          <Input
-            id="dni"
-            label="DNI"
-            labelPlacement="outside"
-            className="mb-4"
-            isRequired
-            value={dni}
-            onValueChange={setDni}
-            placeholder="12345678"
-          />
-
-          <Input
-            id="phone"
-            label="Teléfono"
-            labelPlacement="outside"
-            className="mb-4"
-            value={phone}
-            onValueChange={setPhone}
-            placeholder="(11) 4XXX-XXXX"
-          />
-
-          <Input
-            id="address"
-            label="Dirección"
-            labelPlacement="outside"
-            className="mb-4"
-            value={address}
-            onValueChange={setAddress}
-            placeholder="Calle 123, Piso 4"
-          />
-
-          <Input
-            id="province"
-            label="Provincia"
-            labelPlacement="outside"
-            className="mb-4"
-            value={province}
-            onValueChange={setProvince}
-            placeholder="Buenos Aires"
-          />
-
-          <Input
-            id="city"
-            label="Ciudad"
-            labelPlacement="outside"
-            className="mb-4"
-            value={city}
-            onValueChange={setCity}
-            placeholder="La Plata"
-          />
+          {/* Removed personal identification fields: DNI, phone, address, province, city */}
 
           <div className="flex items-center justify-between w-full">
             <Button type="submit" color="primary">

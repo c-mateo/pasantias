@@ -6,12 +6,16 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  // Rutas públicas: index, login / register (no usan el layout de administración)
-  index("routes/homePublic.tsx"),
-  route("ofertas", "routes/ofertasPublic.tsx"),
-  route("ofertas/:ofertaId", "routes/ofertasPublic/OfertaPublic.tsx"),
-  route("login", "routes/auth/Login.tsx"),
-  route("register", "routes/auth/Register.tsx"),
+  // Rutas públicas con layout
+  layout("layouts/PublicLayout.tsx", [
+    index("routes/homePublic.tsx"),
+    route("ofertas", "routes/ofertasPublic.tsx"),
+    route("ofertas/:ofertaId", "routes/ofertasPublic/OfertaPublic.tsx"),
+    route("login", "routes/auth/Login.tsx"),
+    route("register", "routes/auth/Register.tsx"),
+    route("profile", "routes/profile.tsx"),
+    route("applications", "routes/applications.tsx"),
+  ]),
 
   // Panel de administración con navbar
   route("admin", "layouts/NavbarLayout.tsx", [

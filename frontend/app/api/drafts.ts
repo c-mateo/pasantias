@@ -54,4 +54,13 @@ export class DraftsRepository {
   async getDocuments(offerId: number): Promise<DraftGetDocumentsResponse> {
     return this.client.get<DraftGetDocumentsResponse>(`offers/${offerId}/draft/documents`)
   }
+
+  async getMyDrafts(): Promise<{ data: Array<{ offer: { id: number; position: string; company: { id: number; name: string } }; attachmentsCount: number }>}>
+  {
+    return this.client.get(`my-drafts`)
+  }
+
+  async deleteDraft(offerId: number): Promise<void> {
+    return this.client.delete<void>(`offers/${offerId}/draft`)
+  }
 }

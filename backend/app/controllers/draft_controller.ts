@@ -240,6 +240,30 @@ export default class DraftsController {
     }
   }
 
+  // List drafts for the current user
+  async listUser({ request, auth }: HttpContext) {
+    const drafts = await prisma.draft.findMany({
+      where: { userId: auth.user!.id },
+      include: {
+        offer: {
+          select: {
+            id: true,
+            position: true,
+            company: { select: { id: true, name: true } },
+          },
+        },
+        attachments: { select: { id: true } },
+      },
+    })
+
+    return {
+      data: drafts.map((d) => ({
+        offer: d.offer,
+        attachmentsCount: d.attachments.length,
+      })),
+    }
+  }
+
   async submit({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
 

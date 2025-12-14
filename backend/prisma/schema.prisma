@@ -29,7 +29,8 @@ model User {
   // Perfil obligatorio
   firstName String  @db.Text // Encriptado
   lastName  String  @db.Text // Encriptado
-  dni       String  @unique @db.Text // Encriptado (8 dígitos)
+  cuil      String? @db.Text // Encriptado (8 dígitos)
+  cuilHash  String? @unique @db.VarChar(64) // SHA256 para buscar sin desencriptar
   phone     String? @unique @db.Text // Encriptado
   address   String? @db.Text // Encriptado (calle y número)
   // TODO: Deberia hacerlo no nullable?

@@ -50,8 +50,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-20">
-      <main className="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <div className="min-h-screen py-20">
+      <main className="max-w-md mx-auto bg-white p-6 rounded-lg overflow-hidden border border-gray-200 shadow-sm transition-shadow duration-150 hover:shadow-md">
         <h2 className="text-2xl font-bold mb-4">Iniciar sesión</h2>
         <Form onSubmit={handleSubmit}>
           <Input

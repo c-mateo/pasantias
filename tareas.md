@@ -1,16 +1,17 @@
 Frontend:
-- Listas de administrador en celulares
 - Interfaz de alumno:
   - Página principal
   - Pagina de usuario
 - Recuperar contraseña
-# - Restablecer contraseña
-- Internacionalización (i18n) a español (es-AR)
+- Busqueda/filtrado de ofertas y solicitudes
+<!-- # - Restablecer contraseña -->
 - Manejo de errores
+- Listas de administrador en celulares
 - Interfaz para dispositivos móviles
+- Internacionalización (i18n) a español (es-AR)
 
 Backend:
 - Validaciones de datos
+- Crear flujo para cambiar email, contraseña
 - TODOs sin completar
 - Campos custom
-- Reincorporar encriptación de datos

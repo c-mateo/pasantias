@@ -6,14 +6,14 @@ export const userDataKeys: UserDataKey[] = [
   'email',
   'firstName',
   'lastName',
-  'dni',
+  'cuil',
   'phone',
   'address',
   'province',
   'city',
 ]
 
-export function encryptUserData<T extends UserData>(data: T): StrictUserSubset<T> {
+export function encryptUserData<T extends Partial<UserData>>(data: T): StrictUserSubset<T> {
   const result: any = {}
 
   for (const key of userDataKeys) {
@@ -24,6 +24,8 @@ export function encryptUserData<T extends UserData>(data: T): StrictUserSubset<T
 
   return result
 }
+
+// encryptUserData({ email: 'a'}).
 
 export function decryptUserData<T extends PartialOrNullable<UserData>>(data: T): T {
   const result: any = { ...data }

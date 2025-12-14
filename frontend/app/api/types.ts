@@ -71,7 +71,7 @@ export interface OfferDTO {
     publishedAt: string | null 
 }
 
-export interface UserAdminDTO extends AuditFields { id: number; email: string; phone?: string | null; firstName: string; lastName: string; dni: string; role: UserRole; address?: string | null; province?: string | null; city?: string | null; }
+export interface UserAdminDTO extends AuditFields { id: number; email: string; phone?: string | null; firstName: string; lastName: string; cuil: string; role: UserRole; address?: string | null; province?: string | null; city?: string | null; }
 
 
 // --- 3. Reference DTOs (Mini-DTOs) ---
@@ -93,12 +93,19 @@ export type PublicDocumentTypeDTO = Omit<DocumentTypeDTO, keyof AuditFields>
 // --- 5. DTOs de Request (Bodies) con Nullable para PATCH ---
 
 /** CORREGIDO: Password no existe en UserAdminDTO; se añade directamente. */
-export interface RegisterBody extends Pick<UserAdminDTO, 'email' | 'firstName' | 'lastName' | 'dni' | 'phone' | 'address' | 'province' | 'city'> { 
+export interface RegisterBody extends Pick<UserAdminDTO, 'email' | 'firstName' | 'lastName'> { 
     password: string;
 }
 export interface LoginBody { email: string; password: string; }
 
-export interface ProfileUpdateBody { skillsIds?: number[]; coursesIds?: number[]; }
+export interface ProfileUpdateBody extends Pick<UserAdminDTO, 'firstName' | 'lastName' | 'phone' | 'address' | 'province' | 'city'> { skillsIds?: number[]; coursesIds?: number[]; }
+
+// New: change email / change password bodies + responses
+export interface ChangeEmailBody { email: string }
+export type ChangeEmailResponse = ProfileUpdateResponse
+
+export interface ChangePasswordBody { currentPassword: string; newPassword: string }
+export interface ChangePasswordResponse { message: string }
 
 // Admin CRUD - Company
 export interface CompanyCreateBody extends Pick<CompanyDTO, 'name' | 'email' | 'description' | 'website' | 'phone' | 'logo'> {}
@@ -158,7 +165,7 @@ export interface UseExistingDocumentBody { documentId: number; }
 
 // --- 6. Respuestas Finales (DTOs) ---
 
-export type RegisterResponse = DetailResponse<Omit<UserAdminDTO, 'phone' | 'address' | 'province' | 'city' | 'dni' | keyof AuditFields>> 
+export type RegisterResponse = DetailResponse<Omit<UserAdminDTO, 'phone' | 'address' | 'province' | 'city' | 'cuil' | keyof AuditFields>> 
 export interface UserLoginDTO extends Pick<UserAdminDTO, 'id' | 'email' | 'role' | 'firstName' | 'lastName'> {}
 export interface LoginResponse { data: { user: UserLoginDTO; sessionExpiresAt: string; links: { rel: string, href: string, method: string }[]; } }
 
@@ -205,6 +212,8 @@ export type CourseDeleteResponse = NoContent
 export interface ApplicationOfferDTO { id: number; position: string; company: ApplicationCompanyRefDTO; }
 export interface ApplicationUserDTO { id: number; status: ApplicationStatus; createdAt: string; finalizedAt?: string; offer: ApplicationOfferDTO; }
 export type ApplicationUserListResponse = Paginated<ApplicationUserDTO>
+export interface MyDraftDTO { offer: { id: number; position: string; company: { id: number; name: string } }; attachmentsCount: number }
+export type MyDraftsResponse = { data: MyDraftDTO[] }
 
 export interface ApplicationDetailsDTO {
     id: number; offer: ApplicationOfferDTO; status: ApplicationStatus; createdAt: string; customFieldsValues: Record<string, any>;

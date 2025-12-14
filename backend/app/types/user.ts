@@ -2,7 +2,7 @@ export type UserData = {
   email: string
   firstName: string
   lastName: string
-  dni: string
+  cuil: string | null
   phone: string | null
   address: string | null
   province: string | null

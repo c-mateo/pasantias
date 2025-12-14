@@ -25,7 +25,7 @@ export default function OfferCard({ id, position, company, location, vacancies, 
   };
   const getFullName = (career: CareerInput) => (typeof career === "string" ? career : career.name);
   return (
-    <Card className="max-w-[400px] transition-shadow duration-150">
+    <Card className="max-w-[400px] rounded-lg overflow-hidden border border-gray-200 shadow-sm transition-shadow duration-150 hover:shadow-md">
       <CardHeader className="flex items-center justify-between p-4 gap-2">
         <div className="flex flex-col">
           <h3 className="truncate text-lg font-medium">{position}</h3>

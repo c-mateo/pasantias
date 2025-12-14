@@ -28,6 +28,9 @@ router.group(() => {
 
   // Non-admin routes
   router.get('profile', '#controllers/profile_controller.get').as('profile').use(middleware.auth())
+  router.patch('profile', '#controllers/profile_controller.update').use(middleware.auth())
+  router.patch('profile/email', '#controllers/profile_controller.changeEmail').as('profile.changeEmail').use(middleware.auth())
+  router.post('profile/change-password', '#controllers/profile_controller.changePassword').as('profile.changePassword').use(middleware.auth())
 
   // Courses
   router.get('courses', '#controllers/course_controller.list').as('courses')
@@ -51,6 +54,7 @@ router.group(() => {
   router.put('offers/:offerId/draft/documents', '#controllers/draft_controller.uploadDocument').use(middleware.auth())
   router.delete('offers/:offerId/draft/documents/:attachmentId', '#controllers/draft_controller.removeDocument').use(middleware.auth())
   router.post('offers/:offerId/draft/documents/use-existing', '#controllers/draft_controller.useExistingDocument').use(middleware.auth())
+  router.delete('offers/:offerId/draft', '#controllers/draft_controller.clear').use(middleware.auth())
 
   router.get('skills', '#controllers/skill_controller.list').as('skills')
   router.get('skills/:id', '#controllers/skill_controller.get').as('getSkill')
@@ -59,6 +63,7 @@ router.group(() => {
     router.get('my-applications', '#controllers/application_controller.listUser').as('my-applications')
     router.get('my-applications/:id', '#controllers/application_controller.get').as('my-applications.get')
     router.delete('my-applications/:id', '#controllers/application_controller.delete').as('my-applications.delete')
+    router.get('my-drafts', '#controllers/draft_controller.listUser').as('my-drafts')
 
     router.get('my-documents', '#controllers/my_document_controller.list').as('my-documents')
     router.get('my-documents/:id', '#controllers/my_document_controller.get').as('my-documents.get')

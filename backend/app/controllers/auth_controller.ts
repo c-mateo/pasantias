@@ -3,7 +3,7 @@ import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import hash from '@adonisjs/core/services/hash'
 import vine from '@vinejs/vine'
-import { sha256, sha256Buffer } from '#utils/hash'
+import { sha256 } from '#utils/hash'
 import { checkUnique, FieldContext } from '../../prisma/strategies.js'
 import getRoute from '#utils/getRoutes'
 import { User } from '../../generated/prisma/client.js'
@@ -14,13 +14,8 @@ const registerValidator = vine.compile(
   vine.object({
     email: vine.string().email(),
     password: vine.string().minLength(8),
-    firstName: vine.string(),
-    lastName: vine.string(),
-    dni: vine.string().minLength(8).maxLength(10),
-    phone: vine.string().minLength(7).maxLength(15),
-    address: vine.string(),
-    province: vine.string(),
-    city: vine.string(),
+    firstName: vine.string().alpha({ allowSpaces: true }),
+    lastName: vine.string().alpha({ allowSpaces: true }),
   })
 )
 
@@ -62,7 +57,7 @@ export default class AuthController {
           emailHash: sha256(validated.email),
         },
       },
-      [checkUnique(['dni', 'phone', emailHashUnique(validated.email)])]
+      [checkUnique(['phone', emailHashUnique(validated.email)])]
     )
 
     // TODO: Test this
@@ -155,6 +150,8 @@ export default class AuthController {
     await auth.use('web').logout()
     response.noContent()
   }
+
+
 
   // TODO: Implement password reset
   // async resetPassword({ request, response }: HttpContext) {
