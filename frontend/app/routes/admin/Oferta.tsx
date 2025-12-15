@@ -1,12 +1,13 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/Oferta";
-import { act, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
-import { api, defaultApi } from "~/api/api";
-import { type CompaniesListResponse, type OfferDTO, type Paginated, type SkillDTO, type SkillsListResponse } from "~/api/types";
-import { toDatetimeLocal } from "./Carrera";
-import { Autocomplete, AutocompleteItem, DateInput, DatePicker, Input, NumberInput, Select, SelectItem, Textarea, addToast } from "@heroui/react";
+import { api } from "~/api/api";
+import { type CompanyListResponse, type OfferDetailsDTO, type OfferDetailsResponse, type AdminOfferDetailsResponse, type Paginated, type SkillDTO, type SkillListResponse, type PublicSkillDTO } from "~/api/types";
+import { toDatetimeLocal } from "~/util/helpers";
+import { Autocomplete, AutocompleteItem, DateInput, DatePicker, Input, NumberInput, Select, SelectItem, Textarea, Form } from "@heroui/react";
+import { toast as toastHelper } from "~/util/toast";
 import { Button } from "@heroui/button";
 import { parseDateTime } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
@@ -25,7 +26,6 @@ async function getAll<T extends Paginated<any>>(
       .headers(headers ?? {})
       .get(`${endpoint}?limit=100&after=${next}`)
       .json<T>();
-    console.log(response);
     all.push(...(response.data ?? []));
     if (!response.pagination?.hasNext) break;
     next = response.pagination?.next as number;
@@ -34,39 +34,45 @@ async function getAll<T extends Paginated<any>>(
 }
 
 export async function clientLoader({ params, request }: Route.ClientLoaderArgs) {
-  const companies = await getAll<CompaniesListResponse>("/companies");
+  const companies = await getAll<CompanyListResponse>("/companies");
 
   if (params.ofertaId === "nuevo") {
-    return {
-      data: {
-        id: 0,
-        companyId: 0,
-        position: "",
-        description: "",
-        status: "DRAFT",
-        location: "",
-        vacancies: 1,
-
-        skills: [],
-
-        requirements: ""
-      } as OfferDTO,
-      companies,
+    const empty: AdminOfferDetailsResponse["data"] = {
+      id: 0,
+      position: "",
+      description: "",
+      status: "DRAFT",
+      vacancies: 1,
+      requirements: "",
+      location: null,
+      salary: null,
+      durationWeeks: null,
+      startDate: null,
+      expiresAt: null,
+      publishedAt: null,
+      company: { id: 0, name: "", description: "", logo: "", website: "", email: "", phone: "" },
+      skills: [],
+      courses: [],
+      requiredDocuments: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
+
+    return { data: empty, companies };
   }
 
-  const offer = await api
+  const resp = await api
     .headers({
       Cookie: request.headers.get("Cookie") ?? "",
     })
     .get(`/offers/${params.ofertaId}`)
-    .json<OfferDTO>();
+    .json<AdminOfferDetailsResponse>();
 
-  return { data: offer, companies };
+  return { data: resp.data, companies };
 }
 
 export function usePokemonList({fetchDelay = 0} = {}) {
-  const [items, setItems] = useState([] as SkillDTO[]);
+  const [items, setItems] = useState([] as PublicSkillDTO[]);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -84,14 +90,14 @@ export function usePokemonList({fetchDelay = 0} = {}) {
         await new Promise((resolve) => setTimeout(resolve, fetchDelay));
       }
 
-      let res = await api.get(`/skills?after=${currentOffset}&limit=${limit}`).json<SkillsListResponse>()
+      let res = await api.get(`/skills?after=${currentOffset}&limit=${limit}`).json<SkillListResponse>()
       
       setHasMore(res?.pagination?.hasNext ?? false);
       // Append new results to existing ones
       const items = res?.data ?? [];
       setItems((prevItems) => [...prevItems, ...items]);
     } catch (error) {
-      if (error.name === "AbortError") {
+      if ((error as any)?.name === "AbortError") {
         // eslint-disable-next-line no-console
         console.log("Fetch aborted");
       } else {
@@ -126,8 +132,8 @@ function TransitionButtons({
   status,
   setStatus,
 }: {
-  status: OfferDTO["status"];
-  setStatus: (status: OfferDTO["status"]) => void;
+  status: OfferDetailsDTO["status"];
+  setStatus: (status: OfferDetailsDTO["status"]) => void;
 }) {
   switch (status) {
     case "DRAFT":
@@ -177,8 +183,8 @@ function TransitionButtons({
 }
 
 export default function Oferta({ loaderData }: Route.ComponentProps) {
-  const { data, companies } = useLoaderData<typeof loader>();
-  const [offer, setOffer] = useState(data);
+  const { data, companies } = useLoaderData<typeof clientLoader>();
+  const [offer, setOffer] = useState<AdminOfferDetailsResponse["data"]>(data);
   const navigate = useNavigate();
 
   const metadata = {
@@ -199,7 +205,6 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     setVacancies,
     setExpiresAt,
     setStatus,
-    setCompanyId,
     setLocation,
     setSalary,
     setSkills,
@@ -207,11 +212,16 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     setStartDate,
   } = useSettersForObject(setOffer);
 
+  const setCompanyId = (id: number) => {
+    const comp = companies?.find((c: any) => c.id === id) ?? null;
+    setOffer((prev) => ({ ...prev, company: comp } as any));
+  };
+
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
   const validate = (o: typeof offer) => {
     const e: Record<string, string> = {};
-    if (!o.companyId || o.companyId === 0) e.companyId = "Seleccione una empresa";
+    if (!o.company?.id || o.company.id === 0) e.companyId = "Seleccione una empresa";
     if (!o.position || o.position.trim() === "") e.position = "El puesto es requerido";
     if (!o.description || o.description.trim() === "") e.description = "La descripción es requerida";
     if (!o.vacancies || Number(o.vacancies) < 1) e.vacancies = "Ingrese al menos 1 vacante";
@@ -230,11 +240,11 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     onLoadMore: skillList.onLoadMore,
   });
 
-  const save = (status: OfferDTO["status"] = data.status) => {
+  const save = (status: OfferDetailsDTO["status"] = data.status) => {
     const e = validate(offer);
     setErrors(e);
     if (Object.keys(e).length > 0) {
-      addToast({ title: "Corrige los errores del formulario" });
+      toastHelper.warn({ title: "Corrige los errores del formulario" });
       return;
     }
 
@@ -245,7 +255,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
         try {
           const opPromise = api.post({ ...offer, status }, "/admin/offers");
 
-          addToast({
+          toastHelper.info({
             title: "Guardando oferta",
             description: "Guardando la oferta en el servidor...",
             promise: opPromise,
@@ -253,7 +263,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
 
           await opPromise;
 
-          addToast({ title: "Oferta guardada", description: "La oferta se guardó correctamente." });
+          toastHelper.success({ title: "Oferta guardada", description: "La oferta se guardó correctamente." });
           setModal({ ...modal, isOpen: false });
           navigate("/admin/ofertas");
         } catch (err) {
@@ -264,7 +274,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
             apiErrors.forEach((it: any) => (map[it.field] = it.message));
             setErrors(map);
           }
-          addToast({ title: "Error al guardar", description: "No se pudo guardar la oferta." });
+          toastHelper.error({ title: "Error al guardar", description: "No se pudo guardar la oferta." });
         }
       },
     });
@@ -277,7 +287,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
       action: () => {
         console.log("Offer deleted", offer.id);
         // show a toast and navigate back
-        addToast({ title: "Oferta eliminada" });
+        toastHelper.success({ title: "Oferta eliminada" });
         setModal({ ...modal, isOpen: false });
         navigate("/admin/ofertas");
       },
@@ -331,6 +341,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
       <div className="flex flex-wrap justify-between">
         <div className="grow-7 basis-md">
           <div className="flex flex-col mx-auto p-4 space-y-4">
+            <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
             <h1 className="text-2xl font-bold">Detalles de la Oferta</h1>
 
             <Autocomplete
@@ -340,7 +351,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
               labelPlacement="outside"
               placeholder="Seleccionar empresa"
               defaultItems={companies || []}
-              selectedKey={offer.companyId}
+              selectedKey={offer.company?.id}
               onSelectionChange={(v) => {
                 setCompanyId(v as number);
                 setErrors((prev) => ({ ...prev, companyId: undefined }));
@@ -466,6 +477,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
               {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
             </Select>
 
+            </Form>
           </div>
         </div>
         <div className="grow-3 basis-sm">

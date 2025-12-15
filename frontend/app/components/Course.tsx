@@ -1,5 +1,6 @@
 import { courses, type Course } from "api/api";
 import { Field } from "./Field";
+import { Form } from "@heroui/react";
 // import './test.css'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
@@ -23,11 +24,11 @@ export function CargarCurso({ value }: { value?: Course }) {
     };
 
     return (
-        <form method="post" onSubmit={handleSubmit}>
+        <Form onSubmit={handleSubmit} className="w-full">
             <Field label="Nombre del Curso" type="text" name="name" initialValue={name} required />
             <Field label="Etiqueta del Curso" type="text" name="tag" initialValue={tag} required />
             <button type="submit">{submitText}</button>
-        </form>
+        </Form>
     );
 }
 

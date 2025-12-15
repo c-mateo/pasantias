@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/Carrera";
 import { useState } from "react";
-import { Input, Textarea, addToast } from "@heroui/react";
+import { Input, Textarea, Form } from "@heroui/react";
+import { toast as toastHelper } from "~/util/toast";
 import { Button } from "@heroui/button";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
-import type { CourseDTO, CourseResponse } from "~/api/types";
+import { formatDateTimeLocal } from "~/util/helpers";
+import type { CourseDTO, AdminCourseDetailsResponse } from "~/api/types";
 import { api } from "~/api/api";
 
 export async function clientLoader({
@@ -22,119 +24,17 @@ export async function clientLoader({
     } as CourseDTO;
   }
 
-  const response = await api.get(`/courses/${params.carreraId}`).json<CourseResponse>();
+  const response = await api.get(`/courses/${params.carreraId}`).json<AdminCourseDetailsResponse>();
 
-  return response.data;
+  return response.data ?? { id: 0, name: '', shortName: '', description: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as CourseDTO;
 }
 
-/**
- * Crea una función anidada para actualizar una propiedad específica de un objeto de estado.
- * @template T El tipo del objeto de estado.
- * @template K Las claves de T.
- * @param setter La función setter de React.Dispatch<React.SetStateAction<T>>.
- * @returns Una función que acepta la clave (K) y devuelve otra función para el nuevo valor.
- */
-export const setterBuilderObject = <T extends object, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T>>,
-) => {
-  // Retorna una función que espera la propiedad (K) a modificar
-  return (prop: K) => {
-    // Esta función espera el nuevo valor (T[K]) para esa propiedad
-    return (newValue: T[K]) => {
-      // Llama al setter de React
-      setter((prev) => ({
-        // Copia todas las propiedades anteriores
-        ...prev,
-        // Sobrescribe la propiedad específica
-        [prop]: newValue,
-      }));
-    };
-  };
-};
 
-// Ejemplo de uso:
-// interface User { name: string; age: number; }
-// const [user, setUser] = useState<User>({ name: 'Ana', age: 30 });
-// const setUserProp = setterBuilderObject(setUser);
-// const setUserName = setUserProp('name');
-// setUserName('Beatriz'); // Actualiza solo el nombre
-
-/**
- * Define un tipo base para asegurar que los elementos del array tienen un 'id: number'.
- */
-type ItemWithId = { id: number; [key: string]: any };
-
-/**
- * Crea una función anidada para actualizar una propiedad de un elemento
- * específico dentro de un array de estado, usando su ID.
- * @template T El tipo del elemento individual en el array (debe extender ItemWithId).
- * @template K Las claves de T.
- * @param setter La función setter de React.Dispatch<React.SetStateAction<T[]>>.
- * @returns Una función que acepta id y clave (K), y devuelve otra función para el nuevo valor.
- */
-export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T[]>>,
-) => {
-  // Retorna una función que espera el ID y la propiedad (K) a modificar
-  return (id: number, prop: K) => {
-    // Esta función espera el nuevo valor (T[K])
-    return (newValue: T[K]) => {
-      // Llama al setter de React
-      setter((prevArray) => {
-        // Devolvemos el array mapeado (inmutabilidad)
-        return prevArray.map((item) =>
-          // Si el ID coincide, modificamos el elemento.
-          item.id === id ? { ...item, [prop]: newValue } : item,
-        );
-      });
-    };
-  };
-};
-
-// Ejemplo de uso (asumiendo que T es { id: number, value: string }):
-// const [items, setItems] = useState<Item[]>(/* ... */);
-// const setItemProp = setterBuilderArray(setItems);
-// const setItemValueId10 = setItemProp(10, 'value');
-// setItemValueId10('Nuevo texto'); // Actualiza 'value' del ítem con id 10
-
-export const toDatetimeLocal = (dateString: string | null | undefined) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
-};
-
-export const fromDatetimeLocal = (localDateString: string) => {
-  const localDate = new Date(localDateString);
-  const offset = localDate.getTimezoneOffset();
-  const utcDate = new Date(localDate.getTime() + offset * 60 * 1000);
-  return utcDate.toISOString();
-};
-
-export const formatDateTimeLocal = (dateString?: string) => {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  return Intl.DateTimeFormat(undefined, {
-    timeStyle: "short",
-    dateStyle: "short",
-    hour12: false,
-  }).format(date);
-};
-
-// function diff<T extends Record<string, any>>(newValue: T, oldValue: T) {
-//   const result: any = {}
-//   for (const key in newValue) {
-//     if (newValue[key] != oldValue[key]) result[key] = newValue[key];
-//   }
-//   Object.entries(newValue).filter(([k, v]) => oldValue[k] != v)
-//   return result;
-// };
 
 export default function Curso({ loaderData }: Route.ComponentProps) {
-  const data = loaderData;
+  const data = loaderData as CourseDTO;
 
-  const [course, setCourse] = useState(data);
+  const [course, setCourse] = useState<CourseDTO>(data);
 
   const metadata = {
     createdAt: formatDateTimeLocal(data.createdAt),
@@ -162,12 +62,10 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
 
   const save = () => {
     // Lógica para guardar los cambios del curso
-    console.log("Guardando curso:", course);
     const e = validate(course);
     setErrors(e);
     if (Object.keys(e).length > 0) {
-      addToast({ title: "Corrige los errores del formulario" });
-      return;
+          toastHelper.warn({ title: "Corrige los errores del formulario" });
     }
 
     setModal({
@@ -180,7 +78,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
             ? api.patch(course, `/admin/courses/${course.id}`)
             : api.post(course, "/admin/courses");
 
-          addToast({
+          toastHelper.info({
             title: isExisting ? "Actualizando carrera" : "Creando carrera",
             description: isExisting
               ? "Actualizando la carrera en el servidor..."
@@ -190,7 +88,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
 
           await opPromise;
 
-          addToast({
+          toastHelper.success({
             title: isExisting ? "Carrera actualizada" : "Carrera creada",
             description: isExisting
               ? "La carrera se actualizó correctamente."
@@ -207,7 +105,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
             apiErrors.forEach((it: any) => (map[it.field] = it.message));
             setErrors(map);
           }
-          addToast({
+          toastHelper.error({
             title: "Error al guardar",
             description: "Ocurrió un error al guardar la carrera. Intente nuevamente.",
           });
@@ -218,7 +116,6 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
 
   const del = () => {
     // Lógica para eliminar el curso
-    console.log("Eliminando curso con ID:", course.id);
     setModal({
       isOpen: true,
       message: "¿Está seguro de que desea eliminar este curso?",
@@ -226,7 +123,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
         try {
           const opPromise = api.delete(`/admin/courses/${course.id}`);
 
-          addToast({
+          toastHelper.info({
             title: "Eliminando carrera",
             description: "Eliminando la carrera...",
             promise: opPromise,
@@ -234,12 +131,12 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
 
           await opPromise;
 
-          addToast({ title: "Carrera eliminada" });
+          toastHelper.success({ title: "Carrera eliminada" });
           setModal({ ...modal, isOpen: false });
           goBack();
         } catch (err) {
           console.error(err);
-          addToast({ title: "Error al eliminar", description: "No se pudo eliminar la carrera." });
+          toastHelper.error({ title: "Error al eliminar", description: "No se pudo eliminar la carrera." });
         }
       },
     });
@@ -264,6 +161,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
       <div className="flex flex-wrap justify-between">
         <div className="grow-7 basis-md">
           <div className="flex flex-col mx-auto p-4 space-y-4">
+            <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
             <h1 className="text-2xl font-bold">Detalles de la Carrera</h1>
             <Input
               isRequired
@@ -295,6 +193,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
               value={course.description ?? ""}
               onValueChange={setDescription}
             />
+            </Form>
           </div>
         </div>
         <div className="grow-3 basis-sm">

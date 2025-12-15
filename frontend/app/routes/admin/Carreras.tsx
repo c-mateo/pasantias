@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import AdminList from "~/components/AdminList";
 import { useIntersectionObserver } from "../../hooks/useIntersectionObserver";
 import type { Route } from "./+types/Carreras";
-import { formatDateTimeLocal } from "./Carrera";
+import { formatDateTimeLocal } from "~/util/helpers";
 import { api } from "~/api/api";
 import type { AdminCourseListResponse } from "~/api/types";
 

@@ -15,6 +15,7 @@ export default [
     route("register", "routes/auth/Register.tsx"),
     route("profile", "routes/profile.tsx"),
     route("applications", "routes/applications.tsx"),
+    route("applications/:applicationId", "routes/my-application.tsx"),
   ]),
 
   // Panel de administración con navbar
@@ -28,5 +29,6 @@ export default [
     route("empresas", "routes/admin/Empresas.tsx"),
     route("empresas/:empresaId", "routes/admin/Empresa.tsx"),
     route("aplicaciones", "routes/admin/Aplicaciones.tsx"),
+    route("aplicaciones/:applicationId", "routes/admin/Application.tsx"),
   ]),
 ] satisfies RouteConfig;

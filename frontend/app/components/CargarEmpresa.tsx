@@ -1,6 +1,6 @@
 import { type Company, companies } from "api/api";
 import { Field } from "./Field";
-import { Form } from "../routes/Form";
+import { Form } from "@heroui/react";
 
 interface CargarEmpresaProps {
   value?: Company;
@@ -28,7 +28,7 @@ export function CargarEmpresa({ value }: CargarEmpresaProps) {
   const canSubmit = [ name, email, phone, address, website, description ].every(value => value);
   const buttonClasses = canSubmit ? "submit-button" : "submit-button disabled";
   return (
-    <form method="post" onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit} className="w-full">
       <Field label="Nombre" type="text" name="name" initialValue={name} required />
       <Field label="Email" type="email" name="email" initialValue={email} required />
       <Field label="Teléfono" type="tel" name="phone" initialValue={phone} required />
@@ -37,7 +37,7 @@ export function CargarEmpresa({ value }: CargarEmpresaProps) {
       <Field label="Descripción" type="text" name="description" initialValue={description} required />
       <Field label="Logo URL" type="url" name="logo" initialValue={logo} />
       <button type="submit">{submitText}</button>
-    </form>
+    </Form>
   );
 }
 

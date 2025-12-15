@@ -1,11 +1,13 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/Empresa";
 import { useState } from "react";
-import { Input, Textarea, addToast } from "@heroui/react";
+import { Input, Textarea, Form } from "@heroui/react";
+import { toast as toastHelper } from "~/util/toast";
 import { Button } from "@heroui/button";
 import { Modal } from "../../components/Modal";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { api } from "~/api/api";
+import { toDatetimeLocal, formatDateTimeLocal } from "~/util/helpers";
 import type { CompanyUpdateResponse, AdminCompanyDetailsResponse, CompanyCreateBody, CompanyUpdateBody } from "~/api/types";
 
 export async function clientLoader({
@@ -23,85 +25,7 @@ export async function clientLoader({
   return response.data ?? {};
 }
 
-/**
- * Crea una función anidada para actualizar una propiedad específica de un objeto de estado.
- * @template T El tipo del objeto de estado.
- * @template K Las claves de T.
- * @param setter La función setter de React.Dispatch<React.SetStateAction<T>>.
- * @returns Una función que acepta la clave (K) y devuelve otra función para el nuevo valor.
- */
-export const setterBuilderObject = <T extends object, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T>>
-) => {
-  // Retorna una función que espera la propiedad (K) a modificar
-  return (prop: K) => {
-    // Esta función espera el nuevo valor (T[K]) para esa propiedad
-    return (newValue: T[K]) => {
-      // Llama al setter de React
-      setter((prev) => ({
-        // Copia todas las propiedades anteriores
-        ...prev,
-        // Sobrescribe la propiedad específica
-        [prop]: newValue,
-      }));
-    };
-  };
-};
 
-// Ejemplo de uso:
-// interface User { name: string; age: number; }
-// const [user, setUser] = useState<User>({ name: 'Ana', age: 30 });
-// const setUserProp = setterBuilderObject(setUser);
-// const setUserName = setUserProp('name');
-// setUserName('Beatriz'); // Actualiza solo el nombre
-
-/**
- * Define un tipo base para asegurar que los elementos del array tienen un 'id: number'.
- */
-type ItemWithId = { id: number; [key: string]: any };
-
-/**
- * Crea una función anidada para actualizar una propiedad de un elemento
- * específico dentro de un array de estado, usando su ID.
- * @template T El tipo del elemento individual en el array (debe extender ItemWithId).
- * @template K Las claves de T.
- * @param setter La función setter de React.Dispatch<React.SetStateAction<T[]>>.
- * @returns Una función que acepta id y clave (K), y devuelve otra función para el nuevo valor.
- */
-export const setterBuilderArray = <T extends ItemWithId, K extends keyof T>(
-  setter: React.Dispatch<React.SetStateAction<T[]>>
-) => {
-  // Retorna una función que espera el ID y la propiedad (K) a modificar
-  return (id: number, prop: K) => {
-    // Esta función espera el nuevo valor (T[K])
-    return (newValue: T[K]) => {
-      // Llama al setter de React
-      setter((prevArray) => {
-        // Devolvemos el array mapeado (inmutabilidad)
-        return prevArray.map((item) =>
-          // Si el ID coincide, modificamos el elemento.
-          item.id === id ? { ...item, [prop]: newValue } : item
-        );
-      });
-    };
-  };
-};
-const toDatetimeLocal = (dateString: string) => {
-  const date = new Date(dateString);
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
-};
-
-const formatDateTimeLocal = (dateString?: string) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return Intl.DateTimeFormat(undefined, {
-    timeStyle: "short",
-    dateStyle: "short",
-    hour12: false,
-  }).format(date);
-};
 
 const create = (data: CompanyCreateBody) => {
   return api.post(data, "/admin/companies").json<CompanyUpdateResponse>();
@@ -152,7 +76,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
     const e = validate(company);
     setErrors(e);
     if (Object.keys(e).length > 0) {
-      addToast({ title: "Corrige los errores del formulario" });
+      toastHelper.warn({ title: "Corrige los errores del formulario" });
       return;
     }
     setModal({
@@ -164,7 +88,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
               ? edit(company.id, company)
               : create(company);
 
-            addToast({
+            toastHelper.info({
               title: isExistingCompany ? "Actualizando empresa" : "Creando empresa",
               description: isExistingCompany
                 ? "Actualizando la empresa en el servidor..."
@@ -174,7 +98,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
 
             const res = await opPromise;
 
-            addToast({
+            toastHelper.success({
               title: isExistingCompany ? "Empresa actualizada" : "Empresa creada",
               description: isExistingCompany
                 ? "La empresa se actualizó correctamente."
@@ -192,7 +116,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
               apiErrors.forEach((it: any) => (map[it.field] = it.message));
               setErrors(map);
             }
-            addToast({
+            toastHelper.error({
               title: "Error al guardar",
               description: "Ocurrió un error al guardar la empresa. Intente nuevamente.",
             });
@@ -248,6 +172,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
       <div className="flex flex-wrap justify-between">
         <div className="grow-7 basis-md">
           <div className="flex flex-col mx-auto p-4 space-y-4">
+            <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
             <h1 className="text-2xl font-bold">Detalles de la Empresa</h1>
             <Input
               isRequired
@@ -321,6 +246,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
               value={company.logo ?? ""}
               onValueChange={setLogo}
             />
+            </Form>
           </div>
         </div>
         <div className="grow-3 basis-sm">

@@ -6,10 +6,10 @@ import type { HTMLInputTypeAttribute } from "react";
 // Modal handled by AdminList now
 import { useNavigate } from "react-router";
 import { api } from "~/api/api";
-import type { OffersListResponse, OfferDTO } from "~/api/types";
+import type { OfferListResponse, OfferListDTO } from "~/api/types";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  const res = await api.get("/offers?limit=10").json<OffersListResponse>();
+  const res = await api.get("/offers?limit=10").json<OfferListResponse>();
   return {
     initialData: res?.data ?? [],
     pagination: res?.pagination ?? { next: null, prev: null },
@@ -34,7 +34,7 @@ function useIntersectionObserver<T extends HTMLElement>(
 
 export default function Ofertas({ loaderData }: Route.ComponentProps) {
   const { initialData, pagination } = loaderData;
-  const [offers, setOffers] = useState(initialData || []);
+  const [offers, setOffers] = useState<OfferListDTO[]>(initialData || []);
   const [page, setPage] = useState(pagination.next);
   const [loading, setLoading] = useState(false);
   // selection & modal handled by AdminList now
@@ -49,9 +49,9 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     if (!page || loading) return;
     setLoading(true);
     try {
-      const res = await api.get(`/offers?limit=10&after=${page}`).json<OffersListResponse>();
+      const res = await api.get(`/offers?limit=10&after=${page}`).json<OfferListResponse>();
       const next = res?.data ?? [];
-      setOffers((prev) => [...prev, ...next]);
+      setOffers((prev: OfferListDTO[]) => [...prev, ...next]);
       setPage(res?.pagination?.next ?? null);
     } catch (err) {
       console.error(err);
@@ -71,8 +71,8 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     return () => observer.disconnect();
   }, [page, loading, loadMore]);
 
-  const deleteOffer = (id: number) => setOffers((prev) => prev.filter((o) => o.id !== id));
-  const deleteOffers = (ids: number[]) => setOffers((prev) => prev.filter((o) => !ids.includes(o.id)));
+  const deleteOffer = (id: number) => setOffers((prev: OfferListDTO[]) => prev.filter((o) => o.id !== id));
+  const deleteOffers = (ids: number[]) => setOffers((prev: OfferListDTO[]) => prev.filter((o) => !ids.includes(o.id)));
 
   // AdminList will show delete confirmation modals
 
@@ -80,7 +80,7 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     <div className="px-4 py-3 max-w-4xl mx-auto">
       {/* AdminList handles its confirmation modals */}
       {/* AdminList shows title and create button */}
-      <AdminList<OfferDTO>
+      <AdminList<OfferListDTO>
         headers={[
           { label: 'Puesto' },
           { label: "Puesto" },

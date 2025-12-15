@@ -1,7 +1,6 @@
 import { Field } from "../components/Field";
 import { Button } from "@heroui/button";
-
-
+import { Form as HForm } from "@heroui/react";
 
 import React from "react";
 
@@ -35,7 +34,7 @@ export function Form<T>({ fields, value, onSubmit }: FormProps<T>) {
   };
 
   return (
-    <form method="post" onSubmit={handleSubmit}>
+    <HForm onSubmit={handleSubmit} validationErrors={{}}>
       {fields.map((field) => (
         <Field
           key={field.name}
@@ -47,7 +46,7 @@ export function Form<T>({ fields, value, onSubmit }: FormProps<T>) {
         />
       ))}
       <Button type="submit">{submitText}</Button>
-    </form>
+    </HForm>
   );
 }
 

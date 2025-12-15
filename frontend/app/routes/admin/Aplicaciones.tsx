@@ -1,44 +1,55 @@
 import React, { useEffect, useRef, useState } from "react";
 import AdminList from "~/components/AdminList";
-import { Button } from "@heroui/button";
-
-const initialApplications = [
-  { candidate: "Luis Martínez", offer: "Desarrollador Frontend", status: "Pendiente" },
-  { candidate: "Sofía Ramírez", offer: "Analista de Datos", status: "Aceptado" },
-];
+import { api } from "~/api/api";
+import { Link } from "@heroui/react";
+import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
 
 export default function Aplicaciones() {
-  const [applications, setApplications] = useState(initialApplications);
-  // selection & modal handled by AdminList now
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const deleteApplication = (i:number) => setApplications((prev)=> prev.filter((_, idx) => idx !== i));
-  const deleteApplications = (ids:number[]) => setApplications((prev)=> prev.filter((_, idx) => !ids.includes(idx)));
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get("/admin/applications?limit=20").json();
+        const data = (res as any)?.data ?? [];
+        setApplications(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  // selection & modal handled by AdminList now
+  const deleteApplication = (id: number) => setApplications((prev) => prev.filter((a) => a.id !== id));
+  const deleteApplications = (ids: number[]) => setApplications((prev) => prev.filter((a) => !ids.includes(a.id)));
 
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
-      {/* AdminList shows title and actions */}
-      <AdminList<{ candidate: string; offer: string; status: string }>
+      <AdminList<any>
         headers={[{ label: 'Candidato' }, { label: 'Oferta' }, { label: 'Estado' }]}
         items={applications}
-        loading={false}
+        loading={loading}
         sentinelRef={undefined}
         title="Administrar Aplicaciones"
-        getId={(a) => applications.indexOf(a)}
-        getName={(a) => a.candidate}
+        getId={(a) => a.id}
+        getName={(a) => `${a.offer?.position} - ${a.offer?.company?.name}`}
         onDeleteItem={(id) => deleteApplication(id)}
         onDeleteSelected={(ids) => deleteApplications(ids)}
         renderCells={(application) => (
           <>
-            <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-300 align-middle">{application.candidate}</td>
-            <td className="px-4 py-2 text-sm text-gray-500 border-b border-gray-300 align-middle">{application.offer}</td>
-            <td className="px-4 py-2 border-b border-gray-300 text-center align-middle"><span className="inline-block rounded-xl bg-gray-100 px-3 py-1 text-sm font-medium">{application.status}</span></td>
+            <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-300 align-middle">{application.offer?.position}</td>
+            <td className="px-4 py-2 text-sm text-gray-500 border-b border-gray-300 align-middle">{application.offer?.company?.name}</td>
+            <td className="px-4 py-2 border-b border-gray-300 text-center align-middle">
+              <div className="flex items-center gap-2 justify-center">
+                <ApplicationStatusBadge status={application.status} />
+                <Link href={`/admin/aplicaciones/${application.id}`} className="text-sm text-blue-600">Ver</Link>
+              </div>
+            </td>
           </>
         )}
       />
-
-      {/* AdminList handles confirmation Modals */}
     </div>
   );
 }

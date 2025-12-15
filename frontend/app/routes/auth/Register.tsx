@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@heroui/button";
 import { Form, Input, Link, addToast } from "@heroui/react";
+import { toast as toastHelper } from "~/util/toast";
 import { api } from "~/api/api";
 import { requireUser } from "~/util/AuthContext";
 import { redirect } from "react-router";
@@ -31,7 +32,7 @@ export default function Register() {
 
     setErrors(eObj);
     if (Object.keys(eObj).length > 0) {
-      addToast({ title: "Corrige los errores del formulario" });
+      toastHelper.warn({ title: "Corrige los errores del formulario" });
       return;
     }
 
@@ -53,7 +54,7 @@ export default function Register() {
         apiErrors.forEach((it: any) => (map[it.field] = it.message));
         setErrors(map);
       }
-      addToast({ title: "Error al crear la cuenta", description: "Revise los datos e intente nuevamente." });
+      toastHelper.error({ title: "Error al crear la cuenta", description: "Revise los datos e intente nuevamente." });
     }
   };
 

@@ -1,15 +1,8 @@
 import React, { useState } from "react";
 import { Button } from "@heroui/button";
 import { Form, Input, Link } from "@heroui/react";
-import { api, defaultApi } from "~/api/api";
-import {
-  auth,
-  isLogged,
-  loaderAccess,
-  login,
-  requireUser,
-  useAuth,
-} from "~/util/AuthContext";
+
+import { login, requireUser } from "~/util/AuthContext";
 import type { LoginResponse } from "~/api/types";
 import { redirect, useNavigate } from "react-router";
 
@@ -23,15 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  //
-  // const ctx = useAuth();
-  // ctx.
-  //
-  // console.log("Login redraw");
-  // if (ctx.userData) {
-  //   console.log("Authenticated");
-  //   // navigate("/admin/carreras");
-  // }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
