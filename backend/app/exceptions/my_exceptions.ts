@@ -1,3 +1,5 @@
+import { HttpContext } from '@adonisjs/core/http'
+
 interface Context {
   instance: string
 }
@@ -14,7 +16,7 @@ const supportEmail = process.env.SUPPORT_EMAIL || 'admin@yourdomain.com'
 
 export class ApiException extends Error {
   constructor(private payload: ApiErrorPayload) {
-    super(JSON.stringify(payload))
+    super(payload.detail)
   }
 
   format(context: Context) {
@@ -26,6 +28,12 @@ export class ApiException extends Error {
       instance: context.instance,
       ...(this.payload.meta ? { meta: this.payload.meta } : {}),
     }
+  }
+
+  // Called by Adonis automatically to handle the exception and send a response
+  async handle(error: ApiException, ctx: HttpContext) {
+    const formattedError = error.format({ instance: ctx.request.url() })
+    return ctx.response.status(error.payload.status).json(formattedError)
   }
 }
 
@@ -298,6 +306,21 @@ export const apiErrors = {
   // 7. RATE LIMITING (429)
   // ===========================
 
+  /**
+   * Use: cuando una entidad (IP, cuenta, usuario) supera un límite de frecuencia
+   * de solicitudes dentro de una ventana temporal.
+   * Ejemplos:
+   *  - demasiadas solicitudes a `/auth/password/forgot` desde la misma IP en 1 hora
+   *  - intentos de login repetidos en poco tiempo desde la misma cuenta
+   *
+   * Parámetros:
+   *  - limit: número de requests permitidos en la ventana
+   *  - window: descripción de la ventana (ej. '1 hour')
+   *  - retryAfter: tiempo (en segundos) que el cliente debería esperar antes de reintentar
+   *
+   * @example
+   * throw apiErrors.rateLimitExceeded(5, '1 hour', 3600)
+   */
   rateLimitExceeded(limit: number, window: string, retryAfter: number) {
     return new ApiException({
       type: 'rate-limit-exceeded',
@@ -308,6 +331,23 @@ export const apiErrors = {
     })
   },
 
+  /**
+   * Use: cuando se alcanza o supera una cuota acumulativa de recurso (no una
+   * frecuencia temporal).
+   *
+   * Ejemplos:
+   *  - usuario agotó su cupo mensual de uploads (MB) o número de postulaciones
+   *    permitidas por su plan
+   *  - cuenta agotó su cuota mensual de llamadas a la API
+   *
+   * @param {string} quotaType - Tipo de cuota (ej. 'uploads', 'api_calls')
+   * @param {number} limit - Valor máximo permitido
+   * @param {number} current - Uso actual que excede el límite
+   * @param {string} [suggestion] - Texto opcional con recomendación (p. ej. 'Upgrade your plan')
+   * @returns {ApiException}
+   * @example
+   * throw apiErrors.quotaExceeded('uploads', 1000, 1200, 'Upgrade your plan')
+   */
   quotaExceeded(quotaType: string, limit: number, current: number, suggestion?: string) {
     return new ApiException({
       type: 'quota-exceeded',
@@ -362,6 +402,28 @@ export const apiErrors = {
       title: 'No changes detected',
       status: 400,
       detail: 'The request contains no changes',
+    })
+  },
+
+  // ===========================
+  // 10. TOKEN ERRORS (400/410)
+  // ===========================
+
+  invalidToken() {
+    return new ApiException({
+      type: 'invalid-token',
+      title: 'Invalid token',
+      status: 400,
+      detail: 'The provided token is invalid or has already been used',
+    })
+  },
+
+  expiredToken() {
+    return new ApiException({
+      type: 'expired-token',
+      title: 'Expired token',
+      status: 410,
+      detail: 'The provided token has expired',
     })
   },
 }

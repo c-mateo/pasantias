@@ -2,7 +2,6 @@ import { defineConfig } from '@adonisjs/auth'
 import { sessionGuard } from '@adonisjs/auth/session'
 import type { InferAuthenticators, InferAuthEvents, Authenticators } from '@adonisjs/auth/types'
 import { configProvider } from '@adonisjs/core'
-import { User } from '../generated/prisma/client.js'
 
 const authConfig = defineConfig({
   default: 'web',
@@ -12,11 +11,6 @@ const authConfig = defineConfig({
       provider: configProvider.create(async () => {
         const { PrismaUserProvider } = await import('#auth/session_user_provider')
         return new PrismaUserProvider()
-        // {
-        //   id: 1,
-        //   email: 'fakeuser@example.com',
-        //   role: 'ADMIN',
-        // } as User
       }),
     }),
   },

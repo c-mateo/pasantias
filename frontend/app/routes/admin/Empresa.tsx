@@ -32,7 +32,7 @@ const create = (data: CompanyCreateBody) => {
 };
 
 const edit = (companyId: number, data: CompanyUpdateBody) => {
-  return api.put(data, `/admin/companies/${companyId}`).json<CompanyUpdateResponse>();
+  return api.patch(data, `/admin/companies/${companyId}`).json<CompanyUpdateResponse>();
 };
 
 export default function Empresa({ loaderData }: Route.ComponentProps) {

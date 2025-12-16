@@ -349,7 +349,7 @@ POST /admin/notifications/broadcast
 {
   "title": "Mantenimiento",
   "message": "...",
-  "userIds": [] // broadcast a todos
+  "userIds": [] // broadcast a todos los alumnos (role STUDENT)
 }
 
 1000 usuarios en BD

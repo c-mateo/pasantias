@@ -14,7 +14,7 @@ export type AdminUser = {
   lastName: string;
   email: string;
   role: string;
-  deletedAt: string | null;
+  deletedAt?: string | null;
   createdAt: string;
 };
 
@@ -86,7 +86,7 @@ export default function Usuarios({ loaderData }: Route.ComponentProps) {
     <div className="px-4 py-3 max-w-4xl mx-auto">
       {/* AdminList handles confirmation modals */}
       {/* AdminList shows title and actions */}
-      <AdminList<UserDTO>
+      <AdminList<AdminUser>
         headers={[
           { label: "Nombre" },
           { label: "Email", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },

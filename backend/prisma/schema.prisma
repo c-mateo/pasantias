@@ -25,6 +25,7 @@ model User {
   email     String   @db.Text // Encriptado (AES-256-GCM)
   password  String   @db.VarChar(255) // Bcrypt hash
   role      UserRole @default(STUDENT)
+  emailVerifiedAt DateTime?
 
   // Perfil obligatorio
   firstName String  @db.Text // Encriptado
@@ -33,11 +34,10 @@ model User {
   cuilHash  String? @unique @db.VarChar(64) // SHA256 para buscar sin desencriptar
   phone     String? @unique @db.Text // Encriptado
   address   String? @db.Text // Encriptado (calle y número)
-  // TODO: Deberia hacerlo no nullable?
 
   // Ubicación (plain text para filtrar)
-  city     String? @db.Text // Encriptado
-  province String? @db.Text // Encriptado
+  city      String? @db.Text // Encriptado
+  province  String? @db.Text // Encriptado
 
   // Metadata
   createdAt    DateTime  @default(now())
@@ -50,9 +50,8 @@ model User {
   documents     Document[]
   drafts        Draft[]
   applications  Application[]
-  sessions      Session[]
   notifications Notification[]
-  authTokens    AuthToken[]
+  userTokens    UserToken[]
 
   @@index([emailHash])
   @@index([province, city])
@@ -64,41 +63,26 @@ enum UserRole {
 }
 
 // No implementado
-model Session {
-  id             String   @id @default(cuid(2))
-  userId         Int
-  createdAt      DateTime @default(now())
-  lastActivityAt DateTime @default(now()) // Para sliding/renewal
-  expiresAt      DateTime
-  ipAddress      String?  @db.VarChar(45) // IPv6 compatible
-  userAgent      String?  @db.Text
+model UserToken {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  type      TokenType
+  tokenHash String    @unique
+  metadata  Json?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([expiresAt])
-  @@index([lastActivityAt])
-}
-
-// No implementado
-model AuthToken {
-  id         String         @id @default(cuid(2))
-  userId     Int
-  tokenHash  String         @unique @db.VarChar(64) // SHA256 del token
-  type       AuthTokenType
-  createdAt  DateTime       @default(now())
-  expiresAt  DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, type])
-  @@index([userId])
+  @@index([userId, type])
   @@index([expiresAt])
 }
 
-enum AuthTokenType {
-  EMAIL_VERIFICATION
+enum TokenType {
   PASSWORD_RESET
+  EMAIL_CHANGE
+  EMAIL_VERIFY
 }
 
 // ==========================================

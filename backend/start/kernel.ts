@@ -10,7 +10,6 @@
 
 import router from '@adonisjs/core/services/router'
 import server from '@adonisjs/core/services/server'
-// import '../rules/exist.js'
 
 /**
  * The error handler is used to convert an exception
@@ -32,7 +31,7 @@ server.use([
 /**
  * The router middleware stack runs middleware on all the HTTP
  * requests with a registered route.
-*/
+ */
 router.use([
   () => import('@adonisjs/core/bodyparser_middleware'),
   () => import('@adonisjs/session/session_middleware'),

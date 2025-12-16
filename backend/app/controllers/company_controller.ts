@@ -1,12 +1,9 @@
-// import type { HttpContext } from '@adonisjs/core/http'
-
 import { prisma } from '#start/prisma'
 import { HttpContext } from '@adonisjs/core/http'
 import { validator, createValidator, updateValidator } from '#validators/company'
 import { checkUnique } from '../../prisma/strategies.js'
 import { apiErrors } from '#exceptions/my_exceptions'
 import { buildWhere, preparePagination } from '#utils/pagination'
-import vine from '@vinejs/vine'
 
 enum CompanySort {
   NAME = 'name',
@@ -53,14 +50,6 @@ function getOfferOrder(s?: string) {
   }
 }
 
-const idValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number().positive(),
-    }),
-  })
-)
-
 export default class CompaniesController {
   // GET /companies
   async list({ request, auth }: HttpContext) {
@@ -96,7 +85,7 @@ export default class CompaniesController {
 
   // GET /companies/:id
   async get({ request, auth }: HttpContext) {
-    const { params } = await request.validateUsing(idValidator)
+    const { params } = await request.validateUsing(validator)
     const isNotAdmin = auth.user?.role !== 'ADMIN'
 
     const company = await prisma.company.findUniqueOrThrow({

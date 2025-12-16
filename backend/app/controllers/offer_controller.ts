@@ -225,6 +225,10 @@ export default class OffersController {
     }
 
     if (batch.length > 0) {
+      // Perform the batch operations in a single transaction to ensure the
+      // required document deletions and insertions are applied together. This
+      // avoids partial updates that could leave the offer in an inconsistent
+      // state.
       const result = await prisma.$transaction(batch)
 
       const expectedCounts = [toDelete.length, toAdd.length]

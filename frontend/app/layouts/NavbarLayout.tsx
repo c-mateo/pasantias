@@ -7,6 +7,7 @@ import type { Route } from "./+types/NavbarLayout";
 import { checkSessionOnce, useAuthState } from "~/util/AuthContext";
 import { useEffect } from "react";
 import { Link } from "@heroui/react";
+import NotificationBell from "~/components/NotificationBell";
 
 const titles: Record<string, string> = {
   "/admin/usuarios": "Administrar Usuarios",
@@ -30,7 +31,7 @@ export default function NavbarLayout({}: Route.ComponentProps) {
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">Aplicación de Pasantías</h1>
-          <nav className="flex space-x-4">
+          <nav className="flex items-center space-x-4">
             <Link
               href="/admin/usuarios"
               className="text-gray-700 hover:text-blue-500"
@@ -61,6 +62,11 @@ export default function NavbarLayout({}: Route.ComponentProps) {
             >
               Aplicaciones
             </Link>
+            {/* Notification bell */}
+            <div className="ml-4">
+              {/* @ts-ignore - client component */}
+              <NotificationBell />
+            </div>
           </nav>
         </div>
       </header>

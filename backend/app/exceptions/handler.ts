@@ -1,8 +1,8 @@
 import app from '@adonisjs/core/services/app'
 import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
-import { StatusPageRange } from '@adonisjs/core/types/http'
-import { ValidationError } from '@vinejs/vine'
-import { apiErrors, ApiException } from './my_exceptions.js'
+import { errors as AuthErrors } from '@adonisjs/auth'
+import { errors as LimiterErrors } from '@adonisjs/limiter'
+import { apiErrors } from './my_exceptions.js'
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -25,18 +25,30 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     //   }
     // }
 
-    if (error.code === 'E_UNAUTHORIZED_ACCESS') {
+    if (error instanceof AuthErrors.E_UNAUTHORIZED_ACCESS) {
       const customError = apiErrors.sessionExpired('absolute')
       const formattedError = customError.format({ instance: ctx.request.url() })
       return ctx.response.status(formattedError.status).json(formattedError)
     }
 
-    console.log('Error handled by HttpExceptionHandler:', error)
-
-    if (error instanceof ApiException) {
-      const formattedError = error.format({ instance: ctx.request.url() })
+    if (error instanceof LimiterErrors.E_TOO_MANY_REQUESTS) {
+      // The limiter middleware does not expose limit/window here reliably,
+      // so return a generic rate limit error with default placeholders.
+      const customError = apiErrors.rateLimitExceeded(
+        error.response.limit,
+        'unknown',
+        error.response.availableIn
+      )
+      const formattedError = customError.format({ instance: ctx.request.url() })
       return ctx.response.status(formattedError.status).json(formattedError)
     }
+
+    // console.log('Error handled by HttpExceptionHandler:', error)
+
+    // if (error instanceof ApiException) {
+    //   const formattedError = error.format({ instance: ctx.request.url() })
+    //   return ctx.response.status(formattedError.status).json(formattedError)
+    // }
 
     return super.handle(error, ctx)
   }

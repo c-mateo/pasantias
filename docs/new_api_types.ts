@@ -275,6 +275,7 @@ export interface ApplicationUpdateStatusBody {
 export type ApplicationUpdateStatusResponse = NoContent
 
 // Admin - Notifications
+// If omitted, broadcasts to all students (role STUDENT)
 export interface NotificationBroadcastBody { userIds?: number[]; title: string; message: string; }
 export interface BroadcastResponse { data: { accepted: boolean; } }
 export interface NotificationDTO {

@@ -1148,7 +1148,9 @@ Por brevedad, lista resumida. Todos siguen patrones similares:
 }
 ```
 
-**Si `userIds` vacío o null: broadcast a TODOS**
+**Si `userIds` vacío o null: broadcast a TODOS (todos los alumnos — role STUDENT).**
+
+**Nota:** Si se proporcionan `userIds`, la lista será filtrada para incluir únicamente usuarios con `role = STUDENT` (los ids de administradores serán ignorados).
 
 **Response 201:**
 ```json

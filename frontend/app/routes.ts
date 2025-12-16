@@ -14,6 +14,7 @@ export default [
     route("login", "routes/auth/Login.tsx"),
     route("register", "routes/auth/Register.tsx"),
     route("profile", "routes/profile.tsx"),
+    route("notifications", "routes/notifications.tsx"),
     route("applications", "routes/applications.tsx"),
     route("applications/:applicationId", "routes/my-application.tsx"),
   ]),

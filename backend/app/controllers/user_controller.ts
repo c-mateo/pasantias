@@ -3,6 +3,8 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { idValidator } from '#validators/users'
 import { preparePagination, buildWhere } from '#utils/pagination'
 import { decryptUserData } from '#utils/user'
+import { sha256 } from '#utils/hash'
+import { updateCuilValidator } from '#validators/users'
 
 export default class UserController {
   async list({ request }: HttpContext) {
@@ -67,7 +69,25 @@ export default class UserController {
     }
   }
 
-  // TODO: update user info. Que?
+  // Update CUIL (admin only)
+  async updateCuil({ request, response }: HttpContext) {
+    const { params, ...validated } = await request.validateUsing(updateCuilValidator)
+
+    // Fetch target user
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: params.id } })
+
+    // Single update — no transaction required because this is a single atomic
+    // database operation. We avoid using a transaction here to reduce overhead.
+    // If future requirements need to perform multiple related writes (audit
+    // log, session invalidation, notifications), we should switch back to a
+    // transaction to guarantee atomicity.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { cuil: validated.cuil, cuilHash: sha256(validated.cuil) },
+    })
+
+    return response.ok({ message: 'CUIL actualizado' })
+  }
 
   async delete({ request, response }: HttpContext) {
     const { params } = await idValidator.validate(request)

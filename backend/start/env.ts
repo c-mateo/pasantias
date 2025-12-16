@@ -23,18 +23,14 @@ export default await Env.create(new URL('../', import.meta.url), {
   | Variables for configuring database connection
   |----------------------------------------------------------
   */
-  DB_HOST: Env.schema.string({ format: 'host' }),
-  DB_PORT: Env.schema.number(),
-  DB_USER: Env.schema.string(),
-  DB_PASSWORD: Env.schema.string.optional(),
-  DB_DATABASE: Env.schema.string(),
+  DATABASE_URL: Env.schema.string(),
 
   /*
   |----------------------------------------------------------
   | Variables for configuring session package
   |----------------------------------------------------------
   */
-  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
+  SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'redis'] as const),
 
   /*
   |----------------------------------------------------------
@@ -55,4 +51,12 @@ export default await Env.create(new URL('../', import.meta.url), {
   SMTP_PORT: Env.schema.string(),
   SMTP_USERNAME: Env.schema.string(),
   SMTP_PASSWORD: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for configuring the limiter package
+  |----------------------------------------------------------
+  */
+  LIMITER_STORE: Env.schema.enum(['redis', 'memory'] as const),
+  RATE_LIMITING_ENABLED: Env.schema.boolean.optional(),
 })

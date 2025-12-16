@@ -365,7 +365,7 @@ export interface SkillUpdateBody extends Partial<SkillCreateBody> {}
 export interface NotificationBroadcastBody {
     title: string
     message: string
-    userIds?: number[] // If omitted, broadcasts to all users
+    userIds?: number[] // If omitted, broadcasts to all students (role STUDENT). Provided userIds will be filtered to include only students.
 }
 
 export interface BroadcastResponse {

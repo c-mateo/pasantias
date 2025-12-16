@@ -22,7 +22,7 @@ function compileSchema(sortEnum?: any) {
     shape.sort = vine.enum(sortEnum).optional()
   }
 
-  return vine.compile(vine.object(shape))
+  return vine.create(shape)
 }
 
 export async function validatePagination(request: any, sortEnum: any = noEnumKey) {

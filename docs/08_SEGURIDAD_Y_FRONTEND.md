@@ -294,6 +294,8 @@ async function checkRateLimit(key: string, limit: number, window: number): Promi
 // Uso
 const canProceed = await checkRateLimit(`login:${ip}`, 5, 60);
 if (!canProceed) throw new TooManyRequests();
+
+**Nota (configuración):** El proyecto incluye un wrapper que permite desactivar los limiters mediante la variable de entorno `RATE_LIMITING_ENABLED`. Cuando está `false`, el middleware de rate limiting es un NO-OP, lo que facilita el desarrollo local y las pruebas. Por defecto `.env.example` tiene `RATE_LIMITING_ENABLED=true`.
 ```
 
 **Cuándo implementar:**
@@ -665,7 +667,7 @@ Tabs para:
 interface BroadcastForm {
   title: string;
   message: string;
-  userIds?: number[];  // Multi-select, vacío = todos
+  userIds?: number[];  // Multi-select, vacío = todos los alumnos (role STUDENT)
 }
 ```
 - Form simple

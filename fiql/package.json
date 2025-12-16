@@ -13,8 +13,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^5.2.2",
-    "vitest": "^4.0.14"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
   },
   "exports": {
     ".": "./dist/index.js"

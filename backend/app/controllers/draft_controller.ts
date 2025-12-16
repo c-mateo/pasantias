@@ -8,12 +8,12 @@ import {
   idValidator,
 } from '#validators/draft'
 import { sha256 } from '#utils/hash'
-import fs, { stat } from 'fs/promises'
+import fs, { stat } from 'node:fs/promises'
 import { apiErrors } from '#exceptions/my_exceptions'
-import { createWriteStream } from 'fs'
+import { createWriteStream } from 'node:fs'
 import router from '@adonisjs/core/services/router'
-import { randomUUID } from 'crypto'
-import path from 'path'
+import { randomUUID } from 'node:crypto'
+import path from 'node:path'
 import { checkFK, checkUnique } from '../../prisma/strategies.js'
 
 const uploadsFolder = 'uploads'
@@ -140,7 +140,7 @@ export default class DraftsController {
 
     const fileStats = await stat(savePath)
 
-    if (size != fileStats.size) {
+    if (size !== fileStats.size) {
       throw apiErrors.invalidFile([
         {
           reason: 'Uploaded file size does not match Content-Length header',
@@ -241,7 +241,7 @@ export default class DraftsController {
   }
 
   // List drafts for the current user
-  async listUser({ request, auth }: HttpContext) {
+  async listUser({ auth }: HttpContext) {
     const drafts = await prisma.draft.findMany({
       where: { userId: auth.user!.id },
       include: {
@@ -333,7 +333,7 @@ export default class DraftsController {
 
     // Enqueue notification and email jobs
     // Notify applicant (user)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+
     const { enqueue } = require('#utils/jobs')
     enqueue('CreateNotificationsJob', {
       notifications: [

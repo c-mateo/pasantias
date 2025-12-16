@@ -1,8 +1,8 @@
 import { apiErrors } from '#exceptions/my_exceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import vine from '@vinejs/vine'
 import { preparePagination, buildWhere } from '#utils/pagination'
+import { idValidator, updateStatusValidator } from '#validators/application'
 
 function getApplicationOrder(s?: string) {
   switch (s) {
@@ -19,25 +19,6 @@ enum ApplicationSort {
   CREATED_AT = 'createdAt',
   CREATED_AT_DESC = '-createdAt',
 }
-
-const idValidator = vine.compile(
-  vine.object({
-    params: vine.object({
-      id: vine.number(),
-    }),
-  })
-)
-
-const updateStatusValidator = vine.compile(
-  vine.object({
-    status: vine.enum(['PENDING', 'BLOCKED', 'ACCEPTED', 'REJECTED'] as const),
-    blockReason: vine.string().optional().requiredWhen('status', '=', 'BLOCKED'),
-    feedback: vine.string().optional().requiredWhen('status', 'in', ['ACCEPTED', 'REJECTED']),
-    params: vine.object({
-      id: vine.number(),
-    }),
-  })
-)
 
 export default class ApplicationController {
   // Para el usuario logeado solamente

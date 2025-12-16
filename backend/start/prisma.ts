@@ -3,13 +3,7 @@ import { PrismaClient } from '../generated/prisma/client.js'
 import env from './env.js'
 import { guardModelExtension, paginationExtension } from '../prisma/extensions.js'
 
-const user = env.get('DB_USER')
-const password = env.get('DB_PASSWORD') || ''
-const host = env.get('DB_HOST')
-const port = env.get('DB_PORT')
-const database = env.get('DB_DATABASE')
-const databaseUrl = `postgresql://${user}:${password}@${host}:${port}/${database}`
-console.log('Database URL:', databaseUrl)
+const databaseUrl = env.get('DATABASE_URL')
 
 // env.set('DATABASE_URL', databaseUrl)
 

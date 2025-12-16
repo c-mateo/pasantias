@@ -140,7 +140,7 @@ Cuando ambas finalizan:
 ### Manual
 - `POST /admin/notifications/broadcast`
 - Tipo: ADMIN_ANNOUNCEMENT
-- Permite: envío individual o broadcast a todos
+- Permite: envío individual o broadcast a todos los alumnos (role STUDENT)
 
 ---
 
