@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from "@heroui/react";
 import { Outlet } from "react-router";
 import { checkSessionOnce, useAuthState } from "~/util/AuthContext";
+import NotificationBell from "~/components/NotificationBell";
 
 export default function PublicLayout() {
   const auth = useAuthState();
@@ -22,8 +23,12 @@ export default function PublicLayout() {
             <Link href="/ofertas" className="text-gray-700 hover:text-blue-500">Ofertas</Link>
             {auth.user ? (
               <>
+                {auth.user.role === "ADMIN" && (
+                  <Link href="/admin" className="text-gray-700 hover:text-blue-500">Panel Admin</Link>
+                )}
                 <Link href="/applications" className="text-gray-700 hover:text-blue-500">Mis solicitudes</Link>
                 <Link href="/profile" className="text-gray-700 hover:text-blue-500">Mi cuenta</Link>
+                <NotificationBell />
               </>
             ) : (
               <Link href="/login" className="text-gray-700 hover:text-blue-500">Entrar</Link>

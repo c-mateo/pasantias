@@ -43,7 +43,7 @@ export default class UserController {
   }
 
   async get({ request }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     const user = await prisma.user.findUniqueOrThrow({
       where: {
@@ -90,7 +90,7 @@ export default class UserController {
   }
 
   async delete({ request, response }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     await prisma.user.guardedDelete({
       where: {

@@ -7,35 +7,57 @@ import { Button } from "@heroui/button";
 import { useSettersForObject } from "~/util/createPropertySetter";
 import { Modal } from "../../components/Modal";
 import { formatDateTimeLocal } from "~/util/helpers";
-import type { CourseDTO, AdminCourseDetailsResponse } from "~/api/types";
+import type { CourseDTO, AdminCourseDetailsResponse, CourseCreateResponse, CourseUpdateResponse, ApiError } from "~/api/types";
 import { api } from "~/api/api";
+import type { WretchError } from "wretch";
 
-export async function clientLoader({
-  params,
-}: Route.ClientLoaderArgs) {
+export async function clientLoader({ params }: Route.ClientLoaderArgs) {
   if (params.carreraId === "nuevo") {
     return {
-        id: 0,
-        name: "",
-        shortName: "",
-        description: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      id: 0,
+      name: "",
+      shortName: "",
+      description: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     } as CourseDTO;
   }
 
-  const response = await api.get(`/courses/${params.carreraId}`).json<AdminCourseDetailsResponse>();
+  const response = await api
+    .get(`/courses/${params.carreraId}`)
+    .json<AdminCourseDetailsResponse>();
 
-  return response.data ?? { id: 0, name: '', shortName: '', description: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as CourseDTO;
+  return (
+    response.data ??
+    ({
+      id: 0,
+      name: "",
+      shortName: "",
+      description: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as CourseDTO)
+  );
 }
 
+function omit<T, K extends readonly (keyof T)[]>(
+  obj: T,
+  keys: K
+): Omit<T, K[number]> {
+  const result = { ...obj };
 
+  for (const key of keys) {
+    delete result[key];
+  }
+
+  return result;
+}
 
 export default function Curso({ loaderData }: Route.ComponentProps) {
   const data = loaderData as CourseDTO;
 
   const [course, setCourse] = useState<CourseDTO>(data);
-
+  
   const metadata = {
     createdAt: formatDateTimeLocal(data.createdAt),
     updatedAt: formatDateTimeLocal(data.updatedAt),
@@ -52,22 +74,11 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
   const { setName, setShortName, setDescription } =
     useSettersForObject(setCourse);
 
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-
-  const validate = (c: typeof course) => {
-    const e: Record<string, string> = {};
-    if (!c.name || c.name.trim() === "") e.name = "El nombre es requerido";
-    return e;
-  };
-
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  console.log(errors)
+  
   const save = () => {
     // Lógica para guardar los cambios del curso
-    const e = validate(course);
-    setErrors(e);
-    if (Object.keys(e).length > 0) {
-          toastHelper.warn({ title: "Corrige los errores del formulario" });
-    }
-
     setModal({
       isOpen: true,
       message: "¿Desea guardar los cambios?",
@@ -75,15 +86,24 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
         try {
           const isExisting = course.id !== 0;
           const opPromise = isExisting
-            ? api.patch(course, `/admin/courses/${course.id}`)
-            : api.post(course, "/admin/courses");
+            ? api.patch(course, `/admin/courses/${course.id}`).res()
+            : api.post(course, "/admin/courses").res()
 
+          //             console.log("Error", err as WretchError)
+          // const error = err as ApiError
+
+          // const title = error.type === "already-exists" ? "La carrera ya existe" : "Error al guardar"
+          // const description = error.detail ?? "No se pudieron guardar los cambios."
+
+          // const apiErrors = {}
+          // error.meta?.conflicts.forEach(c => apiErrors[c.field] = c.message);
+          // setErrors(apiErrors)
           toastHelper.info({
             title: isExisting ? "Actualizando carrera" : "Creando carrera",
             description: isExisting
               ? "Actualizando la carrera en el servidor..."
               : "Creando la carrera en el servidor...",
-            promise: opPromise,
+            promise: opPromise.then(),
           });
 
           await opPromise;
@@ -98,16 +118,24 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
           setModal({ ...modal, isOpen: false });
           goBack();
         } catch (err) {
-          console.error(err);
-          const apiErrors = (err as any)?.errors ?? (err as any)?.response?.data?.errors;
-          if (Array.isArray(apiErrors)) {
-            const map: Record<string, string> = {};
-            apiErrors.forEach((it: any) => (map[it.field] = it.message));
-            setErrors(map);
+          const errors = await (err as WretchError).response.json()
+          const apiError = errors as ApiError
+
+          if (apiError.type === "already-exists") {
+            setErrors({
+              name: "La carrera ya existe",
+            })
+
+            toastHelper.error({
+              title: "Conflicto al guardar",
+              description: "La carrera ya existe.",
+            });
+            return
           }
+
           toastHelper.error({
             title: "Error al guardar",
-            description: "Ocurrió un error al guardar la carrera. Intente nuevamente.",
+            description: "No se pudieron guardar los cambios.",
           });
         }
       },
@@ -121,7 +149,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
       message: "¿Está seguro de que desea eliminar este curso?",
       action: async () => {
         try {
-          const opPromise = api.delete(`/admin/courses/${course.id}`);
+          const opPromise = api.delete(`/admin/courses/${course.id}`).res();
 
           toastHelper.info({
             title: "Eliminando carrera",
@@ -136,7 +164,10 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
           goBack();
         } catch (err) {
           console.error(err);
-          toastHelper.error({ title: "Error al eliminar", description: "No se pudo eliminar la carrera." });
+          toastHelper.error({
+            title: "Error al eliminar",
+            description: "No se pudo eliminar la carrera.",
+          });
         }
       },
     });
@@ -152,7 +183,8 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
     <>
       <Modal
         isOpen={modal.isOpen}
-        message={modal.message}
+        title="Confirmar acción"
+        body={modal.message}
         onConfirm={modal.action}
         onCancel={() => {
           setModal({ ...modal, isOpen: false });
@@ -161,38 +193,41 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
       <div className="flex flex-wrap justify-between">
         <div className="grow-7 basis-md">
           <div className="flex flex-col mx-auto p-4 space-y-4">
-            <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
-            <h1 className="text-2xl font-bold">Detalles de la Carrera</h1>
-            <Input
-              isRequired
-              label="Nombre"
-              labelPlacement="outside"
-              placeholder="Ingrese el nombre de la carrera"
-              value={course.name}
-              onValueChange={(v) => {
-                setName(v);
-                setErrors((prev) => ({ ...prev, name: undefined }));
+            <Form
+              id="main-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                save();
               }}
-              isInvalid={!!errors.name}
-              errorMessage={({ validationDetails }) => {
-                if (validationDetails?.valueMissing) return "El nombre es requerido";
-                return errors.name ?? null;
-              }}
-            />
-            <Input
-              label="Nombre Corto"
-              labelPlacement="outside"
-              placeholder="Ingrese nombre corto (sigla)"
-              value={course.shortName ?? ""}
-              onValueChange={setShortName}
-            />
-            <Textarea
-              label="Descripción"
-              labelPlacement="outside"
-              placeholder="Describir la carrera"
-              value={course.description ?? ""}
-              onValueChange={setDescription}
-            />
+              validationErrors={errors as any}
+            >
+              <h1 className="text-2xl font-bold">Detalles de la Carrera</h1>
+              <Input
+                isRequired
+                label="Nombre"
+                labelPlacement="outside"
+                placeholder="Ingrese el nombre de la carrera"
+                value={course.name}
+                name="name"
+                onValueChange={(v) => {
+                  setName(v);
+                  setErrors((prev) => (omit(prev, ["name"])));
+                }}
+              />
+              <Input
+                label="Nombre Corto"
+                labelPlacement="outside"
+                placeholder="Ingrese nombre corto (sigla)"
+                value={course.shortName ?? ""}
+                onValueChange={setShortName}
+              />
+              <Textarea
+                label="Descripción"
+                labelPlacement="outside"
+                placeholder="Describir la carrera"
+                value={course.description ?? ""}
+                onValueChange={setDescription}
+              />
             </Form>
           </div>
         </div>
@@ -213,15 +248,31 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
             )}
             <h2 className="text-xl font-bold">Acciones</h2>
             <div className="flex flex-row flex-wrap gap-4">
-              <Button color="primary" className="px-4 py-2 rounded" onClick={save}>
+              <Button
+                color="primary"
+                className="px-4 py-2"
+                radius="md"
+                form="main-form"
+                type="submit"
+              >
                 {isExistingCourse ? "Guardar Cambios" : "Crear Carrera"}
               </Button>
               {isExistingCourse && (
-                <Button color="danger" className="px-4 py-2 rounded" onClick={del}>
+                <Button
+                  color="danger"
+                  className="px-4 py-2"
+                  radius="md"
+                  onPress={del}
+                >
                   Eliminar Carrera
                 </Button>
               )}
-              <Button color="default" className="px-4 py-2 rounded" onClick={goBack}>
+              <Button
+                color="default"
+                className="px-4 py-2"
+                radius="md"
+                onPress={goBack}
+              >
                 Volver a la Lista de Carreras
               </Button>
             </div>

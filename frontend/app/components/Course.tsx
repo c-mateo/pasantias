@@ -4,6 +4,7 @@ import { Form } from "@heroui/react";
 // import './test.css'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { Button } from "@heroui/button";
 
 export function CargarCurso({ value }: { value?: Course }) {
     const { id, name, tag } = value || {};
@@ -27,7 +28,7 @@ export function CargarCurso({ value }: { value?: Course }) {
         <Form onSubmit={handleSubmit} className="w-full">
             <Field label="Nombre del Curso" type="text" name="name" initialValue={name} required />
             <Field label="Etiqueta del Curso" type="text" name="tag" initialValue={tag} required />
-            <button type="submit">{submitText}</button>
+            <Button type="submit">{submitText}</Button>
         </Form>
     );
 }
@@ -47,8 +48,8 @@ export function CursoList({ courses }: { courses: Course[] }) {
             <div className="row">
                 <h1>Lista de Cursos</h1>
                 <div className="curso-list-actions">
-                    <button className="add-button">Crear curso</button>
-                    <button className="delete-button">Eliminar seleccionados</button>
+                    <Button className="add-button">Crear curso</Button>
+                    <Button className="delete-button">Eliminar seleccionados</Button>
                 </div>
             </div>
             <div className="table">

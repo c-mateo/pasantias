@@ -1,12 +1,14 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/Aplicaciones";
 import { useState } from "react";
+import { Modal } from "~/components/Modal";
 import { Button } from "@heroui/button";
 import { api } from "~/api/api";
+import toast from "~/util/toast";
 import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  const res = await api.get(`/applications/${params.applicationId}`).json();
+  const res = await api.get(`/applications/${(params as any).applicationId}`).json<any>();
   return res.data ?? {};
 }
 
@@ -14,20 +16,32 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
   const data = loaderData as any;
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<'ACCEPTED' | 'REJECTED' | null>(null);
+  const [feedbackInput, setFeedbackInput] = useState('');
 
   const doUpdate = async (status: 'ACCEPTED' | 'REJECTED') => {
-    const feedback = prompt(`Comentario para la decisión (${status}):`, "");
-    if (feedback === null) return;
+    // Open modal to collect feedback instead of using prompt
+    setPendingStatus(status);
+    setFeedbackInput("");
+    setShowFeedbackModal(true);
+  };
+
+  const confirmUpdate = async () => {
+    if (!pendingStatus) return setShowFeedbackModal(false);
     try {
       setIsSaving(true);
-      await api.patch({ status, feedback }, `/applications/${data.id}/status`).res();
-      alert("Estado actualizado");
+      await api.patch({ status: pendingStatus, feedback: feedbackInput }, `/applications/${data.id}/status`).res();
+      toast.success({ title: "Estado actualizado" });
       navigate('/admin/aplicaciones');
     } catch (err) {
       console.error(err);
-      alert('No se pudo actualizar el estado');
+      toast.error({ title: 'Error', message: 'No se pudo actualizar el estado' });
     } finally {
       setIsSaving(false);
+      setShowFeedbackModal(false);
+      setPendingStatus(null);
+      setFeedbackInput("");
     }
   };
 
@@ -50,10 +64,28 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
         </div>
 
         <div className="mt-4 flex gap-3">
-          <Button color="primary" onClick={() => doUpdate('ACCEPTED')} disabled={isSaving}>Aceptar</Button>
-          <Button color="danger" onClick={() => doUpdate('REJECTED')} disabled={isSaving}>Rechazar</Button>
-          <Button color="default" onClick={() => navigate('/admin/aplicaciones')}>Volver</Button>
+          <Button color="primary" onPress={() => doUpdate('ACCEPTED')} disabled={isSaving}>Aceptar</Button>
+          <Button color="danger" onPress={() => doUpdate('REJECTED')} disabled={isSaving}>Rechazar</Button>
+          <Button color="default" onPress={() => navigate('/admin/aplicaciones')}>Volver</Button>
         </div>
+        {showFeedbackModal && (
+          <Modal
+            isOpen={showFeedbackModal}
+            onCancel={() => setShowFeedbackModal(false)}
+            onConfirm={confirmUpdate}
+            message={
+              <div>
+                <div className="font-medium mb-2">Comentario para la decisión ({pendingStatus})</div>
+                <textarea
+                  className="w-full border rounded p-2"
+                  rows={5}
+                  value={feedbackInput}
+                  onChange={(e) => setFeedbackInput(e.target.value)}
+                />
+              </div>
+            }
+          />
+        )}
       </div>
     </div>
   );

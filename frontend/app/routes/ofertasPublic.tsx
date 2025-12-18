@@ -1,5 +1,5 @@
 import type { Route } from "./+types/ofertasPublic";
-import OffersListDemo from "~/components/OffersListDemo";
+import OffersList from "~/components/OffersList";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -11,7 +11,7 @@ export function meta({}: Route.MetaArgs) {
 export default function OfertasPublic() {
   return (
     <main className="min-h-screen bg-gray-50">
-      <OffersListDemo />
+      <OffersList />
     </main>
   );
 }

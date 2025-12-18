@@ -4,7 +4,7 @@ import { Form, Input, Link, addToast } from "@heroui/react";
 import { toast as toastHelper } from "~/util/toast";
 import { api } from "~/api/api";
 import { requireUser } from "~/util/AuthContext";
-import { redirect } from "react-router";
+import { redirect, useNavigate } from "react-router";
 
 export async function clientLoader() {
   const user = await requireUser();
@@ -12,6 +12,7 @@ export async function clientLoader() {
 }
 
 export default function Register() {
+  const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -45,7 +46,7 @@ export default function Register() {
     try {
       const result = await api.post(data, "/auth/register").json();
       console.log(result);
-      window.location.href = "/login";
+      navigate("/login");
     } catch (err) {
       console.error(err);
       const apiErrors = (err as any)?.errors ?? (err as any)?.response?.data?.errors;

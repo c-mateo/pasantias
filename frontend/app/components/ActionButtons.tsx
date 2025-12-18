@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "@heroui/button";
+import { useNavigate } from "react-router";
 
 type Props = {
   onEdit?: () => void;
@@ -8,9 +9,12 @@ type Props = {
 };
 
 export default function ActionButtons({ onEdit, onDelete, editHref }: Props) {
+  const navigate = useNavigate();
+
   const handleEdit = () => {
     if (editHref) {
-      window.location.href = editHref;
+      // use react-router navigation to avoid full page reloads
+      navigate(editHref);
     } else if (onEdit) onEdit();
   };
 
@@ -21,7 +25,8 @@ export default function ActionButtons({ onEdit, onDelete, editHref }: Props) {
         aria-label="Editar"
         onPress={handleEdit}
         color="default"
-        className="inline-flex items-center justify-center w-8 h-8 rounded-full"
+        className="inline-flex items-center justify-center w-8 h-8"
+        radius="full"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-600">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.313l-4 1 1-4L16.862 3.487z" />
@@ -33,7 +38,8 @@ export default function ActionButtons({ onEdit, onDelete, editHref }: Props) {
         aria-label="Eliminar"
         onPress={onDelete}
         color="danger"
-        className="inline-flex items-center justify-center w-8 h-8 rounded-full"
+        className="inline-flex items-center justify-center w-8 h-8"
+        radius="full"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18" />

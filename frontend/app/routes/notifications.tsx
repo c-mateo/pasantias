@@ -4,6 +4,7 @@ import { api } from "~/api/api";
 import type { NotificationsListResponse, NotificationDTO } from "~/api/types";
 import { useIntersectionObserver } from "~/hooks/useIntersectionObserver";
 import toast from "~/util/toast";
+import { Button } from "@heroui/button";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const res = await api
@@ -106,19 +107,9 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
               </div>
               <div className="flex flex-col items-end gap-2">
                 {!n.readAt && (
-                  <button
-                    className="text-sm text-blue-600"
-                    onClick={() => markAsRead(n.id)}
-                  >
-                    Marcar leída
-                  </button>
+                  <Button className="text-sm text-blue-600" onPress={() => markAsRead(n.id)} color="default" size="sm">Marcar leída</Button>
                 )}
-                <button
-                  className="text-sm text-red-600"
-                  onClick={() => remove(n.id)}
-                >
-                  Eliminar
-                </button>
+                <Button className="text-sm text-red-600" onPress={() => remove(n.id)} color="default" size="sm">Eliminar</Button>
               </div>
             </li>
           ))}

@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import AdminList from "~/components/AdminList";
+import React, { useEffect, useState } from "react";
 import { api } from "~/api/api";
-import { Link } from "@heroui/react";
+import { Link, TableCell } from "@heroui/react";
 import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
+import AdminList2 from "~/components/AdminList2";
+import type { ApplicationUserListResponse } from "~/api/types";
 
 export default function Aplicaciones() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -11,9 +12,10 @@ export default function Aplicaciones() {
   useEffect(() => {
     (async () => {
       try {
+        // TODO: use right type
         const res = await api.get("/admin/applications?limit=20").json();
-        const data = (res as any)?.data ?? [];
-        setApplications(data);
+        
+        setApplications(res?.data ?? []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -22,33 +24,59 @@ export default function Aplicaciones() {
     })();
   }, []);
 
+  /*
+  // Search/sort (commented out — kept for future use)
+  const [sort, setSort] = useState<string | undefined>(undefined);
+  */
   const deleteApplication = (id: number) => setApplications((prev) => prev.filter((a) => a.id !== id));
   const deleteApplications = (ids: number[]) => setApplications((prev) => prev.filter((a) => !ids.includes(a.id)));
+  /*
+  // Search & sort helpers (commented out — kept for future use)
+  const searchApplications = async () => {
+    setLoading(true);
+    try {
+      const qs = [`limit=20`];
+      if (sort) qs.push(`sort=${encodeURIComponent(sort)}`);
+      const res = await api.get(`/admin/applications?${qs.join('&')}`).res();
+      const json = await res.json();
+      setApplications(json?.data ?? []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cycleSort = (field: string) => {
+    if (sort === field) setSort(`-${field}`);
+    else if (sort === `-${field}`) setSort(undefined);
+    else setSort(field);
+    // searchApplications();
+  };
+  */
+  // AdminList2 will handle selection/confirmations
 
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
-      <AdminList<any>
-        headers={[{ label: 'Candidato' }, { label: 'Oferta' }, { label: 'Estado' }]}
+      <AdminList2
+        title="Administrar Aplicaciones"
+        columns={[
+          { name: "candidate", label: "Candidato" },
+          { name: "offer", label: "Oferta", renderer: (v) => v?.position ?? 'N/A' },
+          { name: "status", label: "Estado", alignment: "center", renderer: (v) => (
+            <div className="flex items-center gap-2 justify-center">
+              <ApplicationStatusBadge status={v} />
+            </div>
+          )},
+        ]}
         items={applications}
         loading={loading}
-        sentinelRef={undefined}
-        title="Administrar Aplicaciones"
-        getId={(a) => a.id}
-        getName={(a) => `${a.offer?.position} - ${a.offer?.company?.name}`}
+        hasMore={false}
+        getId={(r) => r.id}
+        getName={(r) => r.candidate?.name ?? r.user?.name ?? 'N/A'}
         onDeleteItem={(id) => deleteApplication(id)}
         onDeleteSelected={(ids) => deleteApplications(ids)}
-        renderCells={(application) => (
-          <>
-            <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-300 align-middle">{application.offer?.position}</td>
-            <td className="px-4 py-2 text-sm text-gray-500 border-b border-gray-300 align-middle">{application.offer?.company?.name}</td>
-            <td className="px-4 py-2 border-b border-gray-300 text-center align-middle">
-              <div className="flex items-center gap-2 justify-center">
-                <ApplicationStatusBadge status={application.status} />
-                <Link href={`/admin/aplicaciones/${application.id}`} className="text-sm text-blue-600">Ver</Link>
-              </div>
-            </td>
-          </>
-        )}
+        createHref="/admin/aplicaciones/nuevo"
       />
     </div>
   );

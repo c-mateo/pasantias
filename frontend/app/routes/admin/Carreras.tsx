@@ -6,6 +6,7 @@ import type { Route } from "./+types/Carreras";
 import { formatDateTimeLocal } from "~/util/helpers";
 import { api } from "~/api/api";
 import type { AdminCourseListResponse } from "~/api/types";
+import AdminList2 from "~/components/AdminList2";
 
 // Public view of a course
 export type PublicCourse = {
@@ -29,33 +30,30 @@ export async function clientLoader(data: Route.ClientLoaderArgs) {
   // const user = await requireUser();
   // if (user?.role !== "ADMIN") return null;
 
-  const res = await api
-    .get("/courses?limit=10")
-    .json<AdminCourseListResponse>();
+  const res = await api.get("/courses?limit=10").res();
+  const json = await res.json();
   return {
-    initialData: res?.data ?? [],
-    pagination: res?.pagination ?? { next: null, prev: null },
+    initialData: json?.data ?? [],
+    pagination: json?.pagination ?? { next: null, prev: null },
   };
 }
 
 export default function Cursos({ loaderData }: Route.ComponentProps) {
   const { initialData, pagination } = loaderData;
 
-  const [courses, setCourses] = useState(initialData || []);
+  const [courses, setCourses] = useState<AdminCourse[]>(initialData || []);
   const [page, setPage] = useState(pagination.next);
   const [loading, setLoading] = useState(false);
-  // selection & modal handled by AdminList now
-
-  const sentinelRef = useRef<HTMLTableRowElement>(null);
 
   const loadMore = async () => {
     if (!page || loading) return;
     setLoading(true);
     try {
-      const res = await api.get(`/courses?limit=10&after=${page}`).json<AdminCourseListResponse>();
-      const next = res?.data ?? [];
+      const res = await api.get(`/courses?limit=10&after=${page}`).res();
+      const json = await res.json();
+      const next = json?.data ?? [];
       setCourses((prev) => [...prev, ...next]);
-      setPage(res?.pagination?.next ?? null);
+      setPage(json?.pagination?.next ?? null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -63,23 +61,7 @@ export default function Cursos({ loaderData }: Route.ComponentProps) {
     }
   };
 
-  useIntersectionObserver(sentinelRef, loadMore);
-
-  useEffect(() => {
-    if (!page) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !loading) {
-        loadMore();
-      }
-    });
-
-    if (sentinelRef.current) {
-      observer.observe(sentinelRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [page, loading, loadMore]);
+  const hasMore = page !== null;
 
   const deleteCourse = (courseId: number) =>
     setCourses((prev) => prev.filter((c) => c.id !== courseId));
@@ -88,28 +70,20 @@ export default function Cursos({ loaderData }: Route.ComponentProps) {
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
       {/* AdminList shows title and create button */}
-      <AdminList
-        headers={[
-          { label: "Nombre" },
+      <AdminList2
+        columns={[
+          { name: "name", label: "Nombre", sortable: true },
           {
+            name: "shortName",
             label: "Sigla",
-            className:
-              "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300",
-          },
-          {
-            label: "Creado",
-            className:
-              "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300",
-          },
-          {
-            label: "Actualizado",
-            className:
-              "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300",
-          },
+            alignment: "center",
+            renderer: (item) => item || "N/A",
+          }
         ]}
         items={courses}
         loading={loading}
-        sentinelRef={sentinelRef}
+        hasMore={hasMore}
+        loadMore={loadMore}
         getId={(c) => c.id}
         getName={(c) => c.name}
         // Use AdminList renderCells to display each column cell

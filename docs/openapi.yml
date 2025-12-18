@@ -1,0 +1,186 @@
+openapi: 3.0.3
+info:
+  title: Pasantias API (initial)
+  version: 0.1.0
+  description: |
+    Initial OpenAPI specification covering the most-used public and admin endpoints.
+    This file was generated from existing controllers and documentation; treat it as a living
+    document — extend with more endpoints and schemas as the backend evolves.
+servers:
+  - url: /api
+paths:
+  /offers:
+    get:
+      summary: List offers (cursor pagination)
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: after
+          schema:
+            type: integer
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+        - in: query
+          name: courses
+          schema:
+            type: string
+        - in: query
+          name: companyId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated list of offers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferListResponse'
+  /offers/{id}:
+    get:
+      summary: Offer details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Offer detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferDetailsResponse'
+  /companies:
+    get:
+      summary: List companies (admin/public)
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: after
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated list of companies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyListResponse'
+  /admin/users:
+    get:
+      summary: Admin — list users (cursor pagination)
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: after
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+components:
+  schemas:
+    CursorPagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+        hasNext:
+          type: boolean
+        next:
+          type: integer
+          nullable: true
+    OfferDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        position:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+        vacancies:
+          type: integer
+        publishedAt:
+          type: string
+          nullable: true
+    OfferListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferDTO'
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'
+    OfferDetailsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+            position:
+              type: string
+            company:
+              type: object
+              properties:
+                id: { type: integer }
+                name: { type: string }
+    CompanyDTO:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        website: { type: string, nullable: true }
+    CompanyListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyDTO'
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'
+    UserDTO:
+      type: object
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string }
+        role: { type: string }
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserDTO'
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'

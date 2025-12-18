@@ -1,13 +1,78 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@heroui/button";
-import { Form, Input } from "@heroui/react";
+import { Form, Input, type InputProps } from "@heroui/react";
 import { api } from "~/api/api";
+import toast from "~/util/toast";
 import { requireUser, checkSession } from "~/util/AuthContext";
 import { redirect } from "react-router";
 
 export async function clientLoader() {
   const user = await requireUser();
   if (!user) throw redirect("/login");
+}
+
+type CuilProps = Omit<InputProps, 'value' | 'onValueChange'> & {
+  value: string;
+  onValueChange: (value: string) => void;
+};
+
+function Cuil({value, onValueChange: setValue, ...props}: CuilProps) {
+  const ref = useRef<HTMLInputElement>(null);
+  const cursorDigitsRef = useRef<number | null>(null);
+
+  const formatCuil = (val: string) => {
+    let digits = val.replace(/\D/g, '');
+    if (digits.length > 11) digits = digits.slice(0, 11);
+
+    let formatted = '';
+    if (digits.length > 0) formatted += digits.slice(0, 2);
+    if (digits.length >= 3) formatted += '-' + digits.slice(2, 10);
+    if (digits.length === 11) formatted += '-' + digits.slice(10, 11);
+
+    return formatted;
+  };
+
+  const onValueChange = (val: string) => {
+    const input = ref.current;
+    if (!input) return;
+
+    const cursorPos = input.selectionStart ?? 0;
+
+    // Cuántos dígitos hay antes del cursor
+    cursorDigitsRef.current = val
+      .slice(0, cursorPos)
+      .replace(/\D/g, '').length;
+
+    // Formatear
+    setValue(formatCuil(val));
+  };
+
+  // Restaurar cursor después del render
+  useEffect(() => {
+    if (!ref.current || cursorDigitsRef.current == null) return;
+
+    const digitsToFind = cursorDigitsRef.current;
+    let pos = 0;
+    let digitsSeen = 0;
+
+    while (pos < value.length && digitsSeen < digitsToFind) {
+      if (/\d/.test(value[pos])) digitsSeen++;
+      pos++;
+    }
+
+    ref.current.setSelectionRange(pos, pos);
+    cursorDigitsRef.current = null;
+  }, [value]);
+
+  return (
+    <Input
+      {...props}
+      ref={ref}
+      value={value}
+      onValueChange={onValueChange}
+      inputMode="numeric"
+    />
+  );
 }
 
 export default function ProfilePage() {
@@ -67,7 +132,7 @@ export default function ProfilePage() {
 
       await api.patch(payload, "/profile").json();
       await checkSession();
-      alert("Perfil actualizado");
+      toast.success({ title: "Perfil actualizado" });
       // If we set cuil, reflect it locally
       if (payload.cuil) {
         setCuil(payload.cuil);
@@ -75,7 +140,7 @@ export default function ProfilePage() {
       }
     } catch (err) {
       console.error(err);
-      alert("No se pudo guardar el perfil (intente nuevamente más tarde)");
+      toast.error({ title: "Error", message: "No se pudo guardar el perfil (intente nuevamente más tarde)" });
     }
   };
 
@@ -163,30 +228,36 @@ export default function ProfilePage() {
               ) : (
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
-                    <Input id="cuil-input" label="Establecer CUIL" value={cuilInput} onValueChange={setCuilInput} placeholder="XX-XXXXXXXX-X" />
-                    <div className="text-sm text-gray-500 mt-2">El CUIL se puede establecer solo una vez.</div>
-                  </div>
-                  <div className="mt-6">
-                    <Button
-                      onClick={async () => {
-                        const val = cuilInput?.trim();
-                        if (!val) return alert("Ingrese un CUIL");
-                        try {
-                          await api.patch({ cuil: val }, "/profile").json();
-                          setCuil(val);
-                          setCuilInput("");
-                          await checkSession();
-                          alert("CUIL establecido");
-                        } catch (err) {
-                          console.error(err);
-                          alert("No se pudo establecer el CUIL");
-                        }
-                      }}
-                      color="primary"
-                      disabled={!cuilInput}
-                    >
-                      Establecer
-                    </Button>
+                    <Cuil
+                      id="cuil-input"
+                      label="Establecer CUIL"
+                      value={cuilInput}
+                      onValueChange={setCuilInput}
+                      placeholder="XX-XXXXXXXX-X"
+                      description="El CUIL se puede establecer solo una vez."
+                    />
+                    <div className="mt-3">
+                      <Button
+                        onPress={async () => {
+                          const val = cuilInput?.trim();
+                          if (!val) return toast.warn({ title: "Ingrese un CUIL" });
+                          try {
+                            await api.patch({ cuil: val }, "/profile").json();
+                            setCuil(val);
+                            setCuilInput("");
+                            await checkSession();
+                            toast.success({ title: "CUIL establecido" });
+                          } catch (err) {
+                            console.error(err);
+                            toast.error({ title: "Error", message: "No se pudo establecer el CUIL" });
+                          }
+                        }}
+                        color="primary"
+                        disabled={!cuilInput}
+                      >
+                        Establecer
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -200,7 +271,7 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-700 mb-3">Correo actual: <strong>{email}</strong></div>
               <Input label="Nuevo correo" value={newEmail} onValueChange={setNewEmail} />
               <div className="flex items-center gap-3 mt-3">
-                <Button onClick={() => handleChangeEmail()} color="primary" disabled={isEmailSaving}>{isEmailSaving ? 'Guardando...' : 'Guardar'}</Button>
+                    <Button onPress={() => handleChangeEmail()} color="primary" disabled={isEmailSaving}>{isEmailSaving ? 'Guardando...' : 'Guardar'}</Button>
               </div>
               {emailMessage && <div className="text-sm mt-2 text-gray-700">{emailMessage}</div>}
             </div>
@@ -208,13 +279,20 @@ export default function ProfilePage() {
             <div className="bg-white p-4 rounded shadow">
               <h3 className="font-semibold mb-2">Cambiar contraseña</h3>
               <Input type="password" label="Contraseña actual" value={currentPassword} onValueChange={setCurrentPassword} />
-              <Input type="password" label="Nueva contraseña" value={newPassword} onValueChange={setNewPassword} className="mt-2" />
+              <Input
+                type="password"
+                label="Nueva contraseña"
+                value={newPassword}
+                onValueChange={setNewPassword}
+                className="mt-2"
+                description="La contraseña se gestiona desde el backend."
+              />
               <Input type="password" label="Confirmar nueva contraseña" value={confirmPassword} onValueChange={setConfirmPassword} className="mt-2" />
               <div className="flex items-center gap-3 mt-3">
-                <Button onClick={() => handleChangePassword()} color="primary" disabled={isPasswordSaving}>{isPasswordSaving ? 'Guardando...' : 'Guardar'}</Button>
+                <Button onPress={() => handleChangePassword()} color="primary" disabled={isPasswordSaving}>{isPasswordSaving ? 'Guardando...' : 'Guardar'}</Button>
               </div>
               {passwordMessage && <div className="text-sm mt-2 text-gray-700">{passwordMessage}</div>}
-              <div className="text-xs text-gray-500 mt-2">La contraseña se gestiona desde el backend.</div>
+
             </div>
           </aside>
         </div>

@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { requireUser } from "~/util/AuthContext";
 import { redirect } from "react-router";
 import { api } from "~/api/api";
+import toast from "~/util/toast";
+import { Modal } from "~/components/Modal";
 import { Link } from "@heroui/react";
+import { Button } from "@heroui/button";
 
 export async function clientLoader() {
   const user = await requireUser();
@@ -63,13 +66,26 @@ export default function MyApplications() {
   }, [])
 
   const removeDraft = async (offerId: number) => {
-    if (!confirm("Eliminar borrador?")) return;
+    // Open modal to confirm deletion
+    setPendingDraftId(offerId);
+    setShowDeleteDraftModal(true);
+  };
+
+  const [showDeleteDraftModal, setShowDeleteDraftModal] = useState(false);
+  const [pendingDraftId, setPendingDraftId] = useState<number | null>(null);
+
+  const confirmDeleteDraft = async () => {
+    if (!pendingDraftId) return setShowDeleteDraftModal(false);
     try {
-      await api.delete(`/offers/${offerId}/draft`).res();
-      setDrafts((prev) => prev.filter((p) => p.offer.id !== offerId));
+      await api.delete(`/offers/${pendingDraftId}/draft`).res();
+      setDrafts((prev) => prev.filter((p) => p.offer.id !== pendingDraftId));
+      toast.success({ title: 'Eliminado', message: 'Borrador eliminado' });
     } catch (err) {
       console.error(err);
-      alert("No se pudo eliminar el borrador");
+      toast.error({ title: 'Error', message: 'No se pudo eliminar el borrador' });
+    } finally {
+      setShowDeleteDraftModal(false);
+      setPendingDraftId(null);
     }
   };
 
@@ -101,7 +117,7 @@ export default function MyApplications() {
         <h1 className="text-2xl font-bold">Mis solicitudes</h1>
         {!isDemo && (
           <div>
-            <button className="text-sm text-blue-600" onClick={restoreDemo}>Mostrar datos de ejemplo</button>
+            <Button className="text-sm text-blue-600" onPress={restoreDemo} color="default" size="sm">Mostrar datos de ejemplo</Button>
           </div>
         )}
       </div>
@@ -110,7 +126,7 @@ export default function MyApplications() {
         <div className="mb-4 flex items-center justify-between gap-4 p-3 rounded bg-yellow-50 border-l-4 border-yellow-300 text-yellow-800">
           <div>Mostrando datos de ejemplo para previsualización.</div>
           <div>
-            <button className="text-sm text-red-600" onClick={clearDemo}>Limpiar demo</button>
+            <Button className="text-sm text-red-600" onPress={clearDemo} color="default" size="sm">Limpiar demo</Button>
           </div>
         </div>
       )}
@@ -119,7 +135,7 @@ export default function MyApplications() {
         <div className="mb-4 flex items-center justify-between gap-4 p-3 rounded bg-gray-50 border-l-4 border-gray-200 text-gray-700">
           <div>Datos de ejemplo ocultos.</div>
           <div>
-            <button className="text-sm text-blue-600" onClick={restoreDemo}>Restaurar demo</button>
+            <Button className="text-sm text-blue-600" onPress={restoreDemo} color="default" size="sm">Restaurar demo</Button>
           </div>
         </div>
       )}
@@ -164,13 +180,21 @@ export default function MyApplications() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Link href={`/ofertas/${d.offer.id}`}>Continuar</Link>
-                  <button className="text-red-600" onClick={() => removeDraft(d.offer.id)}>Eliminar</button>
+                  <Button className="text-red-600" onPress={() => removeDraft(d.offer.id)} color="default" size="sm">Eliminar</Button>
                 </div>
               </li>
             ))}
           </ul>
         )}
       </section>
+      {showDeleteDraftModal && (
+        <Modal
+          isOpen={showDeleteDraftModal}
+          onCancel={() => setShowDeleteDraftModal(false)}
+          onConfirm={confirmDeleteDraft}
+          message={<div>Eliminar borrador?</div>}
+        />
+      )}
     </div>
   );
 }

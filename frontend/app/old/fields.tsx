@@ -1,6 +1,9 @@
 
 // function TextField(data: { initialValue: string, inlineEdit: boolean, onSave?: (newValue: string) => void }) {
 
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@heroui/button";
+
 interface FieldAdapterChange extends React.SyntheticEvent {
   target: EventTarget & {
     value: string;
@@ -108,19 +111,7 @@ function Field<T>({
 
   const onDoubleClick = () => {
     setEditing(true);
-  };
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [editing]);
-
-  const optionStyles = editing ? "" : "hidden";
-  const styles = editing
-    ? "outline-blue-500"
-    : "border-transparent outline-none";
-
+  }
   return (
     <td className="px-4 py-1 text-sm text-gray-600 relative">
       <Element
@@ -137,19 +128,25 @@ function Field<T>({
       <div
         className={`absolute top-1 -right-2 text-xs text-gray-400 select-none flex flex-col gap-1 ${optionStyles}`}
       >
-        <button
-          className="size-5 border-1 border-gray-400 rounded flex justify-center items-center hover:cursor-pointer"
-          onClick={cancel}
+        <Button
+          className="size-5 border-1 border-gray-400 flex justify-center items-center hover:cursor-pointer"
+          onPress={cancel}
+          color="default"
+          size="sm"
+          radius="full"
         >
           ✖
-        </button>
-        <button
-          className="size-5 border-1 border-gray-400 rounded flex justify-center items-center hover:cursor-pointer"
-          onClick={confirm}
-          ref={confirmRef}
+        </Button>
+        <Button
+          className="size-5 border-1 border-gray-400 flex justify-center items-center hover:cursor-pointer"
+          onPress={confirm}
+          color="primary"
+          size="sm"
+          radius="full"
+          ref={confirmRef as any}
         >
           ✔
-        </button>
+        </Button>
       </div>
     </td>
   );

@@ -87,7 +87,7 @@ export default class ApplicationController {
   }
 
   async get({ request, auth }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     const extraWhere = auth.user?.role === 'ADMIN' ? {} : { userId: auth.user?.id }
 
@@ -166,7 +166,7 @@ export default class ApplicationController {
   }
 
   async delete({ request, auth }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     const application = await prisma.application.findUniqueOrThrow({
       where: {

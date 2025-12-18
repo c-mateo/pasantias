@@ -1,4 +1,5 @@
 import wretch from "wretch";
+import AbortAddon from "wretch/addons/abort"
 import { logout, useAuthState } from "~/util/AuthContext";
 
 

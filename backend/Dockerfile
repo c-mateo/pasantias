@@ -1,22 +1,29 @@
-FROM node:22-alpine
+FROM node:22.16.0-alpine3.22 AS base
 
-# Instala bash (Adonis CLI necesita a veces sh/bash)
-RUN apk add --no-cache bash
-
-# Directorio de trabajo
+# All deps stage
+FROM base AS deps
 WORKDIR /app
+ADD package.json package-lock.json ./
+RUN npm ci
 
-# Copia solo las definiciones de dependencias
-COPY package*.json ./
+# Production only deps stage
+FROM base AS production-deps
+WORKDIR /app
+ADD package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# Instala dependencias
-RUN npm install
+# Build stage
+FROM base AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules /app/node_modules
+ADD . .
+RUN node ace build
 
-# Copia todo el backend
-COPY . .
-
-# Expone el puerto de Adonis
-EXPOSE 3333
-
-# Habilita hot reload del backend
-CMD ["npm", "run", "dev" ]
+# Production stage
+FROM base
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=production-deps /app/node_modules /app/node_modules
+COPY --from=build /app/build /app
+EXPOSE 8080
+CMD ["node", "./bin/server.js"]

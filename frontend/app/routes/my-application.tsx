@@ -1,27 +1,36 @@
 import { useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/applications";
 import { api } from "~/api/api";
+import { useState } from "react";
+import toast from "~/util/toast";
+import { Modal } from "~/components/Modal";
 import { Button } from "@heroui/button";
 import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  const res = await api.get(`/my-applications/${params.applicationId}`).json();
+  const res = await api.get(`/my-applications/${(params as any).applicationId}`).json<any>();
   return res.data ?? {};
 }
 
 export default function MyApplication({ loaderData }: Route.ComponentProps) {
   const data = loaderData as any;
   const navigate = useNavigate();
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handleCancel = async () => {
-    if (!confirm('Cancelar esta postulación?')) return;
+    setShowCancelModal(true);
+  };
+
+  const confirmCancel = async () => {
     try {
       await api.delete(`/my-applications/${data.id}`).res();
-      alert('Postulación cancelada');
+      toast.success({ title: 'Postulación cancelada' });
       navigate('/applications');
     } catch (err) {
       console.error(err);
-      alert('No se pudo cancelar la postulación');
+      toast.error({ title: 'Error', message: 'No se pudo cancelar la postulación' });
+    } finally {
+      setShowCancelModal(false);
     }
   };
 
@@ -45,15 +54,23 @@ export default function MyApplication({ loaderData }: Route.ComponentProps) {
 
         <div className="mt-4 flex gap-3">
           {(data.status === 'PENDING' || data.status === 'BLOCKED') && (
-            <Button color="danger" onClick={handleCancel}>Cancelar</Button>
+            <Button color="danger" onPress={handleCancel}>Cancelar</Button>
           )}
 
           {data.status === 'CANCELLED' && (
-            <Button color="primary" onClick={() => navigate(`/ofertas/${data.offer.id}`)}>Reaplicar</Button>
+            <Button color="primary" onPress={() => navigate(`/ofertas/${data.offer.id}`)}>Reaplicar</Button>
           )}
 
-          <Button color="default" onClick={() => navigate('/applications')}>Volver</Button>
+          <Button color="default" onPress={() => navigate('/applications')}>Volver</Button>
         </div>
+        {showCancelModal && (
+          <Modal
+            isOpen={showCancelModal}
+            onCancel={() => setShowCancelModal(false)}
+            onConfirm={confirmCancel}
+            message={<div>¿Cancelar esta postulación?</div>}
+          />
+        )}
       </div>
     </div>
   );

@@ -16,6 +16,10 @@ function compileSchema(sortEnum?: any) {
       .any()
       .optional()
       .transform((v: any) => String(v)),
+    q: vine
+      .any()
+      .optional()
+      .transform((v: any) => String(v)),
   }
 
   if (sortEnum) {

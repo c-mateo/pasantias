@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import AdminList from "~/components/AdminList"; 
-import { Button } from "@heroui/button";
+import React, { useCallback, useEffect, useState } from "react";
+import OffersFilters from "~/components/OffersFilters";
+import AdminList2 from "~/components/AdminList2";
 import type { Route } from "./+types/Ofertas";
 import type { HTMLInputTypeAttribute } from "react";
 // Modal handled by AdminList now
@@ -9,10 +9,11 @@ import { api } from "~/api/api";
 import type { OfferListResponse, OfferListDTO } from "~/api/types";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  const res = await api.get("/offers?limit=10").json<OfferListResponse>();
+  const res = await api.get("/offers?limit=10").res();
+  const json = await res.json();
   return {
-    initialData: res?.data ?? [],
-    pagination: res?.pagination ?? { next: null, prev: null },
+    initialData: json?.data ?? [],
+    pagination: json?.pagination ?? { next: null, prev: null },
   };
 }
 
@@ -35,10 +36,34 @@ function useIntersectionObserver<T extends HTMLElement>(
 export default function Ofertas({ loaderData }: Route.ComponentProps) {
   const { initialData, pagination } = loaderData;
   const [offers, setOffers] = useState<OfferListDTO[]>(initialData || []);
+  /*
+  // Search/filter state (commented out — kept for future use)
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState<string | undefined>(undefined);
+  */
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+
+  /*
+  // toggle sort cycle: undefined -> asc -> desc -> undefined (commented out)
+  const cycleSort = (field: string) => {
+    if (sort === field) {
+      setSort(`-${field}`);
+      searchOffers();
+    } else if (sort === `-${field}`) {
+      setSort(undefined);
+      searchOffers();
+    } else {
+      setSort(field);
+      searchOffers();
+    }
+  };
+  */
+  const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
+  const [selectedCourses, setSelectedCourses] = useState<number[]>([]);
   const [page, setPage] = useState(pagination.next);
   const [loading, setLoading] = useState(false);
-  // selection & modal handled by AdminList now
-  const sentinelRef = useRef<HTMLTableRowElement | null>(null);
+  // AdminList2 handles selection & modal internally
   const navigate = useNavigate();
 
   // AdminList manages header checkbox state and selection
@@ -49,10 +74,13 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     if (!page || loading) return;
     setLoading(true);
     try {
-      const res = await api.get(`/offers?limit=10&after=${page}`).json<OfferListResponse>();
-      const next = res?.data ?? [];
+      // Load more (no filters applied by default in admin list)
+      const qs: string[] = [`limit=10`, `after=${page}`];
+      const res = await api.get(`/offers?${qs.join('&')}`).res();
+      const json = await res.json();
+      const next = json?.data ?? [];
       setOffers((prev: OfferListDTO[]) => [...prev, ...next]);
-      setPage(res?.pagination?.next ?? null);
+      setPage(json?.pagination?.next ?? null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -60,52 +88,93 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
     }
   }, [page, loading]);
 
-  useIntersectionObserver(sentinelRef, loadMore);
+  // AdminList2 handles infinite scroll internally via loadMore/hasMore
 
   useEffect(() => {
-    if (!page) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !loading) loadMore();
-    });
-    if (sentinelRef.current) observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [page, loading, loadMore]);
+    (async () => {
+      try {
+        const compsRes = await api.get('/companies?limit=200').res();
+        const compsJson = await compsRes.json();
+        setCompanies(compsJson?.data ?? []);
+      } catch (err) {}
+      try {
+        const csRes = await api.get('/courses?limit=200').res();
+        const csJson = await csRes.json();
+        setCourses(csJson?.data ?? []);
+      } catch (err) {}
+    })();
+  }, []);
+
+  /*
+  // Search helper (commented out — kept for future use)
+  const searchOffers = async () => {
+    setLoading(true);
+    try {
+      const qs: string[] = [`limit=10`];
+      if (q) qs.push(`q=${encodeURIComponent(q)}`);
+      if (sort) qs.push(`sort=${encodeURIComponent(sort)}`);
+      if (selectedCompany) qs.push(`companyId=${selectedCompany}`);
+      if (selectedCourses?.length) qs.push(`courses=${selectedCourses.join(',')}`);
+      const res = await api.get(`/offers?${qs.join('&')}`).res();
+      const json = await res.json();
+      setOffers(json?.data ?? []);
+      setPage(json?.pagination?.next ?? null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  */
 
   const deleteOffer = (id: number) => setOffers((prev: OfferListDTO[]) => prev.filter((o) => o.id !== id));
-  const deleteOffers = (ids: number[]) => setOffers((prev: OfferListDTO[]) => prev.filter((o) => !ids.includes(o.id)));
+  const deleteOffers = (ids: number[]) => setOffers((prev) => prev.filter((o) => !ids.includes(o.id)));
+
+
 
   // AdminList will show delete confirmation modals
 
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
-      {/* AdminList handles its confirmation modals */}
-      {/* AdminList shows title and create button */}
-      <AdminList<OfferListDTO>
-        headers={[
-          { label: 'Puesto' },
-          { label: "Puesto" },
-          { label: "Empresa", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },
-          { label: "Vacantes", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },
-          { label: "Fecha Límite", className: "px-4 py-3 text-center text-sm font-medium text-gray-900 border-b border-gray-300" },
-        ]}
-          items={offers}
-        loading={loading}
-        sentinelRef={sentinelRef}
-          getId={(o) => o.id}
-          getName={(o) => o.position}
-            renderCells={(offer) => (
-            <>
-              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300">{offer.position}</td>
-              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">{offer.company?.name ?? "N/A"}</td>
-              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">{offer.vacancies ?? "N/A"}</td>
-              <td className="px-4 py-2 text-sm text-gray-600 border-b border-gray-300 text-center">{offer.expiresAt ? new Date(offer.expiresAt).toLocaleDateString() : "N/A"}</td>
-            </>
-          )}
-          onDeleteItem={(id) => deleteOffer(id)}
-          onDeleteSelected={(ids) => deleteOffers(ids)}
-          title="Administrar Ofertas"
-          createHref="/admin/ofertas/nuevo"
+      {/* Search & filters (commented out) */}
+      {/**
+      <OffersFilters
+        q={q}
+        setQ={setQ}
+        sort={sort ?? "-publishedAt"}
+        setSort={(s) => setSort(s)}
+        companies={companies}
+        courses={courses}
+        selectedCompany={selectedCompany}
+        setSelectedCompany={(id) => setSelectedCompany(id ?? null)}
+        selectedCourses={selectedCourses}
+        setSelectedCourses={setSelectedCourses}
+        remoteOnly={false}
+        setRemoteOnly={() => {}}
+        onSearch={searchOffers}
+        className="w-full"
       />
+      */}
+
+      <AdminList2
+        title="Administrar Ofertas"
+        columns={[
+          { name: "position", label: "Puesto" },
+          { name: "company", label: "Empresa", alignment: "center", renderer: (v) => v?.name ?? "N/A" },
+          { name: "vacancies", label: "Vacantes", alignment: "center" },
+          { name: "expiresAt", label: "Fecha Límite", alignment: "center", renderer: (v) => (v ? new Date(v).toLocaleDateString() : "N/A") },
+        ]}
+        items={offers}
+        loading={loading}
+        hasMore={page !== null}
+        loadMore={loadMore}
+        getId={(o) => o.id}
+        getName={(o) => o.position}
+        onDeleteItem={(id) => deleteOffer(id)}
+        onDeleteSelected={(ids) => deleteOffers(ids)}
+        createHref="/admin/ofertas/nuevo"
+      />
+
     </div>
   );
 }

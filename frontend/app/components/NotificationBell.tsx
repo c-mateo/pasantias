@@ -3,6 +3,8 @@ import { api } from '~/api/api';
 import type { NotificationsListResponse, NotificationDTO } from '~/api/types';
 import { useNavigate } from 'react-router';
 import toast from '~/util/toast';
+import { useAuthState } from '~/util/AuthContext';
+import { Button } from "@heroui/button";
 
 export default function NotificationBell() {
   const [items, setItems] = useState<NotificationDTO[]>([]);
@@ -11,10 +13,14 @@ export default function NotificationBell() {
   const ref = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
+  const auth = useAuthState();
+  if (!auth.user) return null;
+
   useEffect(() => {
+
     const load = async () => {
       try {
-        const res = await api.get('/notifications?limit=5').json<NotificationsListResponse>();
+        const res = await api.get('/notifications?limit=10').json<NotificationsListResponse>();
         setItems(res?.data ?? []);
         setUnread((res?.data ?? []).filter((n) => !n.readAt).length);
       } catch (err) {
@@ -23,7 +29,7 @@ export default function NotificationBell() {
     };
 
     load();
-  }, []);
+  }, [auth.user]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -48,21 +54,21 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <button className="relative p-2 rounded-full hover:bg-gray-100" onClick={() => setOpen((s) => !s)} aria-label="Notificaciones">
+      <Button className="relative p-2 hover:bg-gray-100" onPress={() => setOpen((s) => !s)} aria-label="Notificaciones" color="default" size="sm" radius="full">
         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">{unread}</span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 shadow-lg rounded z-50">
           <div className="p-2">
             <div className="flex items-center justify-between mb-2">
               <strong>Notificaciones</strong>
-              <button className="text-sm text-blue-600" onClick={() => navigate('/notifications')}>Ver todas</button>
+              <Button className="text-sm text-blue-600" onPress={() => navigate('/notifications')} color="default" size="sm">Ver todas</Button>
             </div>
             <ul>
               {items.length === 0 && <li className="text-sm text-gray-500">No hay notificaciones</li>}
@@ -74,7 +80,7 @@ export default function NotificationBell() {
                     <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                   </div>
                   {!n.readAt && (
-                    <button className="ml-2 text-sm text-blue-600" onClick={() => markAsRead(n.id)}>Marcar</button>
+                    <Button className="ml-2 text-sm text-blue-600" onPress={() => markAsRead(n.id)} color="default" size="sm">Marcar</Button>
                   )}
                 </li>
               ))}

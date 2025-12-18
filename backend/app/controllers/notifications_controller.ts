@@ -42,7 +42,7 @@ export default class NotificationsController {
   }
 
   async get({ request, auth }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     const notification = await prisma.notification.findUniqueOrThrow({
       where: {
@@ -64,7 +64,7 @@ export default class NotificationsController {
   }
   
   async markAsRead({ request, auth }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     const notification = await prisma.notification.guardedUpdate({
       where: {
@@ -88,7 +88,7 @@ export default class NotificationsController {
   }
 
   async delete({ request, response, auth }: HttpContext) {
-    const { params } = await idValidator.validate(request)
+    const { params } = await request.validateUsing(idValidator)
 
     await prisma.notification.guardedDelete({
       where: {

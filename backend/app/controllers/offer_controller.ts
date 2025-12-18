@@ -34,15 +34,51 @@ export default class OffersController {
         companyId: 'number',
         publishedAt: 'string',
         expiresAt: 'string',
-        // TODO: Support this
-        // courses: 'number[]',
+        // Support filtering by course ids via query param `courses` (comma-separated)
+        courses: 'number[]',
       },
     })
+
+    // Support simple text search via `q` (searches position, description and company.name)
+    const rawQs: any = (request as any).qs();
+    let where = buildWhere({ status: 'ACTIVE' }, filterWhere)
+    if (query.q) {
+      const q = String(query.q)
+      const searchWhere = {
+        OR: [
+          { position: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { company: { name: { contains: q, mode: 'insensitive' } } },
+        ],
+      }
+      where = buildWhere(where, searchWhere)
+    }
+
+    // Optional: filter by course ids (courses=1,2,3)
+    if (rawQs?.courses) {
+      const courseIds = String(rawQs.courses).split(',').map((s: string) => Number(s)).filter(Boolean)
+      if (courseIds.length) {
+        where = buildWhere(where, { courses: { some: { id: { in: courseIds } } } })
+      }
+    }
+
+    // Optional: filter by company id (companyId=123)
+    if (rawQs?.companyId) {
+      const companyId = Number(rawQs.companyId)
+      if (!Number.isNaN(companyId)) {
+        where = buildWhere(where, { companyId })
+      }
+    }
+
+    // Optional: remote-only filter (remote=1 => location contains 'remot')
+    if (rawQs?.remote) {
+      where = buildWhere(where, { location: { contains: 'remot', mode: 'insensitive' } })
+    }
 
     return await prisma.offer.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere({ status: 'ACTIVE' }, filterWhere),
+      where,
       orderBy: getOfferOrder(query.sort as any),
       omit: {
         companyId: true,

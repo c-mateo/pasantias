@@ -1,8 +1,10 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import AdminTable from "./AdminTable";
 import ActionButtons from "./ActionButtons";
 import { Button } from "@heroui/button";
+import { useNavigate } from "react-router";
 import { Modal } from "./Modal";
+import { useIntersectionObserver } from "~/hooks/useIntersectionObserver";
 
 export type Header = {
   label: React.ReactNode;
@@ -21,6 +23,7 @@ type AdminListProps<T> = {
   createHref?: string;
   loading?: boolean;
   sentinelRef?: React.RefObject<HTMLElement | null>;
+  onLoadMore?: () => void;
 };
 
 export default function AdminList<T>({
@@ -35,11 +38,22 @@ export default function AdminList<T>({
   createHref,
   loading,
   sentinelRef,
+  onLoadMore,
 }: AdminListProps<T>) {
   const [selected, setSelected] = useState(() => new Set<number>());
   const [selectAllActive, setSelectAllActive] = useState(false);
   const [modal, setModal] = useState<{ isOpen: boolean; message: React.ReactNode; action: () => void }>({ isOpen: false, message: "", action: () => {} });
   const headerRef = useRef<HTMLInputElement | null>(null);
+  // internal sentinel ref for infinite scrolling (so callers don't have to create one)
+  const internalSentinelRef = useRef<HTMLElement | null>(null);
+  const finalSentinelRef = sentinelRef ?? internalSentinelRef;
+
+  // if an onLoadMore callback is provided, observe the sentinel (caller-provided or internal) and call it when visible
+  useIntersectionObserver(finalSentinelRef, () => {
+    if (onLoadMore) onLoadMore();
+  });
+
+  const navigate = useNavigate();
 
   // indeterminate checkbox
   React.useEffect(() => {
@@ -138,12 +152,12 @@ export default function AdminList<T>({
           <h2 className="text-2xl font-semibold">{title}</h2>
           <div className="flex gap-2">
             {selected.size > 0 && (
-              <Button color="danger" className="mr-4 inline-flex items-center justify-center px-4 py-2 rounded text-sm min-w-[140px]" onPress={handleDeleteSelected}>
+              <Button color="danger" className="mr-4 inline-flex items-center justify-center px-4 py-2 text-sm min-w-[140px]" radius="md" onPress={handleDeleteSelected}>
                 Eliminar Seleccionados ({selected.size})
               </Button>
             )}
             {createHref ? (
-              <Button color="primary" className="inline-flex items-center justify-center px-4 py-2 rounded text-sm min-w-[140px]" onPress={() => (window.location.href = createHref)}>
+              <Button color="primary" className="inline-flex items-center justify-center px-4 py-2 text-sm min-w-[140px]" radius="md" onPress={() => navigate(createHref)}>
                 Crear
               </Button>
             ) : null}
@@ -155,7 +169,7 @@ export default function AdminList<T>({
         headers={combinedHeaders}
         items={items}
         loading={!!loading}
-        sentinelRef={sentinelRef}
+        sentinelRef={finalSentinelRef}
         renderRow={(item, idx) => {
           const id = getId(item);
           return (
@@ -181,7 +195,7 @@ export default function AdminList<T>({
         }}
       />
 
-      <Modal isOpen={modal.isOpen} message={modal.message} onConfirm={modal.action} onCancel={() => setModal({ ...modal, isOpen: false })} />
+      <Modal isOpen={modal.isOpen} title="Confirmar acción" body={modal.message} onConfirm={modal.action} onCancel={() => setModal({ ...modal, isOpen: false })} />
     </div>
   );
 }

@@ -256,27 +256,30 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
             <div className="flex flex-row flex-wrap gap-4">
               <Button
                 color="primary"
-                className="px-4 py-2 rounded"
-                onClick={save}
+                className="px-4 py-2"
+                radius="md"
+                onPress={save}
               >
                 {isExistingCompany ? "Guardar Cambios" : "Crear Empresa"}
               </Button>
               {isExistingCompany && (
                 <Button
                   color="danger"
-                  className="px-4 py-2 rounded"
-                  onClick={del}
+                  className="px-4 py-2"
+                  radius="md"
+                  onPress={del}
                 >
                   Eliminar Empresa
                 </Button>
               )}
               <Button
                 color="default"
-                className="px-4 py-2 rounded"
-                onClick={goBack}
+                className="px-4 py-2"
+                radius="md"
+                onPress={goBack}
               >
                 Volver a la Lista de Empresas
-              </Button>
+              </Button> 
             </div>
           </div>
         </div>

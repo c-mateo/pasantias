@@ -1,6 +1,7 @@
 import React from "react";
 import OfferCard from "./OfferCard";
 import { Button } from "@heroui/button";
+import { useNavigate } from "react-router";
 
 export const demoOffers = [
   {
@@ -72,11 +73,12 @@ export const demoOffers = [
 ];
 
 export default function OffersListDemo() {
+  const navigate = useNavigate();
   return (
     <section className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Ofertas recientes</h1>
-        <Button color="default" onPress={() => (window.location.href = '/ofertas')}>Ver todas</Button>
+        <Button color="default" onPress={() => navigate('/ofertas')}>Ver todas</Button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {demoOffers.map((offer) => (

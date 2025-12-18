@@ -11,7 +11,7 @@ import {
 import { sha256 } from '#utils/hash'
 import { checkUnique, FieldContext } from '../../prisma/strategies.js'
 import getRoute from '#utils/getRoutes'
-import { User } from '../../generated/prisma/client.js'
+
 import SendEmail from '#jobs/send_email'
 import { decryptUserData, encryptUserData } from '#utils/user'
 import { generateToken } from '#utils/tokens'
@@ -26,30 +26,23 @@ const emailHashUnique = (email: string): FieldContext => ({
 })
 
 export default class AuthController {
-  async register({ request, response, auth }: HttpContext) {
-    const { email } = request.only(['email'])
-    if (email === 'fakeuser@example.com') {
-      await auth.use('web').login({
-        id: 1,
-        email: 'fakeuser@example.com',
-        role: 'ADMIN',
-      } as User)
-      return response.status(200).json({ message: 'Logged in as fake user' })
-    }
-
+  async register({ request, response }: HttpContext) {
     const validated = await request.validateUsing(registerValidator)
     const hashedPassword = await hash.make(validated.password)
+
+    const userCount = await prisma.user.count()
 
     const { id, role } = await prisma.user.guardedCreate(
       {
         data: {
           ...encryptUserData(validated),
 
+          role: userCount === 0 ? 'ADMIN' : 'STUDENT', // First registered user gets ADMIN
           password: hashedPassword,
           emailHash: sha256(validated.email),
         },
       },
-      [checkUnique(['phone', emailHashUnique(validated.email)])]
+      [checkUnique([emailHashUnique(validated.email)])]
     )
 
     // TODO: Test this
@@ -87,17 +80,7 @@ export default class AuthController {
     })
   }
 
-  async login({ auth, request, response }: HttpContext) {
-    const { email } = request.only(['email'])
-    if (email === 'fakeuser@example.com') {
-      await auth.use('web').login({
-        id: 1,
-        email: 'fakeuser@example.com',
-        role: 'ADMIN',
-      } as User)
-      return response.status(200).json({ message: 'Logged in as fake user' })
-    }
-
+  async login({ auth, request }: HttpContext) {
     const validated = await request.validateUsing(loginValidator)
 
     const user = await prisma.user.findUnique({

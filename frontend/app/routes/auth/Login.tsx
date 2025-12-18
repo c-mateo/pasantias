@@ -3,6 +3,7 @@ import { Button } from "@heroui/button";
 import { Form, Input, Link } from "@heroui/react";
 
 import { login, requireUser } from "~/util/AuthContext";
+import toast from "~/util/toast";
 import type { LoginResponse } from "~/api/types";
 import { redirect, useNavigate } from "react-router";
 
@@ -28,7 +29,7 @@ export default function Login() {
       // window.location.href = "/";
     } catch (err) {
       console.error(err);
-      alert("Error al iniciar sesión");
+      toast.error({ title: "Error", message: "Error al iniciar sesión" });
     } finally {
       // setIsLoading(false);
     }
