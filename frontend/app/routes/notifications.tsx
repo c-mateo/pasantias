@@ -5,6 +5,7 @@ import type { NotificationsListResponse, NotificationDTO } from "~/api/types";
 import { useIntersectionObserver } from "~/hooks/useIntersectionObserver";
 import toast from "~/util/toast";
 import { Button } from "@heroui/button";
+import { formatDateTimeLocal } from "~/util/helpers";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const res = await api
@@ -102,7 +103,7 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
                 <div className="font-medium">{n.title}</div>
                 <div className="text-sm text-gray-600">{n.message}</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  {new Date(n.createdAt).toLocaleString()}
+                  {formatDateTimeLocal(n.createdAt)}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2">

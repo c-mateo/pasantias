@@ -15,6 +15,7 @@ Frontend:
 Backend:
 - Validaciones de datos
 - Crear flujo para cambiar email, contraseña
+- Quitar tipo de documento para más flexibilidad?
 - TODOs sin completar
 - Campos custom
 

@@ -37,7 +37,7 @@ type SetterRecord<T> = {
  * @param state El objeto de estado actual (opcional, ayuda a TypeScript/Compilador).
  * @returns Un objeto con claves 'setPropiedad' y sus funciones setter.
  */
-export const useSettersForObject = <T extends object>(
+export const createSetters = <T extends object>(
     setter: React.Dispatch<React.SetStateAction<T>>,
     state?: T 
 ): SetterRecord<T> => {

@@ -279,10 +279,17 @@ export interface DraftSaveBody {
 }
 
 export interface DraftAttachmentDTO {
-    id: number;
-    documentId: number;
-    draftId: number;
-    // ... otros campos de attachment
+    id: number
+    document: {
+        id: number
+        documentTypeId: number
+        documentType: { id: number; name: string }
+        originalName: string
+    }
+}
+
+export interface DraftGetResponse {
+    data: DraftDTO & { attachments: DraftAttachmentDTO[] }
 }
 
 export interface DraftSaveResponse {
@@ -353,6 +360,27 @@ export interface UserAdminDTO {
   province?: string
   city?: string
 }
+
+// --- Admin Documents ---
+
+/** Representation of a document as returned to Admins */
+export interface AdminDocumentDTO {
+  id: number
+  userId: number
+  documentType: DocumentTypeDTO
+  originalName: string
+  size: number
+  hash: { sha256: string }
+  createdAt: string
+  lastUsedAt: string
+}
+
+export interface AdminDocumentDetailsResponse {
+  data: AdminDocumentDTO
+  links: { rel: string, href: string, method: string }[]
+}
+
+// Note: GET /admin/documents/:id (download) returns a binary file (attachment) and not a JSON body.
 
 export interface SkillCreateBody extends Pick<SkillDTO, 'name'> {
     description?: string

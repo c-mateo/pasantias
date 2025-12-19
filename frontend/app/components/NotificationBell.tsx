@@ -5,8 +5,9 @@ import { useNavigate } from 'react-router';
 import toast from '~/util/toast';
 import { useAuthState } from '~/util/AuthContext';
 import { Button } from "@heroui/button";
+import { formatDateTimeLocal } from '~/util/helpers';
 
-export default function NotificationBell() {
+export default function NotificationBell({ compact = false }: { compact?: boolean }) {
   const [items, setItems] = useState<NotificationDTO[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -54,12 +55,12 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <Button className="relative p-2 hover:bg-gray-100" onPress={() => setOpen((s) => !s)} aria-label="Notificaciones" color="default" size="sm" radius="full">
-        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <Button className={`relative ${compact ? 'p-1' : 'p-2'} hover:bg-gray-100`} onPress={() => setOpen((s) => !s)} aria-label="Notificaciones" color="default" size="sm" radius="full">
+        <svg className={`${compact ? 'w-5 h-5' : 'w-6 h-6'} text-gray-700`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">{unread}</span>
+          <span className={`absolute ${compact ? '-top-0 -right-0 w-4 h-4 text-xs' : '-top-1 -right-1 w-5 h-5'} bg-red-500 text-white rounded-full flex items-center justify-center`}>{unread}</span>
         )}
       </Button>
 
@@ -77,7 +78,7 @@ export default function NotificationBell() {
                   <div className="flex-1">
                     <div className="text-sm font-medium">{n.title}</div>
                     <div className="text-sm text-gray-600 truncate">{n.message}</div>
-                    <div className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+                    <div className="text-xs text-gray-400 mt-1">{formatDateTimeLocal(n.createdAt)}</div>
                   </div>
                   {!n.readAt && (
                     <Button className="ml-2 text-sm text-blue-600" onPress={() => markAsRead(n.id)} color="default" size="sm">Marcar</Button>

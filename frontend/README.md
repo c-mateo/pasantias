@@ -85,3 +85,12 @@ This template comes with [Tailwind CSS](https://tailwindcss.com/) already config
 ---
 
 Built with ❤️ using React Router.
+
+## Proyecto - Notas específicas
+
+Este frontend forma parte del repo "Pasantías" y está configurado para funcionar con el backend en `../backend`.
+
+- Tipos de API: `app/api/types.ts` (usar este archivo como referencia de tipos en el frontend).
+- Flujo de documentos: la lógica para subir, descargar y desvincular documentos está en `app/routes/ofertasPublic/OfertaPublic.tsx`.
+- Pruebas y mejoras recomendadas: agregar E2E para el flujo de upload → submit y tests para `OfertaPublic`.
+

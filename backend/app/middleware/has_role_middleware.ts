@@ -14,7 +14,6 @@ export default class HasRoleMiddleware {
       role: UserRole
     }
   ) {
-    console.log('Checking role:', options.role, 'for user:', ctx.auth.user?.id)
     if (ctx.auth.user?.role !== options.role) {
       return ctx.response.unauthorized({ message: 'Unauthorized' })
     }

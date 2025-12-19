@@ -3,7 +3,7 @@ import { api } from "~/api/api";
 import { Link, TableCell } from "@heroui/react";
 import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
 import AdminList2 from "~/components/AdminList2";
-import type { ApplicationUserListResponse } from "~/api/types";
+import type { AdminOfferListResponse } from "~/api/types";
 
 export default function Aplicaciones() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -12,10 +12,9 @@ export default function Aplicaciones() {
   useEffect(() => {
     (async () => {
       try {
-        // TODO: use right type
-        const res = await api.get("/admin/applications?limit=20").json();
+        const res = await api.get("/admin/applications?limit=20").json<AdminOfferListResponse>();
         
-        setApplications(res?.data ?? []);
+        setApplications(res.data ?? []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -59,6 +58,7 @@ export default function Aplicaciones() {
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
       <AdminList2
+        canDelete
         title="Administrar Aplicaciones"
         columns={[
           { name: "candidate", label: "Candidato" },
@@ -76,7 +76,6 @@ export default function Aplicaciones() {
         getName={(r) => r.candidate?.name ?? r.user?.name ?? 'N/A'}
         onDeleteItem={(id) => deleteApplication(id)}
         onDeleteSelected={(ids) => deleteApplications(ids)}
-        createHref="/admin/aplicaciones/nuevo"
       />
     </div>
   );

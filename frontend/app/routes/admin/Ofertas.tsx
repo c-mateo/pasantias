@@ -1,19 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
 import OffersFilters from "~/components/OffersFilters";
 import AdminList2 from "~/components/AdminList2";
+import { formatDateTimeLocal } from "~/util/helpers";
 import type { Route } from "./+types/Ofertas";
 import type { HTMLInputTypeAttribute } from "react";
 // Modal handled by AdminList now
 import { useNavigate } from "react-router";
 import { api } from "~/api/api";
-import type { OfferListResponse, OfferListDTO } from "~/api/types";
+import { type OfferListDTO, AdminOfferListResponse } from "~/api/types";
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  const res = await api.get("/offers?limit=10").res();
-  const json = await res.json();
+  const res = await api.get("/offers?limit=10").json<AdminOfferListResponse>();
   return {
-    initialData: json?.data ?? [],
-    pagination: json?.pagination ?? { next: null, prev: null },
+    initialData: res.data ?? [],
+    pagination: res.pagination ?? { next: null, prev: null },
   };
 }
 
@@ -35,15 +35,12 @@ function useIntersectionObserver<T extends HTMLElement>(
 
 export default function Ofertas({ loaderData }: Route.ComponentProps) {
   const { initialData, pagination } = loaderData;
-  const [offers, setOffers] = useState<OfferListDTO[]>(initialData || []);
+  const [offers, setOffers] = useState(initialData || []);
   /*
   // Search/filter state (commented out — kept for future use)
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<string | undefined>(undefined);
   */
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
-
   /*
   // toggle sort cycle: undefined -> asc -> desc -> undefined (commented out)
   const cycleSort = (field: string) => {
@@ -90,21 +87,6 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
 
   // AdminList2 handles infinite scroll internally via loadMore/hasMore
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const compsRes = await api.get('/companies?limit=200').res();
-        const compsJson = await compsRes.json();
-        setCompanies(compsJson?.data ?? []);
-      } catch (err) {}
-      try {
-        const csRes = await api.get('/courses?limit=200').res();
-        const csJson = await csRes.json();
-        setCourses(csJson?.data ?? []);
-      } catch (err) {}
-    })();
-  }, []);
-
   /*
   // Search helper (commented out — kept for future use)
   const searchOffers = async () => {
@@ -127,7 +109,7 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
   };
   */
 
-  const deleteOffer = (id: number) => setOffers((prev: OfferListDTO[]) => prev.filter((o) => o.id !== id));
+  const deleteOffer = (id: number) => setOffers((prev) => prev.filter((o) => o.id !== id));
   const deleteOffers = (ids: number[]) => setOffers((prev) => prev.filter((o) => !ids.includes(o.id)));
 
 
@@ -157,12 +139,14 @@ export default function Ofertas({ loaderData }: Route.ComponentProps) {
       */}
 
       <AdminList2
+        canCreate
+        canDelete
         title="Administrar Ofertas"
         columns={[
-          { name: "position", label: "Puesto" },
-          { name: "company", label: "Empresa", alignment: "center", renderer: (v) => v?.name ?? "N/A" },
+          { name: "position", label: "Puesto", sortable: true },
+          { name: "company", label: "Empresa", alignment: "center", sortable: true, renderer: (v) => v.name ?? "N/A" },
           { name: "vacancies", label: "Vacantes", alignment: "center" },
-          { name: "expiresAt", label: "Fecha Límite", alignment: "center", renderer: (v) => (v ? new Date(v).toLocaleDateString() : "N/A") },
+          { name: "expiresAt", label: "Fecha Límite", alignment: "center", renderer: (v) => (v ? formatDateTimeLocal(v) : "N/A") },
         ]}
         items={offers}
         loading={loading}

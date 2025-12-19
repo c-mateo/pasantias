@@ -76,6 +76,8 @@ export default function Empresas({ loaderData }: Route.ComponentProps) {
     <div className="px-4 py-3 max-w-4xl mx-auto">
       {/* Table for companies (controlled selection + modals), removed 'Creado' column */}
       <AdminList2
+        canCreate
+        canDelete
         title="Administrar Empresas"
         columns={[
           { name: "name", label: "Nombre", sortable: true },

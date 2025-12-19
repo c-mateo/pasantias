@@ -43,15 +43,16 @@ export default function Login() {
           <Input
             id="email"
             label="Correo electrónico"
-            labelPlacement="outside"
+           labelPlacement="outside"
             isRequired
             value={email}
             onValueChange={setEmail}
             type="email"
             placeholder="ejemplo@dominio.com"
+            autoComplete="email"
           />
           <Input
-            id="password"
+            name="password"
             label="Contraseña"
             labelPlacement="outside"
             isRequired
@@ -59,6 +60,7 @@ export default function Login() {
             onValueChange={setPassword}
             type="password"
             placeholder="Mínimo 8 caracteres"
+            autoComplete="current-password"
           />
 
           <div className="flex items-center justify-between w-full">

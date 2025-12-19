@@ -21,14 +21,20 @@ export default [
 
   // Panel de administración con navbar
   route("admin", "layouts/NavbarLayout.tsx", [
+    index("routes/admin/AdminIndex.tsx"),
     route("home", "routes/home.tsx"),
     route("usuarios", "routes/admin/Usuarios.tsx"),
+    route("usuarios/:usuarioId", "routes/admin/Usuario.tsx"),
     route("ofertas", "routes/admin/Ofertas.tsx"),
     route("ofertas/:ofertaId", "routes/admin/Oferta.tsx"),
     route("carreras", "routes/admin/Carreras.tsx"),
     route("carreras/:carreraId", "routes/admin/Carrera.tsx"),
     route("empresas", "routes/admin/Empresas.tsx"),
     route("empresas/:empresaId", "routes/admin/Empresa.tsx"),
+    route("skills", "routes/admin/Skills.tsx"),
+    route("skills/:skillId", "routes/admin/Skill.tsx"),
+    route("document-types", "routes/admin/DocumentTypes.tsx"),
+    route("document-types/:documentTypeId", "routes/admin/DocumentType.tsx"),
     route("aplicaciones", "routes/admin/Aplicaciones.tsx"),
     route("aplicaciones/:applicationId", "routes/admin/Application.tsx"),
   ]),

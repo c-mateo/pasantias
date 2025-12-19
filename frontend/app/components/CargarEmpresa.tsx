@@ -18,7 +18,7 @@ type NullToOptional<T> = {
   [K in keyof T as null extends T[K] ? K : never]?: Exclude<T[K], null>;
 };
 
-function omitNull<T>(obj: T): NullToOptional<T> {
+export function omitNull<T>(obj: T): NullToOptional<T> {
   const result : any = {};
   for (const key in obj) {
     if (obj[key] !== null && obj[key] !== undefined) {

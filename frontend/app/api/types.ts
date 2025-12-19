@@ -205,6 +205,7 @@ export type SkillDetailsResponse = DetailResponse<PublicSkillDTO>
 export type SkillCreateResponse = DetailResponse<SkillDTO>
 export type SkillUpdateResponse = DetailResponse<SkillDTO>
 export type SkillDeleteResponse = NoContent
+export type AdminSkillListResponse = Paginated<SkillDTO>
 export type AdminSkillDetailsResponse = DetailResponse<SkillDTO>
 export type AdminSkillCreateResponse = DetailResponse<SkillDTO>
 
@@ -216,6 +217,7 @@ export type CourseUpdateResponse = DetailResponse<CourseDTO>
 export type CourseDeleteResponse = NoContent
 export type AdminCourseListResponse = Paginated<CourseDTO>
 export type AdminCourseDetailsResponse = DetailResponse<CourseDTO>
+export type AdminCourseCreateResponse = DetailResponse<CourseDTO>
 
 // Document Types
 export type DocumentTypeListResponse = Paginated<PublicDocumentTypeDTO>
@@ -240,6 +242,12 @@ export interface ApplicationDetailsDTO {
 }
 export type ApplicationDetailsResponse = DetailResponse<ApplicationDetailsDTO>
 
+export interface AdminApplicationDetailsDTO extends ApplicationDetailsDTO {
+    user: Pick<UserAdminDTO, 'id' | 'firstName' | 'lastName' | 'email' | 'cuil' | 'phone'>;
+    updatedAt: string;
+}
+export type AdminApplicationDetailsResponse = DetailResponse<AdminApplicationDetailsDTO>;
+
 export interface DocumentDTO { id: number; documentType: DocTypeRefDTO; originalName: string; hash: { sha256: string }; createdAt: string; lastUsedAt: string; }
 export type MyDocumentsListResponse = Paginated<DocumentDTO>
 export type DocumentDetailsResponse = DetailResponse<DocumentDTO & { size: number }>
@@ -247,7 +255,7 @@ export type DocumentDetailsResponse = DetailResponse<DocumentDTO & { size: numbe
 // Drafts
 export type DraftDeleteResponse = NoContent
 export interface DraftDTO { id: number; userId: number; offerId: number; customFieldsValues?: Record<string, any> | null; createdAt: string; updatedAt: string; }
-export interface DraftAttachmentDTO { id: number; documentId: number; draftId: number; }
+export interface DraftAttachmentDTO { id: number; document: { id: number; documentTypeId: number; documentType: { id: number; name: string }; originalName: string } }
 export type DraftGetResponse = DetailResponse<DraftDTO & { attachments: DraftAttachmentDTO[] }>
 export type DraftSaveResponse = DetailResponse<DraftDTO & { attachments: DraftAttachmentDTO[] }>
 export interface ApplicationSubmitResponse { data: { applicationId: number; status: ApplicationStatus; appliedAt: string; } }

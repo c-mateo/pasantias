@@ -41,9 +41,7 @@ export function Modal({
       <ModalContent>
         {(onClose) => (
           <>
-            {title && (
-              <ModalHeader className="flex flex-col gap-1">{title}</ModalHeader>
-            )}
+            <ModalHeader className="flex flex-col gap-1">{title}</ModalHeader>
             <ModalBody>{body}</ModalBody>
             <ModalFooter>
               <Button

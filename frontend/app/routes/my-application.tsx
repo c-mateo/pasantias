@@ -3,12 +3,14 @@ import type { Route } from "./+types/applications";
 import { api } from "~/api/api";
 import { useState } from "react";
 import toast from "~/util/toast";
+import { formatDateTimeLocal } from "~/util/helpers";
 import { Modal } from "~/components/Modal";
 import { Button } from "@heroui/button";
 import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
+import type { ApplicationDetailsResponse } from "~/api/types";
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  const res = await api.get(`/my-applications/${(params as any).applicationId}`).json<any>();
+  const res = await api.get(`/my-applications/${params.applicationId}`).json<ApplicationDetailsResponse>();
   return res.data ?? {};
 }
 
@@ -47,8 +49,8 @@ export default function MyApplication({ loaderData }: Route.ComponentProps) {
         </div>
 
         <div className="mt-4">
-          <p><strong>Creada:</strong> {new Date(data.createdAt).toLocaleString()}</p>
-          {data.finalizedAt && <p><strong>Finalizada:</strong> {new Date(data.finalizedAt).toLocaleString()}</p>}
+          <p><strong>Creada:</strong> {formatDateTimeLocal(data.createdAt)}</p>
+          {data.finalizedAt && <p><strong>Finalizada:</strong> {formatDateTimeLocal(data.finalizedAt)}</p>}
           {data.feedback && <p className="mt-2"><strong>Feedback:</strong> {data.feedback}</p>}
         </div>
 
@@ -68,7 +70,7 @@ export default function MyApplication({ loaderData }: Route.ComponentProps) {
             isOpen={showCancelModal}
             onCancel={() => setShowCancelModal(false)}
             onConfirm={confirmCancel}
-            message={<div>¿Cancelar esta postulación?</div>}
+            body={<div>¿Cancelar esta postulación?</div>}
           />
         )}
       </div>

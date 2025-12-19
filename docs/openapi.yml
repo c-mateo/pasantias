@@ -98,7 +98,185 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserListResponse'
+
+  /offers/{offerId}/draft:
+    get:
+      summary: Get current user's draft for an offer
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Draft detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftGetResponse'
+        '204':
+          description: No draft exists
+    patch:
+      summary: Save draft (custom fields)
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftSaveBody'
+      responses:
+        '200':
+          description: Draft saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftSaveResponse'
+    delete:
+      summary: Delete draft (and its attachments)
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+
+  /offers/{offerId}/draft/documents/{reqDocId}:
+    put:
+      summary: Upload a document for a required document type
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: reqDocId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadDocumentResponse'
+
+  /offers/{offerId}/draft/documents/{attachmentId}:
+    delete:
+      summary: Unlink a document attachment from a draft
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: attachmentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+
+  /offers/{offerId}/draft/documents/use-existing:
+    post:
+      summary: Link an existing user document to the draft
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                documentId:
+                  type: integer
+              required:
+                - documentId
+      responses:
+        '200':
+          description: Document linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftAttachmentDTO'
+
+  /offers/{offerId}/draft/submit:
+    post:
+      summary: Submit draft to create an application
+      parameters:
+        - in: path
+          name: offerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationSubmitResponse'
+
+  /my-documents:
+    get:
+      summary: List user documents
+      responses:
+        '200':
+          description: List of user's documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyDocumentsListResponse'
+
+  /my-documents/{id}/download:
+    post:
+      summary: Download a document (returns binary PDF)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
   schemas:
     CursorPagination:
       type: object
@@ -184,3 +362,166 @@ components:
             $ref: '#/components/schemas/UserDTO'
         pagination:
           $ref: '#/components/schemas/CursorPagination'
+
+    DocumentTypeDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    DocumentDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeDTO'
+        originalName:
+          type: string
+        hash:
+          type: object
+          properties:
+            sha256:
+              type: string
+        createdAt:
+          type: string
+        lastUsedAt:
+          type: string
+
+    MyDocumentsListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentDTO'
+        pagination:
+          $ref: '#/components/schemas/CursorPagination'
+
+    DraftDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        offerId:
+          type: integer
+        customFieldsValues:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    DraftAttachmentDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        document:
+          type: object
+          properties:
+            id:
+              type: integer
+            documentTypeId:
+              type: integer
+            documentType:
+              $ref: '#/components/schemas/DocumentTypeDTO'
+            originalName:
+              type: string
+
+    DraftGetResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+            userId:
+              type: integer
+            offerId:
+              type: integer
+            attachments:
+              type: array
+              items:
+                $ref: '#/components/schemas/DraftAttachmentDTO'
+
+    DraftSaveBody:
+      type: object
+      properties:
+        customFieldsValues:
+          type: object
+          additionalProperties: true
+
+    DraftSaveResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/DraftDTO'
+          
+    DocumentAttachmentInfoDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        documentTypeId:
+          type: integer
+        originalName:
+          type: string
+        size:
+          type: integer
+        hash:
+          type: object
+          properties:
+            sha256:
+              type: string
+
+    UploadDocumentResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/DocumentAttachmentInfoDTO'
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              rel:
+                type: string
+              href:
+                type: string
+              method:
+                type: string
+
+    ApplicationSubmitResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            applicationId:
+              type: integer
+            status:
+              type: string
+            appliedAt:
+              type: string
+
+    ApiError:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        meta:
+          type: object
+          additionalProperties: true

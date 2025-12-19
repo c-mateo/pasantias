@@ -2,7 +2,7 @@ import vine from '@vinejs/vine'
 
 export const validator = vine.create({
   params: vine.object({
-    id: vine.number(),
+    offerId: vine.number(),
   }),
   customFieldsValues: vine.object({}).optional(),
 })

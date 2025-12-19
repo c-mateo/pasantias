@@ -96,6 +96,12 @@ router
     router.get('offers', '#controllers/offer_controller.list').as('offers')
     router.get('offers/:id', '#controllers/offer_controller.get').as('getOffer')
 
+    // Document types (public)
+    router.get('document-types', '#controllers/document_type_controller.list').as('documentTypes')
+    router
+      .get('document-types/:id', '#controllers/document_type_controller.get')
+      .as('getDocumentType')
+
     // Draft management
     router.get('offers/:offerId/draft', '#controllers/draft_controller.get').use(middleware.auth())
     router
@@ -107,7 +113,10 @@ router
 
     // Draft document management
     router
-      .put('offers/:offerId/draft/documents', '#controllers/draft_controller.uploadDocument')
+      .put(
+        'offers/:offerId/draft/documents/:reqDocId',
+        '#controllers/draft_controller.uploadDocument'
+      )
       .use(middleware.auth())
     router
       .delete(
@@ -165,9 +174,18 @@ router
         router.patch('companies/:id', '#controllers/company_controller.update').as('updateCompany')
         router.delete('companies/:id', '#controllers/company_controller.delete').as('deleteCompany')
 
-        // router.get('documents', '#controllers/document_controller.listAllDocuments').as('listAllDocuments')
-        // router.get('documents/:id', '#controllers/document_controller.getDocumentDetails').as('getDocumentDetails')
-        // router.delete('documents/:id', '#controllers/document_controller.deleteDocument').as('deleteDocument')
+        // router
+        //   .get('documents', '#controllers/document_controller.listAllDocuments')
+        //   .as('listAllDocuments')
+        // router
+        //   .get('documents/:id', '#controllers/document_controller.getDocumentDetails')
+        //   .as('getDocumentDetails')
+        // router
+        //   .delete('documents/:id', '#controllers/document_controller.deleteDocument')
+        //   .as('deleteDocument')
+        router
+          .get('documents/:id', '#controllers/document_controller.downloadDocument')
+          .as('downloadDocument')
 
         router.post('offers', '#controllers/offer_controller.create').as('createOffer')
         router.patch('offers/:id', '#controllers/offer_controller.update').as('updateOffer')
@@ -176,6 +194,17 @@ router
         router.post('skills', '#controllers/skill_controller.create').as('createSkill')
         router.patch('skills/:id', '#controllers/skill_controller.update').as('updateSkill')
         router.delete('skills/:id', '#controllers/skill_controller.delete').as('deleteSkill')
+
+        // Document types (admin)
+        router
+          .post('document-types', '#controllers/document_type_controller.create')
+          .as('createDocumentType')
+        router
+          .patch('document-types/:id', '#controllers/document_type_controller.update')
+          .as('updateDocumentType')
+        router
+          .delete('document-types/:id', '#controllers/document_type_controller.delete')
+          .as('deleteDocumentType')
 
         router.get('users', '#controllers/user_controller.list')
         router.get('users/:id', '#controllers/user_controller.get')

@@ -5,10 +5,11 @@ import { Input, Textarea, Form } from "@heroui/react";
 import { toast as toastHelper } from "~/util/toast";
 import { Button } from "@heroui/button";
 import { Modal } from "../../components/Modal";
-import { useSettersForObject } from "~/util/createPropertySetter";
+import { createSetters } from "~/util/createSetters";
 import { api } from "~/api/api";
 import { toDatetimeLocal, formatDateTimeLocal } from "~/util/helpers";
 import type { CompanyUpdateResponse, AdminCompanyDetailsResponse, CompanyCreateBody, CompanyUpdateBody } from "~/api/types";
+import { omit } from "./Carrera";
 
 export async function clientLoader({
   params,
@@ -51,7 +52,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
 
   const { setName, setDescription, setWebsite, setEmail, setPhone, setLogo } =
-    useSettersForObject(setCompany);
+    createSetters(setCompany);
 
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
@@ -163,127 +164,137 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
     <>
       <Modal
         isOpen={modal.isOpen}
-        message={modal.message}
+        body={modal.message}
         onConfirm={modal.action}
         onCancel={() => {
           setModal({ ...modal, isOpen: false });
         }}
       />
-      <div className="flex flex-wrap justify-between">
-        <div className="grow-7 basis-md">
-          <div className="flex flex-col mx-auto p-4 space-y-4">
-            <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
-            <h1 className="text-2xl font-bold">Detalles de la Empresa</h1>
-            <Input
-              isRequired
-              label="Nombre"
-              labelPlacement="outside"
-              placeholder="Ingrese el nombre de la empresa"
-              value={company.name}
-              onValueChange={(v) => {
-                setName(v);
-                setErrors((prev) => ({ ...prev, name: undefined }));
-              }}
-              isInvalid={!!errors.name}
-              errorMessage={({ validationDetails }) => {
-                if (validationDetails?.valueMissing) return "El nombre es requerido";
-                return errors.name ?? null;
-              }}
-            />
-            <Input
-              isRequired
-              label="Email"
-              labelPlacement="outside"
-              type="email"
-              placeholder="Ingrese el email de la empresa"
-              value={company.email}
-              onValueChange={(v) => {
-                setEmail(v);
-                setErrors((prev) => ({ ...prev, email: undefined }));
-              }}
-              isInvalid={!!errors.email}
-              errorMessage={({ validationDetails }) => {
-                if (validationDetails?.valueMissing) return "El email es requerido";
-                if (validationDetails?.typeMismatch) return "Formato de email inválido";
-                return errors.email ?? null;
-              }}
-            />
-            <Input
-              label="Teléfono"
-              labelPlacement="outside"
-              placeholder="Ingrese el teléfono"
-              value={company.phone ?? ""}
-              onValueChange={(v) => {
-                setPhone(v);
-                setErrors((prev) => ({ ...prev, phone: undefined }));
-              }}
-            />
-            <Input
-              label="Sitio Web"
-              labelPlacement="outside"
-              type="url"
-              placeholder="https://example.com"
-              value={company.website ?? ""}
-              onValueChange={(v) => {
-                setWebsite(v);
-                setErrors((prev) => ({ ...prev, website: undefined }));
-              }}
-              isInvalid={!!errors.website}
-              errorMessage={() => errors.website ?? null}
-            />
-            <Textarea
-              label="Descripción"
-              labelPlacement="outside"
-              placeholder="Describir la empresa"
-              value={company.description ?? ""}
-              onValueChange={setDescription}
-            />
-            <Input
-              label="Logo URL"
-              labelPlacement="outside"
-              type="url"
-              placeholder="https://example.com/logo.png"
-              value={company.logo ?? ""}
-              onValueChange={setLogo}
-            />
-            </Form>
-          </div>
-        </div>
-        <div className="grow-3 basis-sm">
-          <div className="flex flex-col lg:max-w-sm mx-auto p-4 space-y-4">
-            {metadata}
-            <h2 className="text-xl font-bold">Acciones</h2>
-            <div className="flex flex-row flex-wrap gap-4">
-              <Button
-                color="primary"
-                className="px-4 py-2"
-                radius="md"
-                onPress={save}
-              >
-                {isExistingCompany ? "Guardar Cambios" : "Crear Empresa"}
-              </Button>
-              {isExistingCompany && (
-                <Button
-                  color="danger"
-                  className="px-4 py-2"
-                  radius="md"
-                  onPress={del}
-                >
-                  Eliminar Empresa
-                </Button>
-              )}
-              <Button
-                color="default"
-                className="px-4 py-2"
-                radius="md"
-                onPress={goBack}
-              >
-                Volver a la Lista de Empresas
-              </Button> 
+      <main className="min-h-screen py-8">
+        <div className="max-w-6xl mx-auto p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+            <div className="lg:col-span-4">
+              <article className="bg-white rounded shadow">
+                <div className="p-4">
+                  <div className="mb-4">
+                    <a href="/admin/empresas" className="text-sm text-blue-600">← Volver a Empresas</a>
+                  </div>
+                  <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
+                    <h1 className="text-2xl font-bold">Detalles de la Empresa</h1>
+
+                    <div className="mt-4">
+                      <Input
+                        isRequired
+                        label="Nombre"
+                        labelPlacement="outside"
+                        placeholder="Ingrese el nombre de la empresa"
+                        value={company.name}
+                        onValueChange={(v) => {
+                          setName(v);
+                          setErrors((prev) => (omit(prev, ['name'])));
+                        }}
+                        isInvalid={!!errors.name}
+                        errorMessage={({ validationDetails }) => {
+                          if (validationDetails?.valueMissing) return "El nombre es requerido";
+                          return errors.name ?? null;
+                        }}
+                      />
+
+                      <Input
+                        isRequired
+                        label="Email"
+                        labelPlacement="outside"
+                        type="email"
+                        placeholder="Ingrese el email de la empresa"
+                        value={company.email}
+                        onValueChange={(v) => {
+                          setEmail(v);
+                          setErrors((prev) => ({ ...prev, email: undefined }));
+                        }}
+                        isInvalid={!!errors.email}
+                        errorMessage={({ validationDetails }) => {
+                          if (validationDetails?.valueMissing) return "El email es requerido";
+                          if (validationDetails?.typeMismatch) return "Formato de email inválido";
+                          return errors.email ?? null;
+                        }}
+                      />
+
+                      <Input
+                        label="Teléfono"
+                        labelPlacement="outside"
+                        placeholder="Ingrese el teléfono"
+                        value={company.phone ?? ""}
+                        onValueChange={(v) => {
+                          setPhone(v);
+                          setErrors((prev) => ({ ...prev, phone: undefined }));
+                        }}
+                      />
+
+                      <Input
+                        label="Sitio Web"
+                        labelPlacement="outside"
+                        type="url"
+                        placeholder="https://example.com"
+                        value={company.website ?? ""}
+                        onValueChange={(v) => {
+                          setWebsite(v);
+                          setErrors((prev) => ({ ...prev, website: undefined }));
+                        }}
+                        isInvalid={!!errors.website}
+                        errorMessage={() => errors.website ?? null}
+                      />
+
+                      <Textarea
+                        label="Descripción"
+                        labelPlacement="outside"
+                        placeholder="Describir la empresa"
+                        value={company.description ?? ""}
+                        onValueChange={setDescription}
+                      />
+
+                      <Input
+                        label="Logo URL"
+                        labelPlacement="outside"
+                        type="url"
+                        placeholder="https://example.com/logo.png"
+                        value={company.logo ?? ""}
+                        onValueChange={setLogo}
+                      />
+                    </div>
+                  </Form>
+                </div>
+              </article>
             </div>
+
+            <aside className="lg:col-span-2">
+              <div className="bg-white rounded shadow p-4 space-y-4">
+                {metadata}
+                <h2 className="text-xl font-bold">Acciones</h2>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    color="primary"
+                    className="w-full"
+                    radius="md"
+                    onPress={save}
+                  >
+                    {isExistingCompany ? "Guardar Cambios" : "Crear Empresa"}
+                  </Button>
+                  {isExistingCompany && (
+                    <Button
+                      color="danger"
+                      className="w-full"
+                      radius="md"
+                      onPress={del}
+                    >
+                      Eliminar Empresa
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
-      </div>
+      </main>
     </>
   );
 }

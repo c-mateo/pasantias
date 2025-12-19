@@ -20,7 +20,9 @@ type CreateNotificationsPayload = BroadcastNotification | UserSpecificNotificati
 // IMPORTANT: Broadcasts (ADMIN_ANNOUNCEMENT) are intended for students only.
 // This helper returns only users with role = STUDENT (excludes admins).
 function getAllStudentIds(): Promise<number[]> {
-  return prisma.user.findMany({ where: { role: 'STUDENT', deletedAt: null }, select: { id: true } }).then((users) => users.map((u) => u.id))
+  return prisma.user
+    .findMany({ where: { role: 'STUDENT', deletedAt: null }, select: { id: true } })
+    .then((users) => users.map((u) => u.id))
 }
 
 export default class CreateNotifications extends Job {
@@ -34,7 +36,12 @@ export default class CreateNotifications extends Job {
     } else {
       // Sanitize provided user ids: only keep existing users with role = STUDENT
       const ids = (payload as any).users ?? []
-      users = (await prisma.user.findMany({ where: { id: { in: ids }, role: 'STUDENT', deletedAt: null }, select: { id: true } })).map(u => u.id)
+      users = (
+        await prisma.user.findMany({
+          where: { id: { in: ids }, role: 'STUDENT', deletedAt: null },
+          select: { id: true },
+        })
+      ).map((u) => u.id)
     }
 
     const result = await prisma.notification.createMany({

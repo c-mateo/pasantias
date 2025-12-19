@@ -29,6 +29,7 @@ export default class ApplicationController {
         status: 'string',
         createdAt: 'string',
         finalizedAt: 'string',
+        offerId: 'number',
       },
     })
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { requireUser } from "~/util/AuthContext";
 import { redirect } from "react-router";
 import { api } from "~/api/api";
+import { formatDateTimeLocal } from "~/util/helpers";
 import toast from "~/util/toast";
 import { Modal } from "~/components/Modal";
 import { Link } from "@heroui/react";
@@ -154,7 +155,7 @@ export default function MyApplications() {
                 </div>
                 <div className="text-sm text-gray-600 text-right">
                   <div>{a.status}</div>
-                  <div className="text-xs">{new Date(a.createdAt).toLocaleString()}</div>
+                  <div className="text-xs">{formatDateTimeLocal(a.createdAt)}</div>
                   <div className="mt-2">
                     <Link href={`/ofertas/${a.offer.id}`}>Ver oferta</Link>
                   </div>
@@ -192,7 +193,7 @@ export default function MyApplications() {
           isOpen={showDeleteDraftModal}
           onCancel={() => setShowDeleteDraftModal(false)}
           onConfirm={confirmDeleteDraft}
-          message={<div>Eliminar borrador?</div>}
+          body={<div>Eliminar borrador?</div>}
         />
       )}
     </div>

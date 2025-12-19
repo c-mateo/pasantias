@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@heroui/button";
-import { Form, Input, Link, addToast } from "@heroui/react";
+import { Form, Input, Link } from "@heroui/react";
 import { toast as toastHelper } from "~/util/toast";
 import { api } from "~/api/api";
 import { requireUser } from "~/util/AuthContext";
@@ -19,7 +19,6 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +26,10 @@ export default function Register() {
     if (!firstName.trim()) eObj.firstName = "Nombre requerido";
     if (!lastName.trim()) eObj.lastName = "Apellido requerido";
     if (!email.trim()) eObj.email = "Email requerido";
-    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) eObj.email = "Formato de email inválido";
-    if (!password || password.length < 8) eObj.password = "La contraseña debe tener al menos 8 caracteres";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+      eObj.email = "Formato de email inválido";
+    if (!password || password.length < 8)
+      eObj.password = "La contraseña debe tener al menos 8 caracteres";
     if (password !== confirm) eObj.confirm = "Las contraseñas no coinciden";
 
     setErrors(eObj);
@@ -49,13 +50,17 @@ export default function Register() {
       navigate("/login");
     } catch (err) {
       console.error(err);
-      const apiErrors = (err as any)?.errors ?? (err as any)?.response?.data?.errors;
+      const apiErrors =
+        (err as any)?.errors ?? (err as any)?.response?.data?.errors;
       if (Array.isArray(apiErrors)) {
         const map: Record<string, string> = {};
         apiErrors.forEach((it: any) => (map[it.field] = it.message));
         setErrors(map);
       }
-      toastHelper.error({ title: "Error al crear la cuenta", description: "Revise los datos e intente nuevamente." });
+      toastHelper.error({
+        title: "Error al crear la cuenta",
+        description: "Revise los datos e intente nuevamente.",
+      });
     }
   };
 
@@ -66,26 +71,29 @@ export default function Register() {
         <Form onSubmit={handleSubmit} validationErrors={errors as any}>
           <Input
             id="firstName"
+            name="firstName"
+            autoComplete="given-name"
             label="Nombre"
             labelPlacement="outside"
             className="mb-4"
             isRequired
             value={firstName}
-              onValueChange={(v) => {
-                setFirstName(v);
-                setErrors((prev) => ({ ...prev, firstName: undefined }));
-              }}
-              isInvalid={!!errors.firstName}
-              errorMessage={({ validationDetails }) => {
-                if (validationDetails?.valueMissing) return "Nombre requerido";
-                return errors.firstName ?? null;
-              }}
+            onValueChange={(v) => {
+              setFirstName(v);
+              setErrors((prev) => ({ ...prev, firstName: undefined }));
+            }}
+            isInvalid={!!errors.firstName}
+            errorMessage={({ validationDetails }) => {
+              if (validationDetails?.valueMissing) return "Nombre requerido";
+              return errors.firstName ?? null;
+            }}
             placeholder="Juan"
           />
-          
 
           <Input
             id="lastName"
+            name="lastName"
+            autoComplete="family-name"
             label="Apellido"
             labelPlacement="outside"
             className="mb-4"
@@ -102,10 +110,11 @@ export default function Register() {
             }}
             placeholder="Pérez"
           />
-          
 
           <Input
             id="email"
+            name="email"
+            autoComplete="email"
             label="Correo electrónico"
             labelPlacement="outside"
             className="mb-4"
@@ -118,16 +127,18 @@ export default function Register() {
             isInvalid={!!errors.email}
             errorMessage={({ validationDetails }) => {
               if (validationDetails?.valueMissing) return "Email requerido";
-              if (validationDetails?.typeMismatch) return "Formato de email inválido";
+              if (validationDetails?.typeMismatch)
+                return "Formato de email inválido";
               return errors.email ?? null;
             }}
             type="email"
             placeholder="ejemplo@dominio.com"
           />
-          
 
           <Input
             id="password"
+            name="password"
+            autoComplete="new-password"
             label="Contraseña"
             labelPlacement="outside"
             className="mb-4"
@@ -141,12 +152,12 @@ export default function Register() {
             errorMessage={() => errors.password ?? null}
             type="password"
             placeholder="Mínimo 8 caracteres"
-            autoComplete="new-password"
           />
-          
 
           <Input
             id="confirm"
+            name="confirm"
+            autoComplete="new-password"
             label="Confirmar contraseña"
             labelPlacement="outside"
             className="mb-4"
@@ -160,10 +171,7 @@ export default function Register() {
             errorMessage={() => errors.confirm ?? null}
             type="password"
             placeholder="Reescriba la contraseña"
-            autoComplete="new-password"
           />
-          
-          {/* Removed personal identification fields: DNI, phone, address, province, city */}
 
           <div className="flex items-center justify-between w-full">
             <Button type="submit" color="primary">

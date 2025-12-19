@@ -34,51 +34,15 @@ export default class OffersController {
         companyId: 'number',
         publishedAt: 'string',
         expiresAt: 'string',
-        // Support filtering by course ids via query param `courses` (comma-separated)
-        courses: 'number[]',
+        // TODO: Support this
+        // courses: 'number[]',
       },
     })
-
-    // Support simple text search via `q` (searches position, description and company.name)
-    const rawQs: any = (request as any).qs();
-    let where = buildWhere({ status: 'ACTIVE' }, filterWhere)
-    if (query.q) {
-      const q = String(query.q)
-      const searchWhere = {
-        OR: [
-          { position: { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
-          { company: { name: { contains: q, mode: 'insensitive' } } },
-        ],
-      }
-      where = buildWhere(where, searchWhere)
-    }
-
-    // Optional: filter by course ids (courses=1,2,3)
-    if (rawQs?.courses) {
-      const courseIds = String(rawQs.courses).split(',').map((s: string) => Number(s)).filter(Boolean)
-      if (courseIds.length) {
-        where = buildWhere(where, { courses: { some: { id: { in: courseIds } } } })
-      }
-    }
-
-    // Optional: filter by company id (companyId=123)
-    if (rawQs?.companyId) {
-      const companyId = Number(rawQs.companyId)
-      if (!Number.isNaN(companyId)) {
-        where = buildWhere(where, { companyId })
-      }
-    }
-
-    // Optional: remote-only filter (remote=1 => location contains 'remot')
-    if (rawQs?.remote) {
-      where = buildWhere(where, { location: { contains: 'remot', mode: 'insensitive' } })
-    }
 
     return await prisma.offer.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where,
+      where: buildWhere({ status: 'ACTIVE' }, filterWhere),
       orderBy: getOfferOrder(query.sort as any),
       omit: {
         companyId: true,
@@ -206,11 +170,19 @@ export default class OffersController {
     const { params, courses, skills, requiredDocuments, ...validated } =
       await request.validateUsing(updateValidator)
 
+    const offer = await prisma.offer.findUniqueOrThrow({
+      where: { id: params.id },
+      select: { status: true },
+    })
+
+    const setPublishedAt = offer.status !== 'ACTIVE' && validated.status === 'ACTIVE'
+
     const updatedOffer = await prisma.offer.guardedUpdate(
       {
         where: { id: params.id },
         data: {
           ...validated,
+          publishedAt: setPublishedAt ? new Date() : undefined,
           courses: {
             set: courses?.map((id) => ({ id })) || [],
           },
@@ -237,6 +209,7 @@ export default class OffersController {
     })
 
     const batch = []
+
     if (toDelete.length > 0) {
       batch.push(
         prisma.requiredDocument.deleteMany({
@@ -265,10 +238,12 @@ export default class OffersController {
       // required document deletions and insertions are applied together. This
       // avoids partial updates that could leave the offer in an inconsistent
       // state.
-      const result = await prisma.$transaction(batch)
+      const expectedCounts = [toDelete.length, toAdd.length].filter((count) => count > 0)
 
-      const expectedCounts = [toDelete.length, toAdd.length]
-      if (result.some((r, i) => r.count !== expectedCounts[i])) {
+      const result = await prisma.$transaction(batch)
+      const resultCounts = result.map((r) => r.count)
+
+      if (expectedCounts.some((count, i) => resultCounts[i] !== count)) {
         throw new Error('Error updating required documents for offer ' + params.id)
       }
     }

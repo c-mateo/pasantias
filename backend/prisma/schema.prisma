@@ -217,7 +217,7 @@ model Document {
 
   // Path con UUID para anonimato
   path String @unique @db.VarChar(500)
-  hash String @db.VarChar(64) // SHA256 del archivo para evitar duplicados
+  hash String @unique @db.VarChar(64) // SHA256 del archivo para evitar duplicados
 
   createdAt            DateTime  @default(now())
   lastUsedAt           DateTime  @default(now())

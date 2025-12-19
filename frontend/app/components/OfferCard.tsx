@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "@heroui/button";
+import { formatDateTimeLocal } from "~/util/helpers";
 import { Card, CardHeader, CardBody, CardFooter, Divider, Link, Image, Chip } from "@heroui/react";
 
 export type CareerInput = { name: string; shortName?: string } | string;
@@ -68,7 +69,7 @@ export default function OfferCard({ id, position, company, location, vacancies, 
       </CardBody>
       <Divider />
       <CardFooter className="px-4 py-3 flex items-center justify-between">
-        <div className="text-sm text-gray-600">{expiresAt ? `Cierra: ${expiresAt}` : "Abierta"}</div>
+        <div className="text-sm text-gray-600">{expiresAt ? `Cierra: ${formatDateTimeLocal(expiresAt)}` : "Abierta"}</div>
         <div className="flex items-center gap-2">
           <Link href={id ? `/ofertas/${id}` : "#"} className="no-underline"><Button color="primary" size="sm">Ver</Button></Link>
           <Button color="default" size="sm">Aplicar</Button>

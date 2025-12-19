@@ -1,11 +1,9 @@
-import React, {
-  useMemo,
+import {
   useState,
   useRef,
   useEffect,
   type ReactNode,
 } from "react";
-import AdminTable from "./AdminTable";
 import ActionButtons from "./ActionButtons";
 import { Button } from "@heroui/button";
 import { Modal } from "./Modal";
@@ -24,13 +22,14 @@ import {
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
 import { Navigate } from "react-router";
 import { useNavigate } from "react-router";
+import { createSetters } from "~/util/createSetters";
 
 export type Header = {
-  label: React.ReactNode;
+  label: ReactNode;
   name: string;
   alignment?: "start" | "center" | "end";
   className?: string;
-  renderer?: (item: any) => React.ReactNode;
+  renderer?: (item: any) => ReactNode;
   sortable?: boolean;
 };
 
@@ -45,6 +44,8 @@ type AdminListProps<T> = {
   createHref?: string;
   loading?: boolean;
   hasMore?: boolean;
+  canCreate?: boolean;
+  canDelete?: boolean;
   loadMore?: () => void;
 };
 
@@ -56,7 +57,7 @@ function indexBy<T>(array: T[], prop: keyof T): { [key: string]: T } {
   return index;
 }
 
-export default function AdminList2<T extends { id: number }>({
+export default function AdminList2<T extends { id: number } & Record<string, any>>({
   title,
   items,
   getId,
@@ -66,6 +67,8 @@ export default function AdminList2<T extends { id: number }>({
   onDeleteSelected,
   createHref,
   loading,
+  canCreate,
+  canDelete,
   hasMore,
   loadMore,
 }: AdminListProps<T>) {
@@ -89,6 +92,8 @@ export default function AdminList2<T extends { id: number }>({
   //     headerRef.current.indeterminate =
   //       selectedCount > 0 && selectedCount < total;
   //   }, [selection, items]);
+
+  const { setIsOpen } = createSetters(setModal);
 
   const handleDeleteItem = (id: number) => () => {
     const name = items.find((it) => getId(it) === id);
@@ -131,7 +136,7 @@ export default function AdminList2<T extends { id: number }>({
         if (onDeleteSelected) onDeleteSelected(ids);
         else if (onDeleteItem) ids.forEach((id) => onDeleteItem(id));
         setSelection(new Set());
-        setModal({ ...modal, isOpen: false });
+        setIsOpen(false);
       },
     });
   };
@@ -168,7 +173,7 @@ export default function AdminList2<T extends { id: number }>({
     if (typeof aValue === "string" && typeof bValue === "string") {
       return order * aValue.localeCompare(bValue);
     }
-    return 0
+    return 0;
   });
 
   return (
@@ -195,7 +200,7 @@ export default function AdminList2<T extends { id: number }>({
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-semibold">{title}</h2>
             <div className="flex gap-2">
-              {selectedCount > 0 && (
+              {canDelete && selectedCount > 0 && (
                 <Button
                   color="danger"
                   className="mr-4 inline-flex items-center justify-center px-4 py-2 text-sm min-w-[140px]"
@@ -205,14 +210,16 @@ export default function AdminList2<T extends { id: number }>({
                   Eliminar Seleccionados ({selectedCount})
                 </Button>
               )}
-              <Button
-                color="primary"
-                className="inline-flex items-center justify-center px-4 py-2 text-sm min-w-[140px]"
-                radius="md"
-                onPress={() => navigate("/admin/carreras/nuevo")}
-              >
-                Crear
-              </Button>
+              {canCreate && createHref && (
+                <Button
+                  color="primary"
+                  className="inline-flex items-center justify-center px-4 py-2 text-sm min-w-[140px]"
+                  radius="md"
+                  onPress={() => navigate(createHref)}
+                >
+                  Crear
+                </Button>
+              )}
             </div>
           </div>
         }
@@ -243,11 +250,7 @@ export default function AdminList2<T extends { id: number }>({
                     <TableCell>
                       <ActionButtons
                         onDelete={handleDeleteItem(item.id)}
-                        editHref={
-                          createHref
-                            ? createHref.replace(/nuevo$/, item.id.toString())
-                            : undefined
-                        }
+                        editHref={createHref ? createHref.replace(/nuevo$/, item.id.toString()) : undefined}
                       />
                     </TableCell>
                   );
@@ -265,13 +268,12 @@ export default function AdminList2<T extends { id: number }>({
           )}
         </TableBody>
       </Table>
-      {/* 
       <Modal
         isOpen={modal.isOpen}
-        message={modal.message}
+        body={modal.message}
         onConfirm={modal.action}
-        onCancel={() => setModal({ ...modal, isOpen: false })}
-      /> */}
+        onCancel={() => setIsOpen(false)}
+      />
     </div>
   );
 }

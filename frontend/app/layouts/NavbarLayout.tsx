@@ -8,6 +8,7 @@ import { checkSessionOnce, useAuthState } from "~/util/AuthContext";
 import { useEffect } from "react";
 import { Link } from "@heroui/react";
 import NotificationBell from "~/components/NotificationBell";
+import AppNavbar from "~/components/AppNavbar";
 
 const titles: Record<string, string> = {
   "/admin/usuarios": "Administrar Usuarios",
@@ -15,6 +16,8 @@ const titles: Record<string, string> = {
   "/admin/ofertas": "Administrar Ofertas",
   "/admin/empresas": "Administrar Empresas",
   "/admin/aplicaciones": "Administrar Aplicaciones",
+  "/admin/skills": "Administrar Skills",
+  "/admin/document-types": "Administrar Tipos de Documentos",
 };
 
 export default function NavbarLayout({}: Route.ComponentProps) {
@@ -29,45 +32,22 @@ export default function NavbarLayout({}: Route.ComponentProps) {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Aplicación de Pasantías</h1>
-          <nav className="flex items-center space-x-4">
-            <Link
-              href="/admin/usuarios"
-              className="text-gray-700 hover:text-blue-500"
-            >
-              Usuarios
-            </Link>
-            <Link
-              href="/admin/carreras"
-              className="text-gray-700 hover:text-blue-500"
-            >
-              Carreras
-            </Link>
-            <Link
-              href="/admin/ofertas"
-              className="text-gray-700 hover:text-blue-500"
-            >
-              Ofertas
-            </Link>
-            <Link
-              href="/admin/empresas"
-              className="text-gray-700 hover:text-blue-500"
-            >
-              Empresas
-            </Link>
-            <Link
-              href="/admin/aplicaciones"
-              className="text-gray-700 hover:text-blue-500"
-            >
-              Aplicaciones
-            </Link>
-            {/* Notification bell */}
-            <div className="ml-4">
-              {/* @ts-ignore - client component */}
-              <NotificationBell />
-            </div>
-          </nav>
+        <div className="w-full px-4 py-4 flex justify-between items-center">
+          {/* Use shared responsive navbar */}
+          <AppNavbar
+            title={"Aplicación de Pasantías"}
+            centerItems={[
+              { label: 'Usuarios', href: '/admin/usuarios', isActive: location.pathname === '/admin/usuarios' },
+              { label: 'Carreras', href: '/admin/carreras', isActive: location.pathname === '/admin/carreras' },
+              { label: 'Ofertas', href: '/admin/ofertas', isActive: location.pathname === '/admin/ofertas' },
+              { label: 'Empresas', href: '/admin/empresas', isActive: location.pathname === '/admin/empresas' },
+              { label: 'Aplicaciones', href: '/admin/aplicaciones', isActive: location.pathname === '/admin/aplicaciones' },
+              { label: 'Skills', href: '/admin/skills', isActive: location.pathname === '/admin/skills' },
+              { label: 'Tipos de Docs', href: '/admin/document-types', isActive: location.pathname === '/admin/document-types' },
+            ]}
+            rightItems={[{ label: 'Mi cuenta', href: '/profile' }, { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await import('~/util/AuthContext').then(m => m.logout()); window.location.href = '/'; } }]}
+            showNotificationBell
+          />
         </div>
       </header>
       <main className="container mx-auto px-4 py-6">
