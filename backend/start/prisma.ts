@@ -1,7 +1,11 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client.js'
 import env from './env.js'
-import { guardModelExtension, paginationExtension } from '../prisma/extensions.js'
+import {
+  autoDecryptionExtension,
+  guardModelExtension,
+  paginationExtension,
+} from '../prisma/extensions.js'
 
 const databaseUrl = env.get('DATABASE_URL')
 
@@ -19,6 +23,7 @@ export const prisma = new PrismaClient({
 })
   .$extends(guardModelExtension)
   .$extends(paginationExtension)
+  .$extends(autoDecryptionExtension)
 
 process.on('beforeExit', async () => {
   await prisma.$disconnect()

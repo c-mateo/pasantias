@@ -1,0 +1,5 @@
+@component('emails/layouts/base_text', { title: 'Correo actualizado', heading: `Hola ${name}!`, appName: appName })
+@slot('main')
+  Tu correo fue actualizado hacia {{ oldEmail }}. Si no fuiste vos, contacta soporte.
+@endslot
+@endcomponent

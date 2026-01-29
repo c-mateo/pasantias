@@ -25,8 +25,6 @@ export function encryptUserData<T extends Partial<UserData>>(data: T): StrictUse
   return result
 }
 
-// encryptUserData({ email: 'a'}).
-
 export function decryptUserData<T extends PartialOrNullable<UserData>>(data: T): T {
   const result: any = { ...data }
 

@@ -83,6 +83,13 @@ export default class ApplicationController {
             },
           },
         },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
     })
   }
@@ -90,12 +97,31 @@ export default class ApplicationController {
   async get({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
 
-    const extraWhere = auth.user?.role === 'ADMIN' ? {} : { userId: auth.user?.id }
+    console.log('Role', auth.user?.role)
+    const isAdmin = auth.user?.role === 'ADMIN'
+
+    const extraWhere = isAdmin ? {} : { userId: auth.user?.id }
+    const extraFields = isAdmin
+      ? {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        }
+      : {}
+
+    console.log(extraFields)
 
     const application = await prisma.application.findUniqueOrThrow({
       where: {
         id: params.id,
         ...extraWhere,
+      },
+      omit: {
+        userId: true,
       },
       include: {
         offer: {
@@ -125,17 +151,16 @@ export default class ApplicationController {
             },
           },
         },
+        ...extraFields,
       },
     })
 
-    // const { blockedAt, unblockedAt, blockReason, finalizedAt, feedback, status, ...rest } = application
-
     const data: Record<string, any> = {
       id: application.id,
-      offer: application.offer,
       status: application.status,
+      offer: application.offer,
+      user: application.user,
       createdAt: application.createdAt,
-      customFieldsValues: application.customFieldsValues,
     }
 
     if (application.status.match(/^(ACCEPTED|REJECTED|CANCELED)$/)) {
@@ -196,7 +221,7 @@ export default class ApplicationController {
         id: application.id,
       },
       data: {
-        status: 'CANCELLED',
+        status: 'CANCELED',
         finalizedAt: new Date(),
         attachments: {
           deleteMany: {

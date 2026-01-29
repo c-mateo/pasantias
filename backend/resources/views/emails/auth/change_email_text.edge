@@ -1,0 +1,8 @@
+@component('emails/layouts/base_text', { title: 'Confirmá tu nuevo correo', heading: `Hola ${name}!`, appName: appName })
+@slot('main')
+Solicitaste cambiar tu correo a: {{ newEmail }}
+
+Confirmá el cambio con este link:
+{{ confirmUrl }}
+@endslot
+@endcomponent

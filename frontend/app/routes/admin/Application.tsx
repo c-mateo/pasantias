@@ -10,7 +10,7 @@ import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
 import type { AdminApplicationDetailsResponse } from "~/api/types";
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  const res = await api.get(`/applications/${(params as any).applicationId}`).json<AdminApplicationDetailsResponse>();
+  const res = await api.get(`/admin/applications/${(params as any).applicationId}`).json<AdminApplicationDetailsResponse>();
   return res.data ?? {};
 }
 

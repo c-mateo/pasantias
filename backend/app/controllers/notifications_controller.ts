@@ -14,21 +14,20 @@ function getNotificationOrder(s?: string) {
   }
 }
 
-
-
 export default class NotificationsController {
-  
   async list({ auth }: HttpContext) {
     // use shared pagination validator
     // @ts-ignore
     const request: any = arguments[0]?.request
-    const { query, filterWhere } = await preparePagination(request, { fieldMap: {
-      id: 'number',
-      title: 'string',
-      message: 'string',
-      type: 'string',
-      createdAt: 'string'
-    } })
+    const { query, filterWhere } = await preparePagination(request, {
+      fieldMap: {
+        id: 'number',
+        title: 'string',
+        message: 'string',
+        type: 'string',
+        createdAt: 'string',
+      },
+    })
 
     return await prisma.notification.paginate({
       limit: query.limit ?? 20,
@@ -62,7 +61,7 @@ export default class NotificationsController {
       ],
     }
   }
-  
+
   async markAsRead({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
 
@@ -79,7 +78,7 @@ export default class NotificationsController {
         title: true,
         isRead: true,
         readAt: true,
-      }
+      },
     })
 
     return {
@@ -93,7 +92,7 @@ export default class NotificationsController {
     await prisma.notification.guardedDelete({
       where: {
         id: params.id,
-        userId: auth.user?.id
+        userId: auth.user?.id,
       },
     })
 

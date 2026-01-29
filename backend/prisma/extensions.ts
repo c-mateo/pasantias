@@ -1,6 +1,113 @@
 import { apiErrors } from '#exceptions/my_exceptions'
+import { encryptUserData, userDataKeys } from '#utils/user'
+import encryption from '@adonisjs/core/services/encryption'
+import { StrictUserSubset, UserData, UserDataKey } from '../app/types/user.js'
 import { Prisma } from '../generated/prisma/client.js'
 import { ErrorStrategy, executeGuarded } from './guard.js'
+
+export type StrictUserExclusion<T extends object> = {
+  [K in Exclude<keyof T, UserDataKey>]: T[K]
+}
+
+const separate = <T extends Partial<UserData>>(user: T) => {
+  const a = {} as any
+  const b = {} as any
+
+  for (const key in user) {
+    if (userDataKeys.includes(key as any)) {
+      a[key] = user[key]
+    } else {
+      b[key] = user[key]
+    }
+  }
+
+  return {
+    sensitive: a as StrictUserSubset<T>,
+    nonSensitive: b as StrictUserExclusion<T>,
+  }
+}
+
+export const autoDecryptionExtension = Prisma.defineExtension({
+  name: 'Encryption Extension',
+  result: {
+    user: {
+      email: {
+        needs: { email: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.email) ?? ''
+        },
+      },
+      firstName: {
+        needs: { firstName: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.firstName) ?? ''
+        },
+      },
+      lastName: {
+        needs: { lastName: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.lastName) ?? ''
+        },
+      },
+      cuil: {
+        needs: { cuil: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.cuil) ?? ''
+        },
+      },
+      phone: {
+        needs: { phone: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.phone) ?? ''
+        },
+      },
+      address: {
+        needs: { address: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.address) ?? ''
+        },
+      },
+      province: {
+        needs: { province: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.province) ?? ''
+        },
+      },
+      city: {
+        needs: { city: true },
+        compute(user) {
+          return encryption.decrypt<string>(user.city) ?? ''
+        },
+      },
+    },
+  },
+
+  query: {
+    user: {
+      async update({ model, operation, args, query }) {
+        // args.data.email.
+        const { sensitive, nonSensitive } = separate(args.data)
+        args.data = {
+          ...encryptUserData(sensitive),
+          ...nonSensitive,
+        }
+        return await query(args)
+        // if (!result) return null
+        // return decryptUserData(result)
+      },
+      async create({ model, operation, args, query }) {
+        const { sensitive, nonSensitive } = separate(args.data)
+        args.data = {
+          ...encryptUserData(sensitive),
+          ...nonSensitive,
+        }
+        return await query(args)
+        // if (!result) return null
+        // return decryptUserData(result)
+      },
+    },
+  },
+})
 
 export const guardModelExtension = Prisma.defineExtension({
   name: 'Guarded Model Extension',

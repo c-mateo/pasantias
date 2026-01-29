@@ -2,18 +2,19 @@ import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import { checkUnique } from '../../prisma/strategies.js'
 import getRoute from '#utils/getRoutes'
-import { decryptUserData, encryptUserData } from '#utils/user'
 import { sha256 } from '#utils/hash'
 import hash from '@adonisjs/core/services/hash'
 import { apiErrors } from '#exceptions/my_exceptions'
 import { generateToken } from '#utils/tokens'
-import SendEmail from '#jobs/send_email'
+import SendTemplatedEmail from '#jobs/send_templated_email'
 import {
   updateValidator,
   requestEmailChangeValidator,
   confirmEmailChangeValidator,
   changePasswordValidator,
 } from '#validators/profile'
+import CreateNotifications from '#jobs/create_notifications'
+import env from '#start/env'
 
 // Validators moved to `backend/app/validators/profile.ts` and imported at top
 
@@ -37,7 +38,7 @@ export default class ProfilesController {
       },
     })
     return {
-      data: decryptUserData(userData),
+      data: userData,
       links: [
         { rel: 'self', href: request.url(), method: 'GET' },
         { rel: 'update', href: request.url(), method: 'PATCH' },
@@ -71,7 +72,7 @@ export default class ProfilesController {
       {
         where: { id: auth.user!.id },
         data: {
-          ...encryptUserData(validated),
+          ...validated,
           skills: data.skillsIds
             ? {
                 set: data.skillsIds.map((id: number) => ({ id })),
@@ -102,7 +103,7 @@ export default class ProfilesController {
     )
 
     return {
-      data: decryptUserData(updatedUser),
+      data: updatedUser,
     }
   }
 
@@ -138,26 +139,55 @@ export default class ProfilesController {
       },
     })
 
-    const decrypted = decryptUserData(user)
-
     // Send confirmation to new email
-    const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/confirm-email?token=${token}`
-    await SendEmail.dispatch({
+    const url = `${env.get('FRONTEND_URL')}/confirm-email?token=${token}`
+    await SendTemplatedEmail.dispatch({
       to: newEmail,
-      subject: 'Confirma tu nuevo correo',
-      html: `<p>Confirma tu nuevo correo haciendo click <a href="${url}">aquí</a></p>`,
-      text: `Confirma tu nuevo correo: ${url}`,
+      template: 'auth_change_email',
+      data: { name: user.firstName ?? user.email, newEmail, confirmUrl: url },
     }).catch(console.error)
 
     // Notify current email
-    await SendEmail.dispatch({
-      to: decrypted.email,
-      subject: 'Solicitud de cambio de correo electrónico',
-      html: `<p>Se solicitó un cambio de correo hacia ${newEmail}. Si no fuiste vos, contacta soporte.</p>`,
-      text: `Se solicitó un cambio de correo hacia ${newEmail}. Si no fuiste vos, contacta soporte.`,
+    await SendTemplatedEmail.dispatch({
+      to: user.email,
+      template: 'auth_change_email_requested',
+      data: { name: user.firstName ?? user.email, newEmail },
     }).catch(console.error)
 
     return { message: 'Revisa tu correo para confirmar el cambio' }
+  }
+
+  async verify({ request }: HttpContext) {
+    const { token } = await request.validateUsing(confirmEmailChangeValidator)
+
+    const tokenHash = sha256(token)
+    const record = await prisma.userToken.findUnique({ where: { tokenHash } })
+    if (!record) throw apiErrors.invalidToken()
+    if (record.type !== 'EMAIL_VERIFY') throw apiErrors.invalidToken()
+    if (record.usedAt) throw apiErrors.invalidToken()
+    if (record.expiresAt < new Date()) throw apiErrors.expiredToken()
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: record.userId } })
+    if (user.emailVerifiedAt) {
+      throw apiErrors.validationError([
+        {
+          field: 'email',
+          message: 'Email is already verified.',
+        },
+      ])
+    }
+
+    // Transactional update: set emailVerifiedAt and mark the token used in a single atomic operation.
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { emailVerifiedAt: new Date() },
+      })
+      await tx.userToken.update({ where: { id: record.id }, data: { usedAt: new Date() } })
+      await tx.notification.deleteMany({
+        where: { userId: record.userId, tag: 'email-verification' },
+      })
+    })
   }
 
   async confirmEmailChange({ request }: HttpContext) {
@@ -172,6 +202,9 @@ export default class ProfilesController {
 
     const newEmail = (record.metadata as any)?.newEmail
     if (!newEmail) throw apiErrors.invalidToken()
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: record.userId } })
+    const oldEmail = user.email
 
     // Transactional update: change email, reset emailVerifiedAt, and mark the
     // token used in a single atomic operation. A transaction is necessary to
@@ -192,11 +225,25 @@ export default class ProfilesController {
     })
 
     // Notify new email
-    await SendEmail.dispatch({
+    await SendTemplatedEmail.dispatch({
       to: newEmail,
-      subject: 'Correo actualizado',
-      html: `<p>Tu correo fue actualizado correctamente.</p>`,
-      text: `Tu correo fue actualizado correctamente.`,
+      template: 'auth_email_updated',
+      data: { name: user.firstName ?? user.email, email: newEmail },
+    }).catch(console.error)
+
+    // Notify old email
+    await SendTemplatedEmail.dispatch({
+      to: oldEmail,
+      template: 'auth_email_update_notification',
+      data: { name: user.firstName ?? user.email, oldEmail },
+    }).catch(console.error)
+
+    // Notify in-site
+    await CreateNotifications.dispatch({
+      users: [record.userId],
+      title: 'Correo actualizado',
+      message: 'Tu correo fue actualizado correctamente.',
+      tag: 'email-change',
     }).catch(console.error)
 
     return { message: 'Correo actualizado' }

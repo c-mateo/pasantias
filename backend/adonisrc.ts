@@ -56,6 +56,7 @@ export default defineConfig({
     () => import('@adonisjs/redis/redis_provider'),
     () => import('@adonisjs/limiter/limiter_provider'),
     () => import('adonisjs-websocket/websocket_provider'),
+    () => import('@adonisjs/core/providers/edge_provider'),
   ],
 
   /*
@@ -97,4 +98,10 @@ export default defineConfig({
     ],
     forceExit: false,
   },
+  metaFiles: [
+    {
+      pattern: 'resources/views/**/*.edge',
+      reloadServer: false,
+    },
+  ],
 })

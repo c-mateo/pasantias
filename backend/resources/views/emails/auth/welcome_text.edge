@@ -1,0 +1,9 @@
+@component('emails/layouts/base_text', { title: '¡Bienvenido!', heading: `Hola ${name}!`, appName: appName })
+@slot('main')
+  Gracias por registrarte en {{ appName }}.
+  @if(verifyUrl)
+    Confirmá tu correo con este link:
+    {{ verifyUrl }}
+  @endif
+@endslot
+@endcomponent

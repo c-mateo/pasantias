@@ -11,10 +11,18 @@ import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
 import { auth, forgot, reset, profile, admin } from '#start/limiter'
 import { UserRole } from '@prisma/client'
+import SendTemplatedEmail from '#jobs/send_templated_email'
 
-router.get('/', async () => {
+router.post('/test', async () => {
+  await SendTemplatedEmail.dispatch({
+    to: 'cerrimateo@hotmail.com.ar',
+    template: 'auth_welcome',
+    data: {
+      name: 'Matias',
+    },
+  })
   return {
-    hello: 'world',
+    test: 'it works!',
   }
 })
 
@@ -76,7 +84,7 @@ router
       .use(middleware.auth())
       .use(profile)
 
-    // Email change confirm (public token consumption) - rate limited
+    router.post('profile/verify', '#controllers/profile_controller.verify').use(reset)
     router
       .post('profile/email/confirm', '#controllers/profile_controller.confirmEmailChange')
       .use(reset)

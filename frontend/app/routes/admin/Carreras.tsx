@@ -1,53 +1,125 @@
-import { useState } from "react";
+import { startTransition, useOptimistic, useState } from "react";
 import type { Route } from "./+types/Carreras";
 import { api } from "~/api/api";
-import type { AdminCourseListResponse } from "~/api/types";
-import AdminList2 from "~/components/AdminList2";
+import type {
+  AdminCourseListResponse,
+  CourseDTO,
+  Paginated,
+} from "~/api/types";
+import AdminList2, { type Header } from "~/components/AdminList2";
+import { useList } from "./Aplicaciones";
 
 export async function clientLoader(data: Route.ClientLoaderArgs) {
-  // const user = await requireUser();
-  // if (user?.role !== "ADMIN") return null;
-
-  const res = await api
-    .get("/courses?limit=10")
-    .json<AdminCourseListResponse>();
-  return {
-    initialData: res?.data ?? [],
-    pagination: res?.pagination ?? { next: null, prev: null },
-  };
+  return await api.get("/courses?limit=10").json<AdminCourseListResponse>();
 }
 
+// export function AdminPage<T extends Paginated<{ id: number }>>({
+//   title,
+//   createHref,
+//   columns,
+//   listEndpoint,
+//   deleteEndpoint,
+//   chunk,
+//   loaderData,
+//   getName,
+// }: {
+//   title: string;
+//   createHref: string;
+//   columns: Header[];
+//   listEndpoint: string;
+//   deleteEndpoint: string;
+//   chunk: number;
+//   loaderData: T;
+//   getName: (item: T) => string;
+// }) {
+//   const { items, hasMore, loading, loadMore, deleteItems } = useList({
+//     endpoint: listEndpoint,
+//     chunk,
+//     loaderData,
+//   });
+
+//   const [optimisticItems, deleteOptimisticItems] = useOptimistic(
+//     items,
+//     (items, deletedIds: number[]) => {
+//       return items.filter((item) => !deletedIds.includes(item.id));
+//     },
+//   );
+
+//   const onDeleteItem = async (id: number) => {
+//     startTransition(async () => {
+//       deleteOptimisticItems([id]);
+//       await api.delete(deleteEndpoint + "/" + id).res();
+//       deleteItems([id]);
+//     });
+//   };
+
+//   const onDeleteItems = async (ids: number[]) => {
+//     startTransition(async () => {
+//       deleteOptimisticItems(ids);
+//       await Promise.all(
+//         ids.map(
+//           async (id) => await api.delete(deleteEndpoint + "/" + id).res(),
+//         ),
+//       );
+//       deleteItems(ids);
+//     });
+//   };
+
+//   return (
+//     <div className="px-4 py-3 max-w-4xl mx-auto">
+//       <AdminList2
+//         canCreate
+//         canDelete
+//         columns={columns}
+//         items={optimisticItems}
+//         loading={loading}
+//         hasMore={hasMore}
+//         loadMore={loadMore}
+//         getId={(c) => c.id}
+//         getName={getName}
+//         onDeleteItem={(id) => onDeleteItem(id)}
+//         onDeleteSelected={(ids) => onDeleteItems(ids)}
+//         createHref={createHref}
+//         title={title}
+//       />
+//     </div>
+//   );
+// }
+
 export default function Cursos({ loaderData }: Route.ComponentProps) {
-  const { initialData, pagination } = loaderData;
+  const { items, hasMore, loading, loadMore, deleteItems } = useList({
+    endpoint: "/courses",
+    chunk: 10,
+    loaderData,
+  });
 
-  const [courses, setCourses] = useState(initialData || []);
-  const [page, setPage] = useState(pagination.next);
-  const [loading, setLoading] = useState(false);
+  const [optimisticItems, deleteOptimisticItems] = useOptimistic(
+    items,
+    (items, deletedIds: number[]) => {
+      return items.filter((item) => !deletedIds.includes(item.id));
+    },
+  );
 
-  const loadMore = async () => {
-    if (!page || loading) return;
-    setLoading(true);
-    try {
-      const res = await api.get(`/courses?limit=10&after=${page}`).json<AdminCourseListResponse>();
-      const next = res?.data ?? [];
-      setCourses((prev) => [...prev, ...next]);
-      setPage(res?.pagination?.next ?? null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const deleteCourse = async (id: number) => {
+    startTransition(async () => {
+      deleteOptimisticItems([id]);
+      await api.delete(`/courses/${id}`).res();
+      deleteItems([id]);
+    });
   };
 
-  const hasMore = page !== null;
+  const deleteCourses = async (ids: number[]) => {
+    startTransition(async () => {
+      deleteOptimisticItems(ids);
+      await Promise.all(
+        ids.map(async (id) => await api.delete(`/courses/${id}`).res()),
+      );
+      deleteItems(ids);
+    });
+  };
 
-  const deleteCourse = (courseId: number) =>
-    setCourses((prev) => prev.filter((c) => c.id !== courseId));
-  const deleteCourses = (ids: number[]) =>
-    setCourses((prev) => prev.filter((c) => !ids.includes(c.id)));
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
-      {/* AdminList shows title and create button */}
       <AdminList2
         canCreate
         canDelete
@@ -57,10 +129,11 @@ export default function Cursos({ loaderData }: Route.ComponentProps) {
             name: "shortName",
             label: "Sigla",
             alignment: "center",
-            renderer: (item) => item || "N/A",
-          }
+            sortable: true,
+            renderer: (value) => value ?? "N/A",
+          },
         ]}
-        items={courses}
+        items={optimisticItems}
         loading={loading}
         hasMore={hasMore}
         loadMore={loadMore}

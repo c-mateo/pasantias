@@ -1,12 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Button } from "@heroui/button";
+import { useState } from "react";
 import AdminList2 from "~/components/AdminList2";
-import { Input } from "@heroui/react";
 import type { Route } from "./+types/Usuarios";
 import { api } from "~/api/api";
-import type { UserListResponse } from "~/api/types";
-import ActionButtons from "~/components/ActionButtons";
-import toast from "~/util/toast";
 
 // Admin view of a user
 export type AdminUser = {

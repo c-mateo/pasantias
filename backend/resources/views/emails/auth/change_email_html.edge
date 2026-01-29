@@ -1,0 +1,38 @@
+@mjml()
+<mjml>
+  <mj-body background-color="#f6f7fb">
+    <mj-section padding="24px 0">
+      <mj-column>
+        <mj-wrapper background-color="#ffffff" padding="24px" border-radius="12px">
+          <mj-text font-size="20px" font-weight="bold"> Confirmá tu nuevo correo </mj-text>
+
+          <mj-text> Hola {{ name }}, solicitaste cambiar tu correo a: </mj-text>
+
+          <mj-text font-weight="bold">
+            {{ newEmail }}
+          </mj-text>
+
+          <mj-text> Para confirmar el cambio, hacé click acá: </mj-text>
+
+          <mj-button href="{{ confirmUrl }}"> Confirmar cambio </mj-button>
+
+          <mj-text font-size="12px" color="#666666">
+            Si el botón no funciona, copiá y pegá este link:<br />
+            {{ confirmUrl }}
+          </mj-text>
+
+          <mj-divider />
+
+          <mj-text font-size="12px" color="#666666">
+            Si no solicitaste este cambio, ignorá este correo.
+          </mj-text>
+        </mj-wrapper>
+
+        <mj-text align="center" font-size="12px" color="#999999" padding="12px 0 0">
+          {{ appName }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
+@end

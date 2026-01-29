@@ -1,18 +1,17 @@
 import { prisma } from '#start/prisma'
 import { Job } from 'adonisjs-jobs'
-import { NotificationType } from '../../generated/prisma/browser.js'
 
 type BroadcastNotification = {
+  users: 'ALL'
   title: string
   message: string
-  type: 'ADMIN_ANNOUNCEMENT'
 }
 
 type UserSpecificNotification = {
   users: number[]
   title: string
   message: string
-  type: Exclude<NotificationType, 'ADMIN_ANNOUNCEMENT'>
+  tag?: string
 }
 
 type CreateNotificationsPayload = BroadcastNotification | UserSpecificNotification
@@ -31,17 +30,16 @@ export default class CreateNotifications extends Job {
 
     let users: number[] = []
 
-    if (payload.type === 'ADMIN_ANNOUNCEMENT') {
+    if (payload.users === 'ALL') {
       users = await getAllStudentIds()
     } else {
       // Sanitize provided user ids: only keep existing users with role = STUDENT
       const ids = (payload as any).users ?? []
-      users = (
-        await prisma.user.findMany({
-          where: { id: { in: ids }, role: 'STUDENT', deletedAt: null },
-          select: { id: true },
-        })
-      ).map((u) => u.id)
+      const result = await prisma.user.findMany({
+        where: { id: { in: ids }, role: 'STUDENT', deletedAt: null },
+        select: { id: true },
+      })
+      users = result.map((u) => u.id)
     }
 
     const result = await prisma.notification.createMany({
@@ -49,7 +47,7 @@ export default class CreateNotifications extends Job {
         userId: userId,
         title: payload.title,
         message: payload.message,
-        type: payload.type,
+        tag: (payload as any).tag ?? '',
       })),
     })
     this.logger.info(`Created ${result.count} notifications`)

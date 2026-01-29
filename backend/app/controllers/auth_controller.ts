@@ -12,9 +12,9 @@ import { sha256 } from '#utils/hash'
 import { checkUnique, FieldContext } from '../../prisma/strategies.js'
 import getRoute from '#utils/getRoutes'
 
-import SendEmail from '#jobs/send_email'
-import { decryptUserData, encryptUserData } from '#utils/user'
 import { generateToken } from '#utils/tokens'
+import SendTemplatedEmail from '#jobs/send_templated_email'
+import CreateNotifications from '#jobs/create_notifications'
 
 // Validators moved to `backend/app/validators/auth.ts` and imported at top
 
@@ -35,7 +35,7 @@ export default class AuthController {
     const { id, role } = await prisma.user.guardedCreate(
       {
         data: {
-          ...encryptUserData(validated),
+          ...validated,
 
           role: userCount === 0 ? 'ADMIN' : 'STUDENT', // First registered user gets ADMIN
           password: hashedPassword,
@@ -52,21 +52,21 @@ export default class AuthController {
     // Compose verification link (frontend should implement route to accept token)
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
 
-    // Enqueue SendEmail job
-    await SendEmail.dispatch({
+    await SendTemplatedEmail.dispatch({
       to: validated.email,
-      subject: 'Verify your email',
-      html: `<p>Please verify your email by clicking <a href="${verifyUrl}">here</a></p>`,
-      text: `Verify your email: ${verifyUrl}`,
+      template: 'auth_welcome',
+      data: {
+        name: validated.firstName,
+        verifyUrl,
+      },
     }).catch(console.error)
 
-    // TODO: Enqueue welcome notification job
-    // await CreateNotifications.dispatch({
-    //   users: [ id ],
-    //   title: 'Welcome',
-    //   message: 'Welcome to the platform. Please verify your email.',
-    //   type: ''
-    // }).catch(console.error)
+    await CreateNotifications.dispatch({
+      users: [id],
+      title: 'Welcome',
+      message: 'Welcome to the platform. Please verify your email.',
+      tag: 'email-verification',
+    }).catch(console.error)
 
     return response.created({
       data: {
@@ -87,6 +87,14 @@ export default class AuthController {
       where: {
         emailHash: sha256(validated.email),
       },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        password: true,
+      },
     })
 
     if (!user || !hash.verify(user.password, validated.password)) {
@@ -95,17 +103,11 @@ export default class AuthController {
 
     await auth.use('web').login(user)
 
-    const decryptedUser = decryptUserData(user)
+    const { password, ...userWithoutPassword } = user
 
     return {
       data: {
-        user: {
-          id: decryptedUser.id,
-          email: decryptedUser.email,
-          role: decryptedUser.role,
-          firstName: decryptedUser.firstName,
-          lastName: decryptedUser.lastName,
-        },
+        user: userWithoutPassword,
         // TODO: Implement proper session expiration management
         sessionExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
         links: [
@@ -151,25 +153,26 @@ export default class AuthController {
     const { token, tokenHash } = generateToken()
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60) // 60 minutes
 
-    const decryptedUser = decryptUserData(user)
-
     await prisma.userToken.create({
       data: {
         userId: user.id,
         type: 'PASSWORD_RESET',
         tokenHash,
         expiresAt,
-        metadata: { email: decryptedUser.email },
+        metadata: { email: user.email },
       },
     })
 
     // Send email with reset link (frontend should implement route to accept token)
     const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`
-    await SendEmail.dispatch({
-      to: decryptedUser.email,
-      subject: 'Restablece tu contraseña',
-      html: `<p>Para restablecer tu contraseña, haz click <a href="${url}">aquí</a></p>`,
-      text: `Restablece tu contraseña: ${url}`,
+    await SendTemplatedEmail.dispatch({
+      to: user.email,
+      template: 'auth_reset_password',
+      data: {
+        name: user.firstName ?? user.email,
+        expiresInMinutes: 60,
+        resetUrl: url,
+      },
     }).catch(console.error)
 
     return response.ok(message)
@@ -209,15 +212,13 @@ export default class AuthController {
     // Notify user
     // We need user's email for notification
     const user = await prisma.user.findUniqueOrThrow({ where: { id: record.userId } })
-    const decrypted = decryptUserData(user)
-    await SendEmail.dispatch({
-      to: decrypted.email,
-      subject: 'Tu contraseña ha sido cambiada',
-      html: `<p>Tu contraseña fue actualizada exitosamente.</p>`,
-      text: `Tu contraseña fue actualizada exitosamente.`,
+    await SendTemplatedEmail.dispatch({
+      to: user.email,
+      template: 'auth_password_changed',
+      data: { name: user.firstName ?? user.email },
     }).catch(console.error)
 
     // Return email in response so frontend can auto-login if desired
-    return response.ok({ message: 'Contraseña actualizada', email: decrypted.email })
+    return response.ok({ message: 'Contraseña actualizada', email: user.email })
   }
 }

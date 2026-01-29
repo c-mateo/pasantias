@@ -1,9 +1,4 @@
-import {
-  useState,
-  useRef,
-  useEffect,
-  type ReactNode,
-} from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import ActionButtons from "./ActionButtons";
 import { Button } from "@heroui/button";
 import { Modal } from "./Modal";
@@ -29,9 +24,16 @@ export type Header = {
   name: string;
   alignment?: "start" | "center" | "end";
   className?: string;
-  renderer?: (item: any) => ReactNode;
+  renderer?: (value: any) => ReactNode;
   sortable?: boolean;
 };
+
+type RowContext = {
+    createHref?: string;
+    handleDeleteItem: () => void;
+};
+
+type RowActions = (item: any, ctx: RowContext) => ReactNode;
 
 type AdminListProps<T> = {
   title?: string;
@@ -47,6 +49,7 @@ type AdminListProps<T> = {
   canCreate?: boolean;
   canDelete?: boolean;
   loadMore?: () => void;
+  rowActions?: RowActions;
 };
 
 function indexBy<T>(array: T[], prop: keyof T): { [key: string]: T } {
@@ -57,7 +60,21 @@ function indexBy<T>(array: T[], prop: keyof T): { [key: string]: T } {
   return index;
 }
 
-export default function AdminList2<T extends { id: number } & Record<string, any>>({
+const defaultActions: RowActions = (item, { createHref, handleDeleteItem }) => {
+  return (
+    <ActionButtons
+      onDelete={() => { console.log('Deleting item:', item.id); handleDeleteItem()}}
+      editHref={
+        createHref
+          ? createHref.replace(/nuevo$/, item.id.toString())
+          : undefined
+      }
+    />
+)};
+
+export default function AdminList2<
+  T extends { id: number } & Record<string, any>,
+>({
   title,
   items,
   getId,
@@ -71,6 +88,7 @@ export default function AdminList2<T extends { id: number } & Record<string, any
   canDelete,
   hasMore,
   loadMore,
+  rowActions = defaultActions,
 }: AdminListProps<T>) {
   const [selection, setSelection] = useState<Selection>(new Set());
   const [sortDescriptor, setSortDescriptor] = useState<
@@ -81,27 +99,21 @@ export default function AdminList2<T extends { id: number } & Record<string, any
     message: ReactNode;
     action: () => void;
   }>({ isOpen: false, message: "", action: () => {} });
-  const headerRef = useRef<HTMLInputElement | null>(null);
 
   const selectedCount = selection === "all" ? items.length : selection.size;
 
-  // indeterminate checkbox
-  //   useEffect(() => {
-  //     if (!headerRef.current) return;
-  //     const total = items.length;
-  //     headerRef.current.indeterminate =
-  //       selectedCount > 0 && selectedCount < total;
-  //   }, [selection, items]);
-
   const { setIsOpen } = createSetters(setModal);
 
-  const handleDeleteItem = (id: number) => () => {
+  const getDisplayName = (item: T | undefined) => {
+    if (!item) return "";
+    return getName ? getName(item) : String(getId(item));
+  };
+
+  const createDeleteItemHandler = (id: number) => () => {
+    console.log('Deleting item:', id);
     const name = items.find((it) => getId(it) === id);
-    const displayName = name
-      ? getName
-        ? getName(name)
-        : String(getId(name))
-      : id.toString();
+    const displayName = getDisplayName(name);
+    console.log('Deleting item:', displayName);
     setModal({
       isOpen: true,
       message: (
@@ -246,23 +258,13 @@ export default function AdminList2<T extends { id: number } & Record<string, any
             <TableRow key={item.id}>
               {(columnKey) => {
                 if (columnKey === "actions") {
-                  return (
-                    <TableCell>
-                      <ActionButtons
-                        onDelete={handleDeleteItem(item.id)}
-                        editHref={createHref ? createHref.replace(/nuevo$/, item.id.toString()) : undefined}
-                      />
-                    </TableCell>
-                  );
+                  return <TableCell>{rowActions(item, { createHref, handleDeleteItem: createDeleteItemHandler(item.id) })}</TableCell>;
                 }
                 const renderer = columnLookup[columnKey].renderer;
-                if (renderer)
-                  return (
-                    <TableCell>
-                      {renderer(getKeyValue(item, columnKey))}
-                    </TableCell>
-                  );
-                return <TableCell>{getKeyValue(item, columnKey)}</TableCell>;
+                const value = getKeyValue(item, columnKey);
+                return (
+                  <TableCell>{renderer ? renderer(value) : value}</TableCell>
+                );
               }}
             </TableRow>
           )}

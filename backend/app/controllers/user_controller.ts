@@ -2,7 +2,6 @@ import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import { idValidator } from '#validators/users'
 import { preparePagination, buildWhere } from '#utils/pagination'
-import { decryptUserData } from '#utils/user'
 import { sha256 } from '#utils/hash'
 import { updateCuilValidator } from '#validators/users'
 
@@ -37,7 +36,7 @@ export default class UserController {
     })
 
     return {
-      data: result.data.map(decryptUserData),
+      data: result.data,
       pagination: result.pagination,
     }
   }
@@ -65,7 +64,7 @@ export default class UserController {
       },
     })
     return {
-      data: decryptUserData(user),
+      data: user,
     }
   }
 

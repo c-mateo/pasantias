@@ -1,0 +1,5 @@
+@component('emails/layouts/base_text', { title: 'Solicitud de cambio de correo', heading: `Hola ${name}!`, appName: appName })
+@slot('main')
+  Se solicitó un cambio de correo hacia {{ newEmail }}. Si no fuiste vos, contacta soporte.
+@endslot
+@endcomponent

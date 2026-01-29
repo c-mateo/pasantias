@@ -66,9 +66,9 @@ export interface OfferDTO {
     location?: string | null
     salary?: number | null
     durationWeeks?: number | null
-    startDate?: string | null 
-    expiresAt?: string | null 
-    publishedAt: string | null 
+    startDate?: string | null
+    expiresAt?: string | null
+    publishedAt: string | null
 }
 
 export interface UserAdminDTO extends AuditFields { id: number; email: string; phone?: string | null; firstName: string; lastName: string; cuil: string; role: UserRole; address?: string | null; province?: string | null; city?: string | null; }
@@ -93,7 +93,7 @@ export type PublicDocumentTypeDTO = Omit<DocumentTypeDTO, keyof AuditFields>
 // --- 5. DTOs de Request (Bodies) con Nullable para PATCH ---
 
 /** CORREGIDO: Password no existe en UserAdminDTO; se añade directamente. */
-export interface RegisterBody extends Pick<UserAdminDTO, 'email' | 'firstName' | 'lastName'> { 
+export interface RegisterBody extends Pick<UserAdminDTO, 'email' | 'firstName' | 'lastName'> {
     password: string;
 }
 export interface LoginBody { email: string; password: string; }
@@ -111,7 +111,7 @@ export interface ChangePasswordResponse { message: string }
 export interface CompanyCreateBody extends Pick<CompanyDTO, 'name' | 'email' | 'description' | 'website' | 'phone' | 'logo'> {}
 /** CORREGIDO: Reconstrucción manual para permitir | null sin conflicto con Partial. */
 export interface CompanyUpdateBody extends Partial<Pick<CompanyDTO, 'name' | 'email'>> {
-    description?: string | null; 
+    description?: string | null;
     website?: string | null;
     phone?: string | null;
     logo?: string | null;
@@ -120,8 +120,8 @@ export interface CompanyUpdateBody extends Partial<Pick<CompanyDTO, 'name' | 'em
 // Admin CRUD - Course
 export interface CourseCreateBody extends Pick<CourseDTO, 'name' | 'shortName' | 'description'> {}
 
-export interface CourseUpdateBody extends Partial<Pick<CourseDTO, 'name'>> { 
-    shortName?: string | null; 
+export interface CourseUpdateBody extends Partial<Pick<CourseDTO, 'name'>> {
+    shortName?: string | null;
     description?: string | null;
 }
 
@@ -138,7 +138,7 @@ export interface OfferCreateBody extends Pick<OfferDTO, 'position' | 'descriptio
 }
 
 export interface OfferUpdateBody extends Partial<Pick<OfferDTO, 'position' | 'description' | 'status' | 'vacancies'>> {
-    requirements?: string | null; 
+    requirements?: string | null;
     location?: string | null;
     salary?: number | null;
     durationWeeks?: number | null;
@@ -156,7 +156,7 @@ export interface ApplicationUpdateStatusBody {
   status: Exclude<ApplicationStatus, 'CANCELLED'>;
   blockReason?: string | null;
   feedback?: string | null;
-} 
+}
 
 // Drafts
 export interface DraftSaveBody { customFieldsValues?: Record<string, any> | null; }
@@ -165,7 +165,7 @@ export interface UseExistingDocumentBody { documentId: number; }
 
 // --- 6. Respuestas Finales (DTOs) ---
 
-export type RegisterResponse = DetailResponse<Omit<UserAdminDTO, 'phone' | 'address' | 'province' | 'city' | 'cuil' | keyof AuditFields>> 
+export type RegisterResponse = DetailResponse<Omit<UserAdminDTO, 'phone' | 'address' | 'province' | 'city' | 'cuil' | keyof AuditFields>>
 export interface UserLoginDTO extends Pick<UserAdminDTO, 'id' | 'email' | 'role' | 'firstName' | 'lastName'> {}
 export interface LoginResponse { data: { user: UserLoginDTO; sessionExpiresAt: string; links: { rel: string, href: string, method: string }[]; } }
 
@@ -174,8 +174,8 @@ export type ProfileResponse = DetailResponse<ProfileDTO>
 export type ProfileUpdateResponse = DetailResponse<ProfileDTO>
 
 // Company
-export type CompanyListResponse = Paginated<Omit<CompanyDTO, keyof AuditFields | 'email' | 'phone'>> 
-export type CompanyDetailsResponse = DetailResponse<Omit<CompanyDTO, keyof AuditFields>> 
+export type CompanyListResponse = Paginated<Omit<CompanyDTO, keyof AuditFields | 'email' | 'phone'>>
+export type CompanyDetailsResponse = DetailResponse<Omit<CompanyDTO, keyof AuditFields>>
 export type CompanyCreateResponse = DetailResponse<CompanyDTO>
 export type CompanyUpdateResponse = DetailResponse<CompanyDTO>
 export type CompanyDeleteResponse = NoContent
@@ -188,9 +188,9 @@ export type OfferListResponse = Paginated<OfferListDTO>
 export type AdminOfferListResponse = Paginated<OfferListDTO & AuditFields>
 
 export interface OfferDetailsDTO extends OfferDTO {
-    company: Pick<CompanyDTO, 'id' | 'name' | 'description' | 'logo' | 'website' | 'email' | 'phone'> 
-    skills: Pick<SkillDTO, 'id' | 'name' | 'description'>[] 
-    courses: CourseRefDTO[] 
+    company: Pick<CompanyDTO, 'id' | 'name' | 'description' | 'logo' | 'website' | 'email' | 'phone'>
+    skills: Pick<SkillDTO, 'id' | 'name' | 'description'>[]
+    courses: CourseRefDTO[]
     requiredDocuments: DocTypeRefDTO[]
 }
 export type OfferDetailsResponse = DetailResponse<OfferDetailsDTO>
@@ -243,10 +243,11 @@ export interface ApplicationDetailsDTO {
 export type ApplicationDetailsResponse = DetailResponse<ApplicationDetailsDTO>
 
 export interface AdminApplicationDetailsDTO extends ApplicationDetailsDTO {
-    user: Pick<UserAdminDTO, 'id' | 'firstName' | 'lastName' | 'email' | 'cuil' | 'phone'>;
+    user: Pick<UserAdminDTO, 'id' | 'firstName' | 'lastName'>;
     updatedAt: string;
 }
 export type AdminApplicationDetailsResponse = DetailResponse<AdminApplicationDetailsDTO>;
+export type AdminApplicationListResponse = Paginated<AdminApplicationDetailsDTO>
 
 export interface DocumentDTO { id: number; documentType: DocTypeRefDTO; originalName: string; hash: { sha256: string }; createdAt: string; lastUsedAt: string; }
 export type MyDocumentsListResponse = Paginated<DocumentDTO>

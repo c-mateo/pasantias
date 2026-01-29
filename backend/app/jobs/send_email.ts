@@ -13,9 +13,11 @@ export default class SendEmail extends Job {
   async handle({ to, subject, text, html }: SendEmailPayload) {
     this.logger.info('SendEmail job handled')
 
-    await mail.send((message) => {
+    const response = await mail.send((message) => {
       message.to(to).subject(subject).text(text)
       if (html) message.html(html)
     })
+
+    console.log('Email sent response:', response)
   }
 }

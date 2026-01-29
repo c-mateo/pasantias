@@ -21,28 +21,28 @@ model User {
   id Int @id @default(autoincrement())
 
   // Autenticación
-  emailHash String   @unique @db.VarChar(64) // SHA256 para buscar sin desencriptar
-  email     String   @db.Text // Encriptado (AES-256-GCM)
-  password  String   @db.VarChar(255) // Bcrypt hash
-  role      UserRole @default(STUDENT)
+  emailHash       String    @unique @db.VarChar(64) // SHA256 para buscar sin desencriptar
+  email           String    @db.Text // Encriptado
+  password        String    @db.VarChar(255) // Bcrypt hash
+  role            UserRole  @default(STUDENT)
   emailVerifiedAt DateTime?
 
   // Perfil obligatorio
   firstName String  @db.Text // Encriptado
   lastName  String  @db.Text // Encriptado
-  cuil      String? @db.Text // Encriptado (8 dígitos)
+  cuil      String? @db.Text // Encriptado
   cuilHash  String? @unique @db.VarChar(64) // SHA256 para buscar sin desencriptar
   phone     String? @unique @db.Text // Encriptado
   address   String? @db.Text // Encriptado (calle y número)
 
   // Ubicación (plain text para filtrar)
-  city      String? @db.Text // Encriptado
-  province  String? @db.Text // Encriptado
+  city     String? @db.Text // Encriptado
+  province String? @db.Text // Encriptado
 
   // Metadata
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relaciones
   courses       Course[] // N-N: Usuario en múltiples carreras
@@ -64,7 +64,7 @@ enum UserRole {
 
 // No implementado
 model UserToken {
-  id        Int @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    Int
   type      TokenType
   tokenHash String    @unique
@@ -226,7 +226,7 @@ model Document {
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   documentType DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
-  
+
   attachments DocumentAttachment[]
 
   @@index([userId])
@@ -322,7 +322,7 @@ enum ApplicationStatus {
   BLOCKED // Requiere acción del usuario (ej: documentos adicionales)
   ACCEPTED
   REJECTED
-  CANCELLED
+  CANCELED
 }
 
 // ==========================================
@@ -330,12 +330,12 @@ enum ApplicationStatus {
 // ==========================================
 
 model Notification {
-  id        Int              @id @default(autoincrement())
-  userId    Int
-  type      NotificationType
-  title     String           @db.VarChar(200)
-  message   String           @db.Text
-  relatedId Int?
+  id       Int     @id @default(autoincrement())
+  userId   Int
+  title    String  @db.VarChar(200)
+  message  String  @db.Text
+  clickUrl String? @db.VarChar(200)
+  tag      String  @db.VarChar(100)
 
   isRead    Boolean   @default(false)
   readAt    DateTime?
@@ -345,13 +345,4 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
-}
-
-enum NotificationType {
-  APPLICATION_SUBMITTED
-  APPLICATION_ACCEPTED
-  APPLICATION_REJECTED
-  OFFER_PUBLISHED
-  OFFER_CLOSING_SOON
-  ADMIN_ANNOUNCEMENT
 }
