@@ -6,8 +6,7 @@ import {
   guardModelExtension,
   paginationExtension,
 } from '../prisma/extensions.js'
-import CreateNotifications from '#jobs/create_notifications'
-import SendTemplatedEmail from '#jobs/send_templated_email'
+// Job imports removed here as they are imported where needed by controllers/jobs
 
 const databaseUrl = env.get('DATABASE_URL')
 

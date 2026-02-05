@@ -3,7 +3,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import { idValidator, broadcastValidator } from '#validators/notifications'
 import { buildFilterWhere } from '#utils/query_builder'
-import { notifyUser } from '#services/notification_service'
 import { enqueue } from '#utils/jobs'
 
 function getNotificationOrder(s?: string) {

@@ -1,4 +1,3 @@
-import { sha256 } from '#utils/hash'
 import { PrismaClient } from '../generated/prisma/client.js'
 
 export async function seed(prisma: PrismaClient) {

@@ -1,5 +1,5 @@
 // RFC 9457
-interface ProblemDetails {
+export interface ProblemDetails {
    type: string;
    title: string;
    status: number;
@@ -45,7 +45,7 @@ type UsageCount = {
    usedInOffers?: number;
 };
 
-const Errors = {
+export const Errors = {
    // 401 Unauthorized
    invalidCredentials: (instance: string) => ({
       type: "invalid-credentials" as const,

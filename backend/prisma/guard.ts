@@ -1,7 +1,7 @@
 import { apiErrors } from '#exceptions/my_exceptions'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 
-type PublicKeys<T> = {
+export type PublicKeys<T> = {
   [K in keyof T]: K extends `$${string}` ? never : K
 }[keyof T]
 

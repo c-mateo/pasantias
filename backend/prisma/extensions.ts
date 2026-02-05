@@ -9,7 +9,7 @@ export type StrictUserExclusion<T extends object> = {
   [K in Exclude<keyof T, UserDataKey>]: T[K]
 }
 
-const separate = <T extends Partial<UserData>>(user: T) => {
+const separate = <T extends Record<string, any>>(user: T) => {
   const a = {} as any
   const b = {} as any
 
@@ -84,20 +84,20 @@ export const autoDecryptionExtension = Prisma.defineExtension({
 
   query: {
     user: {
-      async update({ model, operation, args, query }) {
-        // args.data.email.
+      async update({ args, query }: any) {
+        // args.data may be a Prisma update input (with operation wrappers).
         const { sensitive, nonSensitive } = separate(args.data)
         args.data = {
-          ...encryptUserData(sensitive),
+          ...encryptUserData(sensitive as Partial<UserData>),
           ...nonSensitive,
         }
         return await query(args)
         // Note: result decryption handled by computed fields above.
       },
-      async create({ model, operation, args, query }) {
+      async create({ args, query }: any) {
         const { sensitive, nonSensitive } = separate(args.data)
         args.data = {
-          ...encryptUserData(sensitive),
+          ...encryptUserData(sensitive as Partial<UserData>),
           ...nonSensitive,
         }
         // Note: result decryption handled by computed fields above.

@@ -56,7 +56,7 @@ export default class AuthController {
     const verificationToken = sha256(`${id}-${Date.now()}`)
 
     // Compose verification link (frontend should implement route to accept token)
-    const verifyUrl = `${env.get('FRONTEND_URL')}/verify-email?token=${verificationToken}`
+    const verifyUrl = `${env.get('APP_URL')}/verify-email?token=${verificationToken}`
 
     await SendTemplatedEmail.dispatch({
       to: validated.email,
@@ -107,7 +107,7 @@ export default class AuthController {
       throw apiErrors.invalidCredentials()
     }
 
-    await auth.use('web').login(user)
+    await auth.use('web').login(user as any)
 
     const { password, ...userWithoutPassword } = user
 
@@ -169,7 +169,7 @@ export default class AuthController {
     })
 
     // Send email with reset link (frontend should implement route to accept token)
-    const url = `${env.get('FRONTEND_URL')}/reset-password?token=${token}`
+    const url = `${env.get('APP_URL')}/reset-password?token=${token}`
     await SendTemplatedEmail.dispatch({
       to: user.email,
       template: 'auth_reset_password',

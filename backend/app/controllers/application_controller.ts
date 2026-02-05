@@ -323,7 +323,7 @@ export default class ApplicationController {
     const user = application.user
     const fullname = user.firstName ?? user.email
     // Link for end-user should point to the public application view
-    const appUrl = `${env.get('FRONTEND_URL')}/applications/${application.id}`
+    const appUrl = `${env.get('APP_URL')}/applications/${application.id}`
 
     const title =
       status === 'ACCEPTED'

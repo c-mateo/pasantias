@@ -120,7 +120,7 @@ export default class ProfilesController {
     })
 
     // Send confirmation to new email
-    const url = `${env.get('FRONTEND_URL')}/confirm-email?token=${token}`
+    const url = `${env.get('APP_URL')}/confirm-email?token=${token}`
     await SendTemplatedEmail.dispatch({
       to: newEmail,
       template: 'auth_change_email',

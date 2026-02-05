@@ -1,4 +1,4 @@
-import create from 'zustand'
+import { create } from "zustand";
 import { api } from '~/api/api'
 import type { NotificationDTO, NotificationsListResponse } from '~/api/types'
 import { useAuthState } from './AuthContext'

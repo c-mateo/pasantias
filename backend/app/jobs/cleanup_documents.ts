@@ -2,8 +2,6 @@ import { Job } from 'adonisjs-jobs'
 import { prisma } from '#start/prisma'
 import fs from 'node:fs/promises'
 
-const TTL_DAYS = 7
-
 export default class CleanupDocuments extends Job {
   public static get schedule() {
     // No automatic cron here; enqueue from scheduler or run manually

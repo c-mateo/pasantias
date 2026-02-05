@@ -14,11 +14,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        API_URL: "http://127.0.0.1/api/v1"
     restart: always
     networks: [appnet]
     environment:
       NODE_ENV: production
       PORT: 3000
+      API_URL: "http://127.0.0.1/api/v1"
 
   backend:
     build:
@@ -26,21 +29,17 @@ services:
       dockerfile: Dockerfile
     restart: always
     networks: [appnet]
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 8080
-      APP_KEY: ${APP_KEY}
 
-      DB_CONNECTION: pg
-      PG_HOST: db
-      PG_PORT: 5432
-      PG_USER: root
-      PG_PASSWORD: root
-      PG_DB_NAME: app
-
+      DATABASE_URL: "postgresql://root:root@db:5432/app"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      APP_URL: http://127.0.0.1
     depends_on:
       - db
       - redis
@@ -52,19 +51,15 @@ services:
     restart: always
     networks: [appnet]
     command: ["node", "ace", "jobs:listen"]
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: production
-      APP_KEY: ${APP_KEY}
 
-      DB_CONNECTION: pg
-      PG_HOST: db
-      PG_PORT: 5432
-      PG_USER: root
-      PG_PASSWORD: root
-      PG_DB_NAME: app
-
+      DATABASE_URL: "postgresql://root:root@db:5432/app"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      APP_URL: http://127.0.0.1
     depends_on:
       - db
       - redis

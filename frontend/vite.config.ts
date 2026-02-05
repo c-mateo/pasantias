@@ -20,14 +20,14 @@ export default defineConfig({
     svgr(),
   ],
   server: {
-    // host: true,
-    // port: 3000,
+    host: true,
+    port: 3000,
     // hmr: {
     //   host: "localhost"
     // }
-    proxy: {
-      "/api": "http://localhost:3333",
-      "/__transmit": "http://localhost:3333",
-    },
+    // proxy: {
+    //   "/api": "http://localhost:3333",
+    //   "/__transmit": "http://localhost:3333",
+    // },
   },
 });
