@@ -11,9 +11,7 @@ type Payload = { to: string } & {
 }[EmailTemplateName]
 
 export default class SendTemplatedEmail extends Job {
-  // static get queue() {
-  //   return 'mail'
-  // }
+  // Queue name can be specified here if a dedicated queue is desired.
 
   // nombre común: handle
   async handle(payload: Payload) {

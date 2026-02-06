@@ -1,17 +1,10 @@
-// Lightweight jobs enqueue wrapper: tries to use Adonis Queue when available,
-// otherwise falls back to immediate execution of the job handler. This makes
-// code work in environments without a running queue during development.
-
+// Lightweight enqueue helper: prefer Queue when available, fallback to local execution
 export async function enqueue(jobName: string, payload: any) {
   try {
-    // Try to resolve Adonis Queue via IoC. If present, dispatch the job.
-    // Using dynamic import to avoid hard dependency at module load time.
-    // The IoC binding for adonisjs-jobs is usually '@ioc:Adonis/Addons/Queue'.
-    // Try several common bindings for compatibility.
+    // Try to resolve Adonis Queue via IoC and dispatch if available.
     const bindings = ['@ioc:Adonis/Addons/Queue', 'adonisjs-jobs/queue']
     for (const binding of bindings) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const Queue = require(binding)
         if (Queue && typeof Queue.dispatch === 'function') {
           return Queue.dispatch(jobName, payload)
@@ -27,9 +20,7 @@ export async function enqueue(jobName: string, payload: any) {
     // fallthrough to local execution
   }
 
-  // Fallback: attempt to require the job module from `#jobs/<jobName>` and
-  // execute its `handle` method directly. This allows jobs to run synchronously
-  // when no queue worker is available (useful for local dev or tests).
+  // Fallback: require `#jobs/<jobName>` and run its `handle` method synchronously
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const jobModule = require(`#jobs/${jobName}`)
