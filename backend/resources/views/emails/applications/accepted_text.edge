@@ -1,0 +1,10 @@
+@component('emails/layouts/base_text', { title: `Postulación Aceptada`, heading: `Hola ${name}!`, appName: appName })
+
+Tu postulación (ID: {{ applicationId }}) ha sido aceptada.
+
+Oferta: {{ offerPosition ?? 'N/A' }}
+
+Podés ver los detalles en: {{ appUrl ?? '' }}
+
+Gracias por postularte.
+@endcomponent

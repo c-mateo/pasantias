@@ -6,30 +6,34 @@
           <mj-wrapper background-color="#ffffff" padding="32px" border-radius="12px">
 
             <mj-text font-size="20px" font-weight="bold" line-height="28px" padding="0 0 16px 0">
-              Restablecer contraseña
+              ¡Hola {{ name }}!
             </mj-text>
 
             <mj-text font-size="15px" line-height="22px" padding="0 0 12px 0">
-              Hola {{ name }}, recibimos un pedido para restablecer tu contraseña.
+              Tu postulación (ID: <b>{{ applicationId }}</b>) ha sido <b>aceptada</b>.
             </mj-text>
+
+            <mj-spacer height="6px" />
 
             <mj-text font-size="15px" line-height="22px" padding="0 0 14px 0">
-              Este link vence en <b>{{ expiresInMinutes }} minutos</b>.
+              Oferta: {{ offerPosition ?? 'N/A' }}
             </mj-text>
 
-            <mj-button href="{{ resetUrl }}" padding="12px 0" background-color="#414141" border-radius="8px">
-              Restablecer contraseña
+            <mj-button href="{{ appUrl ?? '#' }}" padding="12px 0" background-color="#414141" border-radius="8px">
+              Ver postulación
             </mj-button>
 
-            <mj-text font-size="13px" color="#666666" line-height="18px" padding="12px 0 12px 0">
+            <mj-spacer height="8px" />
+
+            <mj-text font-size="13px" color="#666666" line-height="20px" padding="10px 0 14px 0">
               Si el botón no funciona, copiá y pegá este link:<br />
-              {{ resetUrl }}
+              {{ appUrl ?? '' }}
             </mj-text>
 
-            <mj-divider border-width="1px" border-color="#eeeeee" padding="8px 0 12px 0" />
+            <mj-divider border-width="1px" border-color="#eeeeee" padding="12px 0 16px 0" />
 
-            <mj-text font-size="13px" color="#666666" line-height="20px">
-              Si no solicitaste este cambio, ignorá este correo.
+            <mj-text font-size="14px" color="#666666" line-height="22px">
+              Gracias por postularte.
             </mj-text>
 
           </mj-wrapper>
