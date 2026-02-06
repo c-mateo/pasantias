@@ -6,10 +6,9 @@ import { api } from "~/api/api";
 import toast from "~/util/toast";
 import { login } from "~/util/AuthContext";
 
-// export async clientLoader({params}: Route.ClientLoaderArgs) {
-//   const token = params.get("token");
-//   return { token };
-// }
+/**
+ * Página para restablecer la contraseña a partir de un `token` en la URL.
+ */
 
 export default function ResetPassword() {
   const token = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get("token");

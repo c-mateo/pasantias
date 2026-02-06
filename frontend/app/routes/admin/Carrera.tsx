@@ -75,7 +75,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
     createSetters(setCourse);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  console.log(errors)
+  // `errors` se usa para mostrar validaciones provenientes del API
   
   const save = () => {
     // Lógica para guardar los cambios del curso
@@ -89,15 +89,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
             ? api.patch(course, `/admin/courses/${course.id}`).res()
             : api.post(course, "/admin/courses").res()
 
-          //             console.log("Error", err as WretchError)
-          // const error = err as ApiError
-
-          // const title = error.type === "already-exists" ? "La carrera ya existe" : "Error al guardar"
-          // const description = error.detail ?? "No se pudieron guardar los cambios."
-
-          // const apiErrors = {}
-          // error.meta?.conflicts.forEach(c => apiErrors[c.field] = c.message);
-          // setErrors(apiErrors)
+          // Si se requiere, parsear `err` para poblar `errors` con campos específicos.
           toastHelper.info({
             title: isExisting ? "Actualizando carrera" : "Creando carrera",
             description: isExisting

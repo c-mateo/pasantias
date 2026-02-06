@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "~/api/api";
-import type { NotificationsListResponse, NotificationDTO } from "~/api/types";
+import type { NotificationDTO } from "~/api/types";
 import { useNavigate } from "react-router";
 import toast from "~/util/toast";
 import { useAuthState } from "~/util/AuthContext";
@@ -10,14 +10,16 @@ import { formatDateTimeLocal } from "~/util/helpers";
 import { Tooltip } from "@heroui/react";
 import Icon from "app/assets/envelope-dot.svg?react";
 import BellIcon from "app/assets/bell.svg?react";
+import useNotifications from "~/util/notificationsStore";
 
 export default function NotificationBell({
   compact = false,
 }: {
   compact?: boolean;
 }) {
-  const [items, setItems] = useState<NotificationDTO[]>([]);
-  const [unread, setUnread] = useState(0);
+  const notifications = useNotifications();
+  const items = notifications.items;
+  const unread = notifications.unread;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
@@ -28,27 +30,17 @@ export default function NotificationBell({
   if (!auth.user) return null;
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api
-          .get("/notifications?limit=10")
-          .json<NotificationsListResponse>();
-        setItems(res?.data ?? []);
-        setUnread((res?.data ?? []).filter((n) => !n.readAt).length);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    load();
+    // initial load
+    if (!notifications.loadedOnce) void notifications.loadInitial();
 
     // subscribe to realtime notifications for the user
     if (transmit && auth.user) {
-      transmit.subscribe(`user:${auth.user.id}`, (notification) => {
-        setItems((prev) => [notification, ...prev].slice(0, 10));
-        setUnread((u) => u + (notification.readAt ? 0 : 1));
+      const unsub = transmit.subscribe(`user:${auth.user.id}`, (notification: NotificationDTO) => {
+        notifications.push(notification);
       });
+      return () => unsub?.();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);
 
   useEffect(() => {
@@ -63,26 +55,9 @@ export default function NotificationBell({
 
   const markAsRead = async (id: number) => {
     try {
-      const res = await api
-        .patch({}, `/notifications/${id}/mark-as-read`)
-        .json();
-      setItems((prev) =>
-        prev.map((it) =>
-          it.id === id
-            ? {
-                ...it,
-                readAt: (res as any)?.data?.readAt ?? new Date().toISOString(),
-              }
-            : it,
-        ),
-      );
-      setUnread((u) => Math.max(0, u - 1));
+      await notifications.markAsRead(id);
     } catch (err) {
-      console.error(err);
-      toast.error({
-        title: "Error",
-        message: "No se pudo marcar la notificación como leída",
-      });
+      toast.error({ title: "Error", message: "No se pudo marcar la notificación como leída" });
     }
   };
 

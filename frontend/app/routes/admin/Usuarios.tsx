@@ -3,7 +3,10 @@ import { useList } from "../../util/useList";
 import type { Route } from "./+types/Usuarios";
 import { api } from "~/api/api";
 
-// Admin view of a user
+/**
+ * Usuario mostrado en la vista administrativa.
+ * Campos incluidos para las tablas de administración.
+ */
 export type AdminUser = {
   id: number;
   firstName: string;
@@ -14,10 +17,12 @@ export type AdminUser = {
   createdAt: string;
 };
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
+/**
+ * Carga inicial de datos para la vista de usuarios.
+ * Intenta leer `/admin/users` y devolver estructura esperada por el cliente.
+ * Si el endpoint no existe o falla, se devuelven arrays vacíos como fallback.
+ */
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  // TODO: No existe el endpoint aún
   const res = await api.get("/admin/users?limit=10").res();
   const json = await res.json();
   return {
@@ -26,6 +31,10 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   };
 }
 
+/**
+ * Componente de administración de usuarios.
+ * Usa el hook `useList` para paginación, orden y eliminación.
+ */
 export default function Usuarios({ loaderData }: Route.ComponentProps) {
   const {
     items,
@@ -54,7 +63,7 @@ export default function Usuarios({ loaderData }: Route.ComponentProps) {
         title="Administrar Usuarios"
         columns={[
           { name: "firstName", label: "Nombre" },
-          { name: "email", label: "Email", alignment: "center" },
+          { name: "email", label: "Correo electrónico", alignment: "center" },
           { name: "role", label: "Rol", alignment: "center" },
           { name: "status", label: "Estado", alignment: "center", renderer: (v) => (v ? "Inactivo" : "Activo") },
         ]}
@@ -68,6 +77,7 @@ export default function Usuarios({ loaderData }: Route.ComponentProps) {
         getName={(u) => `${u.firstName} ${u.lastName}`}
         onDeleteItem={(id) => deleteUser(id)}
         onDeleteSelected={(ids) => deleteUsers(ids)}
+        createHref="/admin/usuarios/nuevo"
       />
     </div>
   );

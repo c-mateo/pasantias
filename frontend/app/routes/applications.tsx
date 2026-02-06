@@ -40,7 +40,6 @@ export default function MyApplications() {
   }, []);
 
   const removeDraft = async (offerId: number) => {
-    // Open modal to confirm deletion
     setPendingDraftId(offerId);
     setShowDeleteDraftModal(true);
   };
@@ -66,8 +65,7 @@ export default function MyApplications() {
 
   if (loading) return <div className="p-6">Cargando...</div>;
 
-  // `isDemo` is managed by state when demo data is loaded or forced
-  // derived: const isDemo = apps.length > 0 && String(apps[0].id).startsWith('1') && (apps[0].offer?.company?.name === 'Acme S.A.' || apps[0].offer?.company?.name === 'DataCorp');
+  // `isDemo` can ser detectado a partir de los datos; actualmente se maneja desde estado.
 
   return (
     <div className="max-w-4xl mx-auto">

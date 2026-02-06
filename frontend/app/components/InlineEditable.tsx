@@ -16,7 +16,8 @@ type Props<T> = {
   renderView?: (v: T) => React.ReactNode;
   onRequestSave: (v: T) => void; // called when user requests to save (Enter or icon)
   saveDisabled?: boolean;
-  validate?: (v: T) => string | null; // return error message or null
+  /** Validate value; return error message or null if valid */
+  validate?: (v: T) => string | null;
 };
 
 export default function InlineEditable<T>({

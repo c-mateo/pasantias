@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import ActionButtons from "./ActionButtons";
 
 const users = [
-  { name: "Emily Carter", email: "emily.carter@example.com", role: "Admin", status: "Active" },
-  { name: "Daniel Harris", email: "daniel.harris@example.com", role: "User", status: "Active" },
-  { name: "Chloe Foster", email: "chloe.foster@example.com", role: "User", status: "Inactive" },
-  { name: "Noah Parker", email: "noah.parker@example.com", role: "User", status: "Active" },
-  { name: "Isabella Morgan", email: "isabella.morgan@example.com", role: "User", status: "Active" },
+  { name: "Emily Carter", email: "emily.carter@example.com", role: "Administrador", status: "Activo" },
+  { name: "Daniel Harris", email: "daniel.harris@example.com", role: "Usuario", status: "Activo" },
+  { name: "Chloe Foster", email: "chloe.foster@example.com", role: "Usuario", status: "Inactivo" },
+  { name: "Noah Parker", email: "noah.parker@example.com", role: "Usuario", status: "Activo" },
+  { name: "Isabella Morgan", email: "isabella.morgan@example.com", role: "Usuario", status: "Activo" },
 ];
 
-export default function UsersTable() {
+export default function UsuariosTabla() {
   const [selected, setSelected] = useState(() => new Set<number>());
   const headerRef = useRef<HTMLInputElement | null>(null);
 
@@ -47,11 +47,11 @@ export default function UsersTable() {
                 aria-label="Seleccionar todo"
               />
             </th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Name</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Email</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Role</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Status</th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Actions</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Nombre</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Correo electrónico</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Rol</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Estado</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -80,8 +80,8 @@ export default function UsersTable() {
               </td>
               <td className="px-4 py-2 text-sm text-gray-500">
                 <ActionButtons
-                  onEdit={() => console.log("Edit user", user.name)}
-                  onDelete={() => console.log("Delete user", user.name)}
+                  onEdit={() => console.log("Editar usuario", user.name)}
+                  onDelete={() => console.log("Eliminar usuario", user.name)}
                 />
               </td>
             </tr>

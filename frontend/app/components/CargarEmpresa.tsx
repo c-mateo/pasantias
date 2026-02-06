@@ -37,7 +37,6 @@ export function CargarEmpresa({ value }: CargarEmpresaProps) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    // console.log("Datos enviados:", data);
     if (id) {
       // Actualizar empresa existente
       await api.patch(data, `/admin/companies/${id}`).json();

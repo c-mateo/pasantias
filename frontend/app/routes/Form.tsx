@@ -25,11 +25,8 @@ export function Form<T>({ fields, value, onSubmit }: FormProps<T>) {
     const formData = new FormData(event.currentTarget);
     const entries = Object.fromEntries(formData.entries());
 
-    // Conversión de tipos simple (puedes extender esto si necesitas casting)
-    // const data = Object.fromEntries(
-    //   fields.map((field) => [field.name, entries[field.name]])
-    // ) as T;
-
+    // Conversión de tipos simple. Si se requieren transformaciones
+    // más avanzadas, implementarlas antes de llamar a `onSubmit`.
     await onSubmit(entries as T);
   };
 

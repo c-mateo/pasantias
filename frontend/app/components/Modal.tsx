@@ -8,13 +8,6 @@ import {
   ModalHeader,
 } from "@heroui/react";
 
-// const ask = (message: string, options: string[] = [], onConfirm?: () => void) => {
-//     const confirmation = window.confirm(message);
-//     if (confirmation && onConfirm) {
-//         onConfirm();
-//     }
-// };
-
 type ModalProps = {
   isOpen: boolean;
   title?: ReactNode;
@@ -23,6 +16,10 @@ type ModalProps = {
   onCancel: () => void;
 };
 
+/**
+ * Componente modal reutilizable.
+ * Muestra `title` y `body`, y expone `onConfirm` / `onCancel`.
+ */
 export function Modal({
   isOpen,
   title,
@@ -31,9 +28,7 @@ export function Modal({
   onCancel,
 }: ModalProps) {
   const onOpenChange = (open: boolean) => {
-    if (!open) {
-      onCancel();
-    }
+    if (!open) onCancel();
   };
 
   return (
@@ -48,7 +43,7 @@ export function Modal({
                 color="danger"
                 variant="light"
                 onPress={() => {
-                  onCancel()
+                  onCancel();
                   onClose();
                 }}
               >
@@ -70,52 +65,3 @@ export function Modal({
     </HeroModal>
   );
 }
-
-// export function Modal({
-//   isOpen, message, onConfirm, onCancel,
-// }: {
-//   isOpen: boolean;
-//   message: React.ReactNode;
-//   onConfirm: () => void;
-//   onCancel: () => void;
-// }) {
-//   if (!isOpen) return null;
-
-//   const ref = useRef<HTMLDivElement | null>(null);
-
-//   useEffect(() => {
-//     if (isOpen) {
-//       ref.current?.focus();
-//     }
-//   }, [isOpen]);
-
-//   const onClickOutside = (e: React.MouseEvent) => {
-//     if (ref.current === e.target) {
-//       onCancel();
-//     }
-//   };
-
-//   const onKeyUp = (e: React.KeyboardEvent) => {
-//     if (e.key === "Escape") {
-//       onCancel();
-//     }
-//   };
-
-//   return (
-//     <div
-//       ref={ref}
-//       onClick={onClickOutside}
-//       className="fixed z-10 inset-0 bg-black/25 backdrop-blur-xs flex items-center justify-center"
-//       onKeyUp={onKeyUp}
-//       tabIndex={-1}
-//     >
-//       <div className="max-w-xl bg-white p-6 rounded shadow-md">
-//         <p className="mb-4">{message}</p>
-//         <div className="flex justify-end space-x-4">
-//           <Button onPress={onCancel} color="default" className="px-4 py-2" radius="md">Cancelar</Button>
-//           <Button onPress={onConfirm} color="primary" className="px-4 py-2" radius="md">Confirmar</Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

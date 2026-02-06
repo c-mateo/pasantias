@@ -68,7 +68,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
 
   const renderTextWithParagraphs = (
     text?: string | null,
-    pClass = "text-sm text-gray-700"
+    pClass = "text-sm text-gray-700",
   ) => {
     if (!text) return null;
     return text
@@ -127,7 +127,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
         const attachmentsArr = draft?.attachments ?? [];
         console.debug(
           "[ApplySection] reloadDraftAttachments: attachmentsArr=",
-          attachmentsArr
+          attachmentsArr,
         );
 
         const mapping: Record<number, any> = {};
@@ -145,7 +145,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
         });
         console.debug(
           "[ApplySection] reloadDraftAttachments: mapping=",
-          mapping
+          mapping,
         );
 
         // Overwrite attachments state with server mapping to avoid stale/merged keys causing wrong UI states
@@ -236,7 +236,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
           "[ApplySection] onFileChange: marked uploaded docId=",
           docId,
           "fileName=",
-          f.name
+          f.name,
         );
 
         toast.success({
@@ -318,7 +318,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
 
     const anyUploading = Object.values(attachments).some((a) => a?.uploading);
     const allRequiredUploaded = (requiredDocs || []).every(
-      (d) => !!(attachments[d.id]?.uploaded || attachments[d.id]?.id)
+      (d) => !!(attachments[d.id]?.uploaded || attachments[d.id]?.id),
     );
 
     const [hasApplied, setHasApplied] = useState<boolean>(!!initialHasApplied);
@@ -340,8 +340,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
       setIsSubmitting(true);
       try {
         // Submit draft (server will create Application and remove draft)
-        const res = await api.post({}, `/offers/${offerId}/draft/submit`).res();
-        const json = await res.json().catch(() => null);
+        await api.post({}, `/offers/${offerId}/draft/submit`).res();
         toast.success({
           title: "Solicitud enviada",
           description: "Tu postulación fue enviada correctamente.",
@@ -372,7 +371,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
       }
 
       const ok = window.confirm(
-        "¿Eliminar borrador? Esta acción no se puede deshacer."
+        "¿Eliminar borrador? Esta acción no se puede deshacer.",
       );
       if (!ok) return;
 
@@ -525,7 +524,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
                           try {
                             const blob = await api
                               .url(
-                                `/my-documents/${attachments[d.id].documentId}/download`
+                                `/my-documents/${attachments[d.id].documentId}/download`,
                               )
                               .post()
                               .blob();
@@ -678,14 +677,17 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
                 <div className="leading-relaxed">
                   {renderTextWithParagraphs(
                     o.description,
-                    "text-sm text-gray-700"
+                    "text-sm text-gray-700",
                   )}
                 </div>
                 {o.requirements && (
                   <div>
                     <h3 className="text-sm font-semibold">Requisitos</h3>
                     <p className="text-sm text-gray-700 mt-1">
-                      {o.requirements}
+                      {renderTextWithParagraphs(
+                        o.requirements,
+                        "text-sm text-gray-700",
+                      )}
                     </p>
                   </div>
                 )}
@@ -721,9 +723,10 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
                 {companyDescription && (
                   <div className="mt-4">
                     <h3 className="text-sm font-semibold">Sobre la empresa</h3>
-                    <p className="text-sm text-gray-700 mt-1">
-                      {companyDescription}
-                    </p>
+                    {renderTextWithParagraphs(
+                      companyDescription,
+                      "text-sm text-gray-700",
+                    )}
                   </div>
                 )}
 
@@ -753,9 +756,14 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
                   />
                 ) : (
                   <div className="border rounded p-4 text-center">
-                    <div className="text-sm text-gray-700 mb-3">Inicia sesión para aplicar a esta oferta.</div>
+                    <div className="text-sm text-gray-700 mb-3">
+                      Inicia sesión para aplicar a esta oferta.
+                    </div>
                     <div className="flex justify-center">
-                      <RouterLink to={`/login?next=/ofertas/${o.id}`} className="no-underline">
+                      <RouterLink
+                        to={`/login?next=/ofertas/${o.id}`}
+                        className="no-underline"
+                      >
                         <Button color="primary">Iniciar sesión</Button>
                       </RouterLink>
                     </div>
@@ -767,7 +775,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
               <footer className="flex items-center justify-between p-4">
                 <div className="text-sm text-gray-500">
                   {o.expiresAt
-                    ? `Cierra: ${formatDateTimeLocal(o.expiresAt)}`
+                    ? `Abierta hasta el ${formatDateTimeLocal(o.expiresAt)}`
                     : "Abierta"}
                 </div>
               </footer>

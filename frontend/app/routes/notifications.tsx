@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { Route } from "./+types/notifications";
 import { api } from "~/api/api";
-import type { NotificationsListResponse, NotificationDTO } from "~/api/types";
+import type { NotificationDTO, NotificationsListResponse } from "~/api/types";
 import { useIntersectionObserver } from "~/hooks/useIntersectionObserver";
+import useNotifications from "~/util/notificationsStore";
 import toast from "~/util/toast";
 import { Button } from "@heroui/button";
 import { formatDateTimeLocal } from "~/util/helpers";
@@ -19,72 +20,48 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 
 export default function Notifications({ loaderData }: Route.ComponentProps) {
   const { initialData, pagination } = loaderData;
-
-  const [items, setItems] = useState<NotificationDTO[]>(initialData || []);
-  const [page, setPage] = useState(pagination.next);
-  const [loading, setLoading] = useState(false);
+  const notifications = useNotifications();
+  const items = notifications.items;
+  const page = notifications.page;
+  const loading = notifications.loading;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadMore = async () => {
-    if (!page || loading) return;
-    setLoading(true);
-    try {
-      const res = await api
-        .get(`/notifications?limit=20&after=${page}`)
-        .json<NotificationsListResponse>();
-      const next = res?.data ?? [];
-      setItems((prev) => [...prev, ...next]);
-      setPage(res?.pagination?.next ?? null);
-    } catch (err) {
-      console.error(err);
-      toast.error({
-        title: "Error",
-        message: "Error al cargar más notificaciones",
-      });
-    } finally {
-      setLoading(false);
-    }
+    await notifications.loadMore();
   };
 
   useIntersectionObserver(sentinelRef, loadMore);
 
   useEffect(() => {
-    // nothing
+    // initial data from loader: seed store if not loaded
+    if (!notifications.loadedOnce) {
+      notifications.loadInitial().catch(() => {});
+      // seed items from loader
+      if (initialData && initialData.length > 0) {
+        // replace items only if store empty
+        if (!notifications.items || notifications.items.length === 0) {
+          notifications.setItems(initialData);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const markAsRead = async (id: number) => {
     try {
-      const res = await api
-        .patch({}, `/notifications/${id}/mark-as-read`)
-        .json();
-      setItems((prev) =>
-        prev.map((it) =>
-          it.id === id
-            ? {
-                ...it,
-                readAt: (res as any)?.data?.readAt ?? new Date().toISOString(),
-              }
-            : it
-        )
-      );
-      toast.success({
-        title: "Leído",
-        message: "Notificación marcada como leída",
-      });
+      await notifications.markAsRead(id);
+      toast.success({ title: "Leído", message: "Notificación marcada como leída" });
     } catch (err) {
-      console.error(err);
       toast.error({ title: "Error", message: "No se pudo marcar como leída" });
     }
   };
 
   const remove = async (id: number) => {
     try {
-      await api.delete(`/notifications/${id}`).res();
-      setItems((prev) => prev.filter((it) => it.id !== id));
+      await notifications.remove(id);
       toast.success({ title: "Eliminado", message: "Notificación eliminada" });
     } catch (err) {
-      console.error(err);
       toast.error({ title: "Error", message: "No se pudo eliminar" });
     }
   };

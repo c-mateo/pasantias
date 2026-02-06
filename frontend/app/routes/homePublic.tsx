@@ -19,7 +19,7 @@ export default function HomePublic() {
           <h1 className="text-3xl font-bold">Ofertas recientes</h1>
           <Button color="default" onPress={() => navigate('/ofertas')}>Ver todas</Button>
         </div>
-        <OffersList />
+        <OffersList hideControls onlyRelevantForUser />
       </section>
     </main>
   );

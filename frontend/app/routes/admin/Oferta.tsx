@@ -1,29 +1,23 @@
-import { useLoaderData, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import type { Route } from "./+types/Oferta";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createSetters } from "~/util/createSetters";
 import { Modal } from "../../components/Modal";
 import { api } from "~/api/api";
 import {
   type CompanyListResponse,
   type OfferDetailsDTO,
-  type OfferDetailsResponse,
   type AdminOfferDetailsResponse,
   type Paginated,
-  type SkillDTO,
-  type SkillListResponse,
   type PublicSkillDTO,
   type CourseListResponse,
-  type PublicCourseDTO,
-  type PublicDocumentTypeDTO,
   type DocumentTypeListResponse,
   type OfferStatus,
 } from "~/api/types";
-import { formatDateTimeLocal, toDatetimeLocal } from "~/util/helpers";
+import { formatDateTimeLocal } from "~/util/helpers";
 import {
   Autocomplete,
   AutocompleteItem,
-  DateInput,
   DatePicker,
   Input,
   NumberInput,
@@ -34,7 +28,11 @@ import {
 } from "@heroui/react";
 import { toast as toastHelper } from "~/util/toast";
 import { Button } from "@heroui/button";
-import { parseDateTime } from "@internationalized/date";
+import {
+  parseAbsoluteToLocal,
+  parseDateTime,
+  parseZonedDateTime,
+} from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
 import { usePaginatedList } from "~/util/usePaginatedList";
@@ -43,7 +41,7 @@ type DataType<T> = T extends Paginated<infer U> ? U : never;
 
 export async function getAll<T extends Paginated<any>>(
   endpoint: string,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
 ): Promise<DataType<T>[]> {
   let next = 0;
   const all = [];
@@ -85,7 +83,8 @@ export async function clientLoader({
   request,
 }: Route.ClientLoaderArgs) {
   const companies = await getAll<CompanyListResponse>("/companies");
-  const documentTypes = await getAll<DocumentTypeListResponse>("/document-types");
+  const documentTypes =
+    await getAll<DocumentTypeListResponse>("/document-types");
   const allCourses = await getAll<CourseListResponse>("/courses");
 
   if (params.ofertaId === "nuevo") {
@@ -207,8 +206,6 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     action: () => {},
   });
 
-  console.log("offer:", offer);
-
   const {
     setPosition,
     setCompanyId,
@@ -244,7 +241,10 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
   const isExisting = offer.id !== 0;
 
   const [isOpen, setIsOpen] = useState(false);
-  const skillList = usePaginatedList<PublicSkillDTO>("/skills", { fetchDelay: 500, limit: 10 });
+  const skillList = usePaginatedList<PublicSkillDTO>("/skills", {
+    fetchDelay: 500,
+    limit: 10,
+  });
 
   const [, scrollerRef] = useInfiniteScroll({
     hasMore: skillList.hasMore,
@@ -307,7 +307,6 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
       isOpen: true,
       message: "¿Está seguro de que desea eliminar esta oferta?",
       action: () => {
-        console.log("Offer deleted", offer.id);
         // show a toast and navigate back
         toastHelper.success({ title: "Oferta eliminada" });
         setModal({ ...modal, isOpen: false });
@@ -315,8 +314,6 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
       },
     });
   };
-
-  const goBack = () => navigate("/admin/ofertas");
 
   const buttons = isExisting ? (
     <>
@@ -473,14 +470,16 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
                     <DatePicker
                       label="Fecha de Expiración"
                       labelPlacement="outside"
-                      granularity="minute"
+                      granularity="day"
                       hourCycle={24}
                       value={
                         offer.expiresAt
-                          ? parseDateTime(offer.expiresAt)
+                          ? parseAbsoluteToLocal(offer.expiresAt)
                           : undefined
                       }
-                      onChange={(v) => setExpiresAt(v?.toString())}
+                      onChange={(v) =>
+                        setExpiresAt(v?.toAbsoluteString() ?? null)
+                      }
                     />
 
                     <Input
@@ -515,10 +514,12 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
                       granularity="day"
                       value={
                         offer.startDate
-                          ? parseDateTime(offer.startDate)
+                          ? parseAbsoluteToLocal(offer.startDate)
                           : undefined
                       }
-                      onChange={(v) => setStartDate(v?.toString())}
+                      onChange={(v) =>
+                        setStartDate(v?.toAbsoluteString() ?? null)
+                      }
                     />
 
                     <Select
@@ -577,7 +578,9 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
                       placeholder="Seleccionar documentos requeridos"
                       selectionMode="multiple"
                       items={documentTypes ?? []}
-                      selectedKeys={new Set((offer.requiredDocuments ?? []).map(String))}
+                      selectedKeys={
+                        new Set((offer.requiredDocuments ?? []).map(String))
+                      }
                       onSelectionChange={(v: any) => {
                         let ids: number[] = [];
                         if (v instanceof Set) {
@@ -588,10 +591,15 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
                           ids = [Number(v)];
                         }
                         setRequiredDocuments(ids);
-                        setErrors((prev) => ({ ...prev, requiredDocuments: undefined }));
+                        setErrors((prev) => ({
+                          ...prev,
+                          requiredDocuments: undefined,
+                        }));
                       }}
                     >
-                      {(dt: any) => <SelectItem key={dt.id}>{dt.name}</SelectItem>}
+                      {(dt: any) => (
+                        <SelectItem key={dt.id}>{dt.name}</SelectItem>
+                      )}
                     </Select>
                   </Form>
                 </div>

@@ -1,5 +1,6 @@
 
-// function TextField(data: { initialValue: string, inlineEdit: boolean, onSave?: (newValue: string) => void }) {
+// Legacy helpers retained for reference (file under `old/`);
+// remove if no longer needed.
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@heroui/button";

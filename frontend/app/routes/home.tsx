@@ -8,10 +8,13 @@ import { useNavigate } from "react-router";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Inicio - Ofertas recientes" },
-    { name: "description", content: "Welcome to React Router!" },
+    { name: "description", content: "Bienvenido a la aplicación de pasantías" },
   ];
 }
 
+/**
+ * Página principal que muestra ofertas recientes.
+ */
 export default function Home() {
   const navigate = useNavigate();
   return (
@@ -20,26 +23,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold">Ofertas recientes</h1>
         <Button color="default" onPress={() => navigate('/ofertas')}>Ver todas</Button>
       </div>
-      <OffersList />
+      <OffersList hideControls onlyRelevantForUser />
     </section>
   );
-    // value={{
-    //   name: "Empresa Ejemplo",
-    //   email: "email@a.com",
-    //   phone: "123456789",
-    //   address: "Calle Falsa 123",
-    //   website: "https://example.com",
-    //   description: "Descripción de la empresa ejemplo",
-    //   logo: "https://via.placeholder.com/150"
-    // }}
-    // />;
-  // return <Empresa
-  //   name="Empresa Ejemplo"
-  //   email="test"
-  //   phone="123456789"
-  //   address="Calle Falsa 123"
-  //   website="https://example.com"
-  //   description="Descripción de la empresa ejemplo"
-  //   logo="https://via.placeholder.com/150"
-  // />;
 }

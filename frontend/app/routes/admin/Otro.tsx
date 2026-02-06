@@ -1,2 +1,6 @@
 
-// Lista de skills y tipos de documentos
+import React from 'react'
+
+export default function Otro() {
+	return null
+}

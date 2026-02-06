@@ -15,9 +15,6 @@ function createTransmitClient() {
 }
 
 export function useTransmit() {
-  // const [subscriptions, setSubscriptions] = useState<
-  //   Record<string, Subscription>
-  // >({});
   const [client, _] = useState<Transmit | undefined>(createTransmitClient());
 
     const subscribe = async (
@@ -40,3 +37,6 @@ export function useTransmit() {
     subscribe,
   };
 }
+
+// Nota: si se necesita gestionar múltiples suscripciones/local state,
+// reintroducir `subscriptions` y `setSubscriptions`.

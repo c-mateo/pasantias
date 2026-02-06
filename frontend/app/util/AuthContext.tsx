@@ -39,8 +39,8 @@ interface AuthState {
 export const useAuthState = create<AuthState>((set) => ({
   checked: false,
   user: null,
-  setChecked: (checked: boolean) => set((state) => ({ checked })),
-  setUser: (user: UserData | null) => set((state) => ({ user })),
+  setChecked: (checked: boolean) => set(() => ({ checked })),
+  setUser: (user: UserData | null) => set(() => ({ user })),
 }));
 
 export async function checkSession() {
@@ -78,8 +78,8 @@ export async function login(email: string, password: string) {
 
 export async function logout(skip: boolean = false) {
   if (!skip) {
-    console.log("Logging out");
-    const res = await api.post({}, "/auth/logout").json();
+    // Invoke logout endpoint; skip in some flows (SSR/tests)
+    await api.post({}, "/auth/logout").json();
   }
   const auth = useAuthState.getState();
   auth.setUser(null);
@@ -100,38 +100,14 @@ export async function requireUser() {
   const auth = useAuthState.getState();
   return auth.user;
 }
-
-// export function useSession() {
-//   const [_checked, setChecked] = useState(false);
-//   const [userData, setUserData] = useState<UserData | null>(null);
-
-//   useEffect(() => {
-//     return auth.addListener(setUserData);
-//   }, []);
-
-//   useEffect(() => {
-//     return checked.addListener(setChecked);
-//   }, []);
-
-//   useEffect(() => {
-//     // Check session
-//     checkSessionOnce();
-//   }, []);
-
-//   return { checked: _checked, userData };
-// }
-
 export const AuthProvider = ({
-  // checked,
-  // userData,
   children,
 }: {
   checked?: boolean;
   userData?: UserData | null;
   children: React.ReactNode;
 }) => {
-  // console.log("Context", userData);
-  // const value = useMemo(() => createValue(userData ?? null), [userData]);
+  // Provider inicializa sesión desde API al montar.
   const session = useAuthState();
 
   useEffect(() => {

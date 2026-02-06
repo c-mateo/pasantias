@@ -15,7 +15,13 @@ type FilterDescriptor = {
 };
 
 
-export function useList<T extends { id: number;[key: string]: any; }>(options: {
+/**
+ * Hook reutilizable para listas paginadas en el frontend.
+ * - `endpoint`: ruta base para lectura.
+ * - `chunk`: tamaño de página.
+ * - `initialData`/`initialPage`: datos/página inicial proporcionados por el loader.
+ */
+export function useList<T extends { id: number; [key: string]: any }>(options: {
   endpoint: string;
   chunk: number;
   initialData?: T[];
@@ -95,95 +101,11 @@ export function useList<T extends { id: number;[key: string]: any; }>(options: {
     } finally {
       setAbortController(null);
     }
-
-    // Prepare data
-    // const newOutput = Array.from(items.values());
-    // .filter((item) => {
-    //   // Apply filtering here if needed
-    //   if (filterDescriptor) {
-    //     const results = filterDescriptor.contraints.map((constraint) => {
-    //       const itemValue = item[constraint.field];
-    //       const constraintValue = constraint.value;
-    //       switch (constraint.operator) {
-    //         case "eq":
-    //           return itemValue === constraintValue;
-    //         case "neq":
-    //           return itemValue !== constraintValue;
-    //         case "lt":
-    //           return itemValue < constraintValue;
-    //         case "lte":
-    //           return itemValue <= constraintValue;
-    //         case "gt":
-    //           return itemValue > constraintValue;
-    //         case "gte":
-    //           return itemValue >= constraintValue;
-    //         case "contains":
-    //           if (typeof itemValue === "string" && typeof constraintValue === "string") {
-    //             return itemValue.includes(constraintValue);
-    //           }
-    //           return false;
-    //         default:
-    //           return false;
-    //       }
-    //     });
-    //     if (filterDescriptor.logic === "and") {
-    //       return results.every((res) => res);
-    //     } else {
-    //       return results.some((res) => res);
-    //     }
-    //   }
-    //   return true;
-    // });
-    // function isStringOrNull(aValue: any) {
-    //   return aValue === null || typeof aValue === "string";
-    // }
-    // function isNumberOrNull(aValue: any) {
-    //   return aValue === null || typeof aValue === "number";
-    // }
-    // Apply sorting
-    // if (sortDescriptor) {
-    // console.log('Sorting by', sortDescriptor.column, sortDescriptor.direction);
-    // newOutput.sort((a, b) => {
-    //   const aValue = a[sortDescriptor.column];
-    //   const bValue = b[sortDescriptor.column];
-    //   if (isStringOrNull(aValue) && isStringOrNull(bValue)) {
-    //     const aStr = aValue as string | null;
-    //     const bStr = bValue as string | null;
-    //     if (aStr === null && bStr === null) return 0;
-    //     if (aStr === null)
-    //       return sortDescriptor.direction === "ascending" ? 1 : -1;
-    //     if (bStr === null)
-    //       return sortDescriptor.direction === "ascending" ? -1 : 1;
-    //     return sortDescriptor.direction === "ascending"
-    //       ? aStr.localeCompare(bStr)
-    //       : bStr.localeCompare(aStr);
-    //   }
-    //   if (isNumberOrNull(aValue) && isNumberOrNull(bValue)) {
-    //     const aNum = aValue as number | null;
-    //     const bNum = bValue as number | null;
-    //     if (aNum === null && bNum === null) return 0;
-    //     if (aNum === null)
-    //       return sortDescriptor.direction === "ascending" ? -1 : 1;
-    //     if (bNum === null)
-    //       return sortDescriptor.direction === "ascending" ? 1 : -1;
-    //     return sortDescriptor.direction === "ascending"
-    //       ? aNum - bNum
-    //       : bNum - aNum;
-    //   }
-    //   return 0;
-    // });
-    // }
-    // setOutput(newOutput);
-    // NOTE: next is set above on success; abort controller cleared in finally
+    // NOTE: `next` y `abortController` ya se gestionan arriba; si se requiere
+    // filtrado/orden avanzado en cliente, podemos implementarlo aquí en el futuro.
   };
 
-  // const createItem = async (item: T) => {
-  //   startTransition(async () => {
-  //     mutateOptimistic({ action: "add", items: [item] });
-  //     await api.post(item, options.endpoint).res();
-  //     setItems((prev) => [...prev, item]);
-  //   });
-  // };
+  // createItem: si se necesita, puede volver a implementarse usando mutateOptimistic
   const deleteItems = async (ids: number[]) => {
     startTransition(async () => {
       mutateOptimistic({ action: "remove", ids });
@@ -201,8 +123,7 @@ export function useList<T extends { id: number;[key: string]: any; }>(options: {
   };
 
   useEffect(() => {
-    // Reload data when sortDescriptor or filterDescriptor changes
-    console.log("Reloading data due to sort/filter change");
+    // Recargar datos cuando cambian orden o filtros.
     load(true, true);
   }, [sortDescriptor, filterDescriptor]);
 

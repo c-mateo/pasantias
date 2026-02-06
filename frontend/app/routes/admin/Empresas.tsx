@@ -32,35 +32,7 @@ export default function Empresas({ loaderData }: Route.ComponentProps) {
     initialPage: loaderData.pagination?.next ?? null,
   });
 
-  /*
-  // Search & sort helpers (commented out — kept for future use)
-  const searchCompanies = async () => {
-    setLoading(true);
-    try {
-      const qs = [`limit=10`];
-      if (sort) qs.push(`sort=${encodeURIComponent(sort)}`);
-      const res = await api.get(`/companies?${qs.join('&')}`).res();
-      const json = await res.json();
-      setCompanies(json?.data ?? []);
-      setPage(json?.pagination?.next ?? null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cycleSort = (field: string) => {
-    if (sort === field) setSort(`-${field}`);
-    else if (sort === `-${field}`) setSort(undefined);
-    else setSort(field);
-    // searchCompanies();
-  };
-  */
-
-  // useList handles loading & pagination
-
-  // AdminList2 handles infinite scroll via loadMore/hasMore
+  // useList handles loading & pagination; AdminList2 manages infinite scroll.
 
   const deleteCompany = (companyId: number) => deleteItems([companyId]);
   const deleteCompanies = (ids: number[]) => deleteItems(ids);

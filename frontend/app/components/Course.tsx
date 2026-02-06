@@ -1,7 +1,6 @@
 import { courses, type Course } from "api/api";
 import { Field } from "./Field";
 import { Form } from "@heroui/react";
-// import './test.css'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "@heroui/button";
@@ -60,7 +59,7 @@ export function CursoList({ courses }: { courses: Course[] }) {
                     <div className="center">Acciones</div>
                 </div>
                 {courses.map(course => (
-                    // <Curso key={course.id} {...course} />
+                    // render row for each course
                     <a key={course.id} className="table-row" href={`/courses/${course.id}`}>
                         <div><input type="checkbox" id={`course-${course.id}`} /></div>
                         <div className="left">{course.name}</div>
@@ -74,54 +73,6 @@ export function CursoList({ courses }: { courses: Course[] }) {
         </div>
     );
 }
-
-// export function CursoList({ courses }: { courses: Course[] }) {
-//     return (
-//         <div className="curso-list">
-//             <div className="row">
-//                 <h1>Lista de Cursos</h1>
-//                 <div className="curso-list-actions">
-//                     <button className="add-button">Crear curso</button>
-//                     <button className="delete-button">Eliminar seleccionados</button>
-//                 </div>
-//             </div>
-//             <div className="table">
-//                 <table>
-//                     <colgroup>
-//                         <col style={{ width: "50px" }} />
-//                         {/* <col style={{ width: "200px" }} />
-//                         <col style={{ width: "100px" }} /> */}
-//                         <col />
-//                         <col />
-//                         <col style={{ width: "50px" }} />
-//                     </colgroup>
-//                     <thead>
-//                         <tr>
-//                             <th></th>
-//                             <th className="left">Nombre</th>
-//                             <th className="left">Etiqueta</th>
-//                             <th className="center">Acciones</th>
-//                         </tr>
-//                     </thead>
-//                     <tbody>
-//                         {courses.map(course => (
-//                             // <Curso key={course.id} {...course} />
-//                             <tr key={course.id} >
-//                                 <td><input type="checkbox" id={`course-${course.id}`} /></td>
-//                                 <td className="left">{course.name}</td>
-//                                 <td className="left">{course.tag}</td>
-//                                 <td className="center">
-//                                     <FontAwesomeIcon icon={faTrash} size="sm" />
-//                                 </td>
-//                             </tr>
-//                         ))}
-//                     </tbody>
-//                 </table>
-
-//             </div>
-//         </div>
-//     );
-// }
 
 // Test data for development
 export const testCourses: Course[] = [
