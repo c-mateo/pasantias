@@ -8,7 +8,7 @@ const getFrontOrigin = () => {
 };
 
 // Use explicit API_URL if provided, otherwise use the front origin + /api
-const API_BASE = (import.meta.env.API_URL as string) || `${getFrontOrigin()}/api`;
+const API_BASE = (import.meta.env.API_URL as string) || `${getFrontOrigin()}/api/v1`;
 
 export const api = wretch(API_BASE)
   .options({

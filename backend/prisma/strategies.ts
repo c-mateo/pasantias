@@ -1,11 +1,10 @@
-// utils/db-strategies.ts
 import { apiErrors } from '#exceptions/my_exceptions'
-import { Prisma } from '@prisma/client'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { equals } from '../utils/equals.js'
 import { areSameType } from '../utils/areSameType.js'
 
 type Strategy = (
-  error: Prisma.PrismaClientKnownRequestError,
+  error: PrismaClientKnownRequestError,
   model: any,
   input: any
 ) => Promise<void> | void
