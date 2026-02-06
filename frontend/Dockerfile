@@ -1,19 +1,23 @@
-FROM node:22-alpine
-
-# Crea directorio de trabajo
+FROM node:22.16.0-alpine3.22 AS base
 WORKDIR /app
 
-# Copia package*.json para instalar dependencias
-COPY package*.json ./
+FROM base AS deps
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Instala dependencias
-RUN npm install
-
-# Copia el resto del proyecto
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN npm run build
 
-# Exponer el puerto de Vite
-EXPOSE 5173
+FROM base AS runner
+ENV NODE_ENV=production
+ENV PORT=3000
+WORKDIR /app
 
-# HMR necesita host 0.0.0.0
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/build ./build
+EXPOSE 3000
+CMD ["npm","run","start"]
