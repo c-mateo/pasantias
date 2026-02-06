@@ -1,6 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '../../generated/prisma/client.js'
 
 /**
  * Auth middleware is used authenticate HTTP requests and deny

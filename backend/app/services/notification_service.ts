@@ -1,5 +1,5 @@
 import transmit from '@adonisjs/transmit/services/main'
-import { Notification } from '@prisma/client'
+import { Notification } from '../../generated/prisma/client.js'
 
 export async function notifyUser(userId: number, payload: Notification) {
   const broadcastable = {
