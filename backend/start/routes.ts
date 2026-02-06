@@ -9,50 +9,11 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
-import { auth, forgot, reset, profile, admin } from '#start/limiter'
-import { UserRole } from '@prisma/client'
-import SendTemplatedEmail from '#jobs/send_templated_email'
-import CreateNotifications from '#jobs/create_notifications'
-import { notifyUser } from '#services/notification_service'
 import transmit from '@adonisjs/transmit/services/main'
+import { UserRole } from '../generated/prisma/enums.js'
+import { admin, auth, forgot, profile, reset } from './limiter.js'
 
 transmit.registerRoutes()
-
-router.post('/test', async () => {
-  await CreateNotifications.dispatch({
-    users: [1],
-    title: 'Postulación aceptada',
-    message: 'Tu postulación #1 fue aceptada.',
-    tag: 'application',
-  }).catch((err) => {
-    console.error('CreateNotifications error', err)
-  })
-  // Send email using templated email job
-
-  // await SendTemplatedEmail.dispatch({
-  //   to: 'mateo.cerri.ar@gmail.com',
-  //   template: 'application_accepted',
-  //   data: {
-  //     name: 'Mateo',
-  //     applicationId: 1,
-  //     offerPosition: 'Ingeniero',
-  //     appUrl: 'http://127.0.0.1:5173/admin/aplicaciones/1',
-  //   },
-  // }).catch((err) => console.error('SendTemplatedEmail error', err))
-})
-
-router.post('/notifications/test', async ({ request, response }) => {
-  // const userId = auth.user?.id
-  // if (!userId) return response.unauthorized()
-
-  // console.log('Sending test notification to user', 1, 'with payload')
-  await notifyUser(1, {
-    title: 'Notificación de prueba',
-    message: 'Esta es una notificación de prueba.',
-  })
-
-  return response.accepted({ data: { sent: true } })
-})
 
 router
   .group(() => {
@@ -208,15 +169,6 @@ router
         router.patch('companies/:id', '#controllers/company_controller.update').as('updateCompany')
         router.delete('companies/:id', '#controllers/company_controller.delete').as('deleteCompany')
 
-        // router
-        //   .get('documents', '#controllers/document_controller.listAllDocuments')
-        //   .as('listAllDocuments')
-        // router
-        //   .get('documents/:id', '#controllers/document_controller.getDocumentDetails')
-        //   .as('getDocumentDetails')
-        // router
-        //   .delete('documents/:id', '#controllers/document_controller.deleteDocument')
-        //   .as('deleteDocument')
         router
           .get('documents/:id', '#controllers/document_controller.downloadDocument')
           .as('downloadDocument')
@@ -242,6 +194,9 @@ router
 
         router.get('users', '#controllers/user_controller.list')
         router.get('users/:id', '#controllers/user_controller.get')
+        router.put('users/:id/courses', '#controllers/user_controller.updateCourses')
+        router.put('users/:id/role', '#controllers/user_controller.updateRole')
+        router.patch('users/:id', '#controllers/user_controller.update')
         router.delete('users/:id', '#controllers/user_controller.delete')
         router.put('users/:id/cuil', '#controllers/user_controller.updateCuil')
 

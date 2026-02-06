@@ -24,10 +24,9 @@ export type Field = string | Constraint | FieldContext
 // --- ESTRATEGIA: UNIQUE CONSTRAINT (P2002) ---
 export function checkUnique(fields: Field[]): Strategy {
   return async (error, model, input) => {
-    console.log('checkUnique invoked with error:', error.code, 'fields:', fields)
     if (error.code !== 'P2002') return
 
-    // const fieldNames = error.meta?.target as string[]
+    // fieldNames can be retrieved from error.meta.target when needed
     let contexts = fields.map((field) =>
       typeof field === 'object' && 'name' in field ? field : { name: field }
     )

@@ -92,8 +92,7 @@ export const autoDecryptionExtension = Prisma.defineExtension({
           ...nonSensitive,
         }
         return await query(args)
-        // if (!result) return null
-        // return decryptUserData(result)
+        // Note: result decryption handled by computed fields above.
       },
       async create({ model, operation, args, query }) {
         const { sensitive, nonSensitive } = separate(args.data)
@@ -101,9 +100,8 @@ export const autoDecryptionExtension = Prisma.defineExtension({
           ...encryptUserData(sensitive),
           ...nonSensitive,
         }
+        // Note: result decryption handled by computed fields above.
         return await query(args)
-        // if (!result) return null
-        // return decryptUserData(result)
       },
     },
   },
@@ -113,18 +111,8 @@ export const guardModelExtension = Prisma.defineExtension({
   name: 'Guarded Model Extension',
   model: {
     $allModels: {
-      //   async createIfNotExists<T, A>(
-      //     this: T,
-      //     args: Prisma.Exact<A, Prisma.Args<T, 'create'>>
-      //   ): Promise<Prisma.Result<T, A, 'create'>> {
-      //     const ctx = Prisma.getExtensionContext(this);
-      //     try {
-      //       return await (ctx as any).create(args);
-      //     } catch (error) {
-      //       // return null;
-      //       return await (ctx as any).findUnique({ where: (args as any).data });
-      //     }
-      //   },
+      // createIfNotExists intentionally removed; can be reintroduced
+      // with a concrete contract if needed.
       // Find unique or throw custom error
       async findUniqueOrThrow<T, A>(
         this: T,

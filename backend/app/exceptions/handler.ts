@@ -17,15 +17,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * response to the client
    */
   async handle(error: any, ctx: HttpContext) {
-    // console.log("Handle", error)
-    // if (error instanceof ValidationError) {
-    //   if (error.messages.some((msg => msg.rule === 'exists'))) {
-    //     return ctx.response.notFound({
-    //       message: 'Resource not found',
-    //     })
-    //   }
-    // }
-
+    // Handle known framework errors and return sanitized API responses.
     if (error instanceof AuthErrors.E_UNAUTHORIZED_ACCESS) {
       const customError = apiErrors.sessionExpired('absolute')
       const formattedError = customError.format({ instance: ctx.request.url() })
@@ -33,8 +25,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
     }
 
     if (error instanceof LimiterErrors.E_TOO_MANY_REQUESTS) {
-      // The limiter middleware does not expose limit/window here reliably,
-      // so return a generic rate limit error with default placeholders.
+      // Return generic rate limit error (middleware doesn't expose limits here).
       const customError = apiErrors.rateLimitExceeded(
         error.response.limit,
         'unknown',
@@ -50,7 +41,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
       return ctx.response.status(formattedError.status).json(formattedError)
     }
 
-    // If this is an ApiException created by our helpers, format and return it
+    // ApiException: return formatted payload
     if (error instanceof ApiException) {
       const formatted = (error as any).format({ instance: ctx.request.url() })
       return ctx.response.status(formatted.status).json(formatted)
@@ -63,23 +54,14 @@ export default class HttpExceptionHandler extends ExceptionHandler {
       return ctx.response.status(formatted.status).json(formatted)
     }
 
-    // For other unexpected errors, return a sanitized 500 with an errorId
-    // to avoid leaking implementation details (stack/frames) to clients.
-    // Log the original error along with the generated id for diagnostics.
+    // Unexpected errors: log and return sanitized 500 with an errorId
     const errorId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
     console.error(`InternalError ${errorId}:`, error)
     const internal = apiErrors.internalError(errorId)
     const formattedInternal = internal.format({ instance: ctx.request.url() })
     return ctx.response.status(formattedInternal.status).json(formattedInternal)
 
-    // console.log('Error handled by HttpExceptionHandler:', error)
-
-    // if (error instanceof ApiException) {
-    //   const formattedError = error.format({ instance: ctx.request.url() })
-    //   return ctx.response.status(formattedError.status).json(formattedError)
-    // }
-
-    return super.handle(error, ctx)
+    // Fallback: report and return sanitized 500 (handled above).
   }
 
   /**
