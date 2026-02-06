@@ -102,7 +102,7 @@ export default function Skill({ loaderData }: Route.ComponentProps) {
                   </div>
                   <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
                     <h1 className="text-2xl font-bold">Detalles de la Skill</h1>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-col gap-4 w-full">
                       <Input value={item.name ?? ''} onValueChange={(v) => { setItem((p: any) => ({ ...p, name: v })); setErrors({ ...errors, name: undefined }); }} isRequired label="Nombre" placeholder="Nombre de la skill" />
                     </div>
                   </Form>

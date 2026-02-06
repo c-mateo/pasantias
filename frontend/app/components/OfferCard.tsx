@@ -1,4 +1,3 @@
-import React from "react";
 import { Button } from "@heroui/button";
 import { formatDateTimeLocal } from "~/util/helpers";
 import { Card, CardHeader, CardBody, CardFooter, Divider, Link, Image, Chip } from "@heroui/react";
@@ -22,7 +21,7 @@ export default function OfferCard({ id, position, company, location, vacancies, 
   const getShortName = (career: CareerInput) => {
     if (!career) return undefined;
     if (typeof career === "string") return undefined;
-    return "#" + career.shortName || undefined;
+    return career.shortName ? "#" + career.shortName : undefined;
   };
   const getFullName = (career: CareerInput) => (typeof career === "string" ? career : career.name);
   return (
@@ -51,10 +50,10 @@ export default function OfferCard({ id, position, company, location, vacancies, 
           <div className="mt-3 flex flex-wrap gap-2 self-start">
             {careers.map((c: CareerInput, i: number) => {
               const short = getShortName(c);
-              const label = short ?? getFullName(c);
               const title = getFullName(c);
+              if (!short) return null;
               return (
-                <Chip key={i} size="sm" className="!px-2" title={title} aria-label={title}>{short ?? label}</Chip>
+                <Chip key={i} size="sm" className="!px-2" title={title} aria-label={title}>{short}</Chip>
               );
             })}
           </div>
@@ -72,7 +71,6 @@ export default function OfferCard({ id, position, company, location, vacancies, 
         <div className="text-sm text-gray-600">{expiresAt ? `Cierra: ${formatDateTimeLocal(expiresAt)}` : "Abierta"}</div>
         <div className="flex items-center gap-2">
           <Link href={id ? `/ofertas/${id}` : "#"} className="no-underline"><Button color="primary" size="sm">Ver</Button></Link>
-          <Button color="default" size="sm">Aplicar</Button>
         </div>
       </CardFooter>
     </Card>

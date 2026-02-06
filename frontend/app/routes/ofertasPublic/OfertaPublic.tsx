@@ -64,6 +64,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
     typeof o.company === "object"
       ? (o.company?.description ?? undefined)
       : undefined;
+  const auth = useAuthState();
 
   const renderTextWithParagraphs = (
     text?: string | null,
@@ -396,7 +397,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
     };
 
     return (
-      <div className="border rounded p-4">
+      <div className="border border-gray-200 rounded p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Aplicar a la oferta</h3>
           <div className="text-sm text-gray-500">
@@ -415,7 +416,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
           {(requiredDocs || []).map((d) => (
             <div
               key={d.id}
-              className="p-3 border rounded flex items-center justify-between"
+              className="p-3 border border-gray-200 rounded flex items-center justify-between"
             >
               <div>
                 <div className="font-medium">{d.name}</div>
@@ -744,11 +745,22 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
 
               {/* Apply section */}
               <div className="p-4">
-                <ApplySection
-                  requiredDocs={(o.requiredDocuments as any[]) ?? []}
-                  offerId={o.id}
-                  initialHasApplied={loaderHasApplied}
-                />
+                {auth.user ? (
+                  <ApplySection
+                    requiredDocs={(o.requiredDocuments as any[]) ?? []}
+                    offerId={o.id}
+                    initialHasApplied={loaderHasApplied}
+                  />
+                ) : (
+                  <div className="border rounded p-4 text-center">
+                    <div className="text-sm text-gray-700 mb-3">Inicia sesión para aplicar a esta oferta.</div>
+                    <div className="flex justify-center">
+                      <RouterLink to={`/login?next=/ofertas/${o.id}`} className="no-underline">
+                        <Button color="primary">Iniciar sesión</Button>
+                      </RouterLink>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Divider />

@@ -30,26 +30,22 @@ export default function NavbarLayout({}: Route.ComponentProps) {
   if (auth.user?.role !== "ADMIN") return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="w-full px-4 py-4 flex justify-between items-center">
-          {/* Use shared responsive navbar */}
-          <AppNavbar
-            title={"Aplicación de Pasantías"}
-            centerItems={[
-              { label: 'Usuarios', href: '/admin/usuarios', isActive: location.pathname === '/admin/usuarios' },
-              { label: 'Carreras', href: '/admin/carreras', isActive: location.pathname === '/admin/carreras' },
-              { label: 'Ofertas', href: '/admin/ofertas', isActive: location.pathname === '/admin/ofertas' },
-              { label: 'Empresas', href: '/admin/empresas', isActive: location.pathname === '/admin/empresas' },
-              { label: 'Aplicaciones', href: '/admin/aplicaciones', isActive: location.pathname === '/admin/aplicaciones' },
-              { label: 'Skills', href: '/admin/skills', isActive: location.pathname === '/admin/skills' },
-              { label: 'Tipos de Docs', href: '/admin/document-types', isActive: location.pathname === '/admin/document-types' },
-            ]}
-            rightItems={[{ label: 'Mi cuenta', href: '/profile' }, { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await import('~/util/AuthContext').then(m => m.logout()); window.location.href = '/'; } }]}
-            showNotificationBell
-          />
-        </div>
-      </header>
+    <div className="min-h-screen">
+      <AppNavbar
+        title={"Aplicación de Pasantías"}
+        centerItems={[
+          { label: 'Usuarios', href: '/admin/usuarios', isActive: location.pathname === '/admin/usuarios' },
+          { label: 'Carreras', href: '/admin/carreras', isActive: location.pathname === '/admin/carreras' },
+          { label: 'Ofertas', href: '/admin/ofertas', isActive: location.pathname === '/admin/ofertas' },
+          { label: 'Empresas', href: '/admin/empresas', isActive: location.pathname === '/admin/empresas' },
+          { label: 'Aplicaciones', href: '/admin/aplicaciones', isActive: location.pathname === '/admin/aplicaciones' },
+          { label: 'Skills', href: '/admin/skills', isActive: location.pathname === '/admin/skills' },
+          { label: 'Tipos de Docs', href: '/admin/document-types', isActive: location.pathname === '/admin/document-types' },
+        ]}
+        rightItems={[{ label: 'Mi cuenta', href: '/profile' }, { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await import('~/util/AuthContext').then(m => m.logout()); window.location.href = '/'; } }]}
+        showNotificationBell
+      />
+
       <main className="container mx-auto px-4 py-6">
         <Outlet />
       </main>

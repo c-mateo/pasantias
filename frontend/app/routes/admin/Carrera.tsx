@@ -207,7 +207,7 @@ export default function Curso({ loaderData }: Route.ComponentProps) {
                     validationErrors={errors as any}
                   >
                     <h1 className="text-2xl font-bold">Detalles de la Carrera</h1>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-col gap-4 w-full">
                       <Input
                         isRequired
                         label="Nombre"

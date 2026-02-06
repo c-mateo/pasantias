@@ -1,20 +1,19 @@
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
-  useMemo,
 } from "react";
 import { api } from "~/api/api";
 import type { LoginResponse, ProfileResponse } from "~/api/types";
 import { create } from "zustand";
 
 export interface UserData {
+  id: number;
+  email: string;
   firstName: string;
   lastName: string;
   role: string;
 }
-// export type UserData = ProfileResponse["data"]
 
 function createValue(userData: UserData | null) {
   return {
@@ -30,41 +29,6 @@ const AuthContext = createContext<AuthState | null>(null);
 
 export let loaderAccess: UserData | null = null;
 
-// type Callback<T> = (newValue: T) => void;
-
-// class GlobalState<T> {
-//   listeners = new Set<Callback<T>>();
-
-//   constructor(private value: T) {}
-
-//   update(newValue: T) {
-//     console.log("Updating", newValue);
-//     this.value = newValue;
-//     this.listeners.forEach((fn) => fn(newValue));
-//   }
-
-//   get() {
-//     return this.value;
-//   }
-
-//   addListener(c: Callback<T>) {
-//     console.log("Listening");
-//     const a = (value) => {
-//       console.log("Callback", this.value);
-//       c(value);
-//     };
-//     this.listeners.add(a);
-//     return () => {
-//       this.listeners.delete(a);
-//     };
-//   }
-// }
-
-// function useGlobal<T>(init: T){
-//   const c = new GlobalState(init)
-//   return init.
-// }
-
 interface AuthState {
   checked: boolean;
   user: UserData | null;
@@ -77,55 +41,14 @@ export const useAuthState = create<AuthState>((set) => ({
   user: null,
   setChecked: (checked: boolean) => set((state) => ({ checked })),
   setUser: (user: UserData | null) => set((state) => ({ user })),
-  // checkSession: async () => {
-  //   if (checkPromise) return;
-  //   try {
-  //     checkPromise = api.get("/profile").json<ProfileResponse>();
-  //     const res = await checkPromise;
-  //     const auth = useAuthState.getState();
-  //     auth.setUser(res.data);
-  //     console.log("Check session", res.data);
-  //   } catch {
-  //   } finally {
-  //     checkPromise = null;
-  //   }
-  // },
-  // checkSessionOnce: async () => {
-  //   const auth = useAuthState.getState();
-  //   if (!auth.checked) {
-  //     await checkSession();
-  //     auth.setChecked(true);
-  //   }
-  // },
-  // login: async (email: string, password: string) => {
-  //   const res = await api
-  //     .post({ email, password }, "/auth/login")
-  //     .json<LoginResponse>();
-
-  //   // TODO: Fix
-  //   const auth = useAuthState.getState();
-  //   auth.setUser(res.data.user as UserData);
-  // },
-  // logout: async () => {
-  //   const res = await api.post({}, "/auth/logout").json();
-  //   console.log("Logout", res);
-  //   const auth = useAuthState.getState();
-  //   auth.setUser(null);
-  // },
 }));
 
-let checkPromise: Promise<ProfileResponse> | null = null;
-
 export async function checkSession() {
-  // if (checkPromise) return;
   try {
-    const checkPromise = api.get("/profile").json<ProfileResponse>();
-    const res = await checkPromise;
+    const res = await api.get("/profile").json<ProfileResponse>();
     const auth = useAuthState.getState();
     auth.setUser(res?.data ?? null);
   } catch {
-  } finally {
-    checkPromise = null;
   }
 }
 
@@ -142,9 +65,15 @@ export async function login(email: string, password: string) {
     .post({ email, password }, "/auth/login")
     .json<LoginResponse>();
 
-  // TODO: Fix
+  // If login failed the API may return 401 or an empty response; ensure we
+  // throw so callers (Login page) handle the error and do not redirect.
+  if (!res || !res.data || !res.data.user) {
+    throw new Error("Invalid credentials");
+  }
+
   const auth = useAuthState.getState();
-  auth.setUser(res?.data?.user as UserData ?? null);
+  auth.setUser(res.data.user as UserData);
+  return res;
 }
 
 export async function logout(skip: boolean = false) {
@@ -213,8 +142,6 @@ export const AuthProvider = ({
         const auth = useAuthState();
         auth.setUser(res?.data ?? null);
       } catch {
-      } finally {
-        checkPromise = null;
       }
     })();
   }, []);

@@ -182,7 +182,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
                   <Form onSubmit={(e) => { e.preventDefault(); save(); }} validationErrors={errors as any}>
                     <h1 className="text-2xl font-bold">Detalles de la Empresa</h1>
 
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-col gap-4 w-full">
                       <Input
                         isRequired
                         label="Nombre"

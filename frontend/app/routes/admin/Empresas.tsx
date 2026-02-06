@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useList } from "../../util/useList";
 import type { Route } from "./+types/Empresas";
 import { api } from "~/api/api";
 import type { AdminCompanyListResponse, CompanyDTO } from "~/api/types";
@@ -15,12 +16,21 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 }
 
 export default function Empresas({ loaderData }: Route.ComponentProps) {
-  const { initialData, pagination } = loaderData;
-
-  const [companies, setCompanies] = useState<CompanyDTO[]>(initialData || []);
-  const [page, setPage] = useState(pagination.next);
-  const [loading, setLoading] = useState(false);
-  const [sort, setSort] = useState<string | undefined>(undefined);
+  const {
+    items: companies,
+    hasMore,
+    loading,
+    loadMore,
+    deleteItems,
+    sortDescriptor,
+    setSortDescriptor,
+  } = useList<CompanyDTO>({
+    endpoint: "/companies",
+    deleteEndpoint: "/admin/companies",
+    chunk: 10,
+    initialData: loaderData.initialData ?? [],
+    initialPage: loaderData.pagination?.next ?? null,
+  });
 
   /*
   // Search & sort helpers (commented out — kept for future use)
@@ -48,29 +58,12 @@ export default function Empresas({ loaderData }: Route.ComponentProps) {
   };
   */
 
-  const loadMore = async () => {
-    if (!page || loading) return;
-    setLoading(true);
-
-    const qs = [`limit=10`, `after=${page}`];
-    if (sort) qs.push(`sort=${encodeURIComponent(sort)}`);
-
-    const res = await api.get(`/companies?${qs.join('&')}`).res();
-    const json = await res.json();
-    const next = json?.data ?? [];
-    setCompanies((prev) => [...prev, ...next]);
-    setPage(json?.pagination?.next ?? null); // null si no hay más
-    setLoading(false);
-  };
+  // useList handles loading & pagination
 
   // AdminList2 handles infinite scroll via loadMore/hasMore
 
-  const deleteCompany = (companyId: number) => {
-    setCompanies((prev) => prev.filter((company) => company.id !== companyId));
-  };
-  const deleteCompanies = (ids: number[]) => {
-    setCompanies((prev) => prev.filter((company) => !ids.includes(company.id)));
-  };
+  const deleteCompany = (companyId: number) => deleteItems([companyId]);
+  const deleteCompanies = (ids: number[]) => deleteItems(ids);
 
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
@@ -87,8 +80,10 @@ export default function Empresas({ loaderData }: Route.ComponentProps) {
         ]}
         items={companies}
         loading={loading}
-        hasMore={page !== null}
+        hasMore={hasMore}
         loadMore={loadMore}
+        sortDescriptor={sortDescriptor}
+        onSortChange={setSortDescriptor}
         getId={(c) => c.id}
         getName={(c) => c.name}
         onDeleteItem={(id) => deleteCompany(id)}

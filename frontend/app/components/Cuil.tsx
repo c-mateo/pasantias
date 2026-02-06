@@ -10,6 +10,7 @@ export type CuilProps = Omit<InputProps, "value" | "onValueChange"> & {
 export default function Cuil({ value, onValueChange: setValue, inputRef, ...props }: CuilProps) {
   const ref = useRef<HTMLInputElement>(null);
   const cursorDigitsRef = useRef<number | null>(null);
+  const [internal, setInternal] = React.useState<string>(value ?? "");
 
   const formatCuil = (val: string) => {
     let digits = val.replace(/\D/g, "");
@@ -25,20 +26,32 @@ export default function Cuil({ value, onValueChange: setValue, inputRef, ...prop
 
   const onValueChange = (val: string) => {
     const input = ref.current;
-    if (!input) return;
+    const cursorPos = input ? input.selectionStart ?? 0 : null;
 
-    const cursorPos = input.selectionStart ?? 0;
+    if (cursorPos != null) {
+      cursorDigitsRef.current = val
+        .slice(0, cursorPos)
+        .replace(/\D/g, "").length;
+    } else {
+      cursorDigitsRef.current = null;
+    }
 
-    // Cuántos dígitos hay antes del cursor
-    cursorDigitsRef.current = val
-      .slice(0, cursorPos)
-      .replace(/\D/g, "").length;
-
-    // Formatear
-    setValue(formatCuil(val));
+    const formatted = formatCuil(val);
+    setInternal(formatted);
+    // notify parent only if different from external value
+    try {
+      if (setValue && formatted !== (value ?? "")) setValue(formatted);
+    } catch (e) {
+      // ignore
+    }
   };
 
   // Restaurar cursor después del render
+  // Keep internal in sync when parent value changes
+  useEffect(() => {
+    setInternal(value ?? "");
+  }, [value]);
+
   useEffect(() => {
     if (!ref.current || cursorDigitsRef.current == null) return;
 
@@ -46,25 +59,30 @@ export default function Cuil({ value, onValueChange: setValue, inputRef, ...prop
     let pos = 0;
     let digitsSeen = 0;
 
-    while (pos < value.length && digitsSeen < digitsToFind) {
-      if (/\d/.test(value[pos])) digitsSeen++;
+    while (pos < internal.length && digitsSeen < digitsToFind) {
+      if (/\d/.test(internal[pos])) digitsSeen++;
       pos++;
     }
 
-    ref.current.setSelectionRange(pos, pos);
+    try {
+      ref.current.setSelectionRange(pos, pos);
+    } catch (e) {
+      // ignore if setting selection fails
+    }
     cursorDigitsRef.current = null;
-  }, [value]);
+  }, [internal]);
 
   return (
     <Input
       {...props}
+      isDisabled={props.isDisabled}
       ref={(el: HTMLInputElement | null) => {
         ref.current = el;
         if (!inputRef) return;
         if (typeof inputRef === "function") inputRef(el);
         else if (typeof inputRef === "object") (inputRef as any).current = el;
       }}
-      value={value}
+      value={internal}
       onValueChange={onValueChange}
       inputMode="numeric"
     />

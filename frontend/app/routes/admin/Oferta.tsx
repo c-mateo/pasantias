@@ -13,6 +13,8 @@ import {
   type SkillDTO,
   type SkillListResponse,
   type PublicSkillDTO,
+  type CourseListResponse,
+  type PublicCourseDTO,
   type PublicDocumentTypeDTO,
   type DocumentTypeListResponse,
   type OfferStatus,
@@ -35,6 +37,7 @@ import { Button } from "@heroui/button";
 import { parseDateTime } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
+import { usePaginatedList } from "~/util/usePaginatedList";
 
 type DataType<T> = T extends Paginated<infer U> ? U : never;
 
@@ -83,6 +86,7 @@ export async function clientLoader({
 }: Route.ClientLoaderArgs) {
   const companies = await getAll<CompanyListResponse>("/companies");
   const documentTypes = await getAll<DocumentTypeListResponse>("/document-types");
+  const allCourses = await getAll<CourseListResponse>("/courses");
 
   if (params.ofertaId === "nuevo") {
     const empty: CompatibleType = {
@@ -106,7 +110,7 @@ export async function clientLoader({
       updatedAt: new Date().toISOString(),
     };
 
-    return { data: empty, companies, documentTypes };
+    return { data: empty, companies, documentTypes, courses: allCourses };
   }
 
   const resp = await api
@@ -143,67 +147,10 @@ export async function clientLoader({
     expiresAt: expiresAt ?? null,
   };
 
-  return { data, companies, documentTypes };
+  return { data, companies, documentTypes, courses: allCourses };
 }
 
-export function useSkillList({ fetchDelay = 0 } = {}) {
-  const [items, setItems] = useState([] as PublicSkillDTO[]);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const limit = 10; // Number of items per page, adjust as necessary
-
-  const loadPokemon = async (currentOffset: number) => {
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    try {
-      setIsLoading(true);
-
-      if (offset > 0) {
-        // Delay to simulate network latency
-        await new Promise((resolve) => setTimeout(resolve, fetchDelay));
-      }
-
-      let res = await api
-        .get(`/skills?after=${currentOffset}&limit=${limit}`)
-        .json<SkillListResponse>();
-
-      setHasMore(res?.pagination?.hasNext ?? false);
-      // Append new results to existing ones
-      const items = res?.data ?? [];
-      setItems((prevItems) => [...prevItems, ...items]);
-    } catch (error) {
-      if ((error as any)?.name === "AbortError") {
-        // eslint-disable-next-line no-console
-        console.log("Fetch aborted");
-      } else {
-        // eslint-disable-next-line no-console
-        console.error("There was an error with the fetch operation:", error);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadPokemon(offset);
-  }, []);
-
-  const onLoadMore = () => {
-    const newOffset = offset + limit;
-
-    setOffset(newOffset);
-    loadPokemon(newOffset);
-  };
-
-  return {
-    items,
-    hasMore,
-    isLoading,
-    onLoadMore,
-  };
-}
+// usePaginatedList hook provides paginated items
 
 function TransitionButtons({
   status,
@@ -245,7 +192,7 @@ function TransitionButtons({
 }
 
 export default function Oferta({ loaderData }: Route.ComponentProps) {
-  const { data, companies, documentTypes } = loaderData;
+  const { data, companies, documentTypes, courses } = loaderData;
   const [offer, setOffer] = useState(data);
   const navigate = useNavigate();
 
@@ -273,6 +220,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
     setLocation,
     setSalary,
     setSkills,
+    setCourses,
     setRequiredDocuments,
     setDurationWeeks,
     setStartDate,
@@ -296,7 +244,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
   const isExisting = offer.id !== 0;
 
   const [isOpen, setIsOpen] = useState(false);
-  const skillList = useSkillList({ fetchDelay: 500 });
+  const skillList = usePaginatedList<PublicSkillDTO>("/skills", { fetchDelay: 500, limit: 10 });
 
   const [, scrollerRef] = useInfiniteScroll({
     hasMore: skillList.hasMore,
@@ -434,7 +382,7 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
                     <div>
                       <Autocomplete
                         isRequired
-                        className="w-full"
+                        fullWidth
                         label="Empresa"
                         labelPlacement="outside"
                         placeholder="Seleccionar empresa"
@@ -580,10 +528,46 @@ export default function Oferta({ loaderData }: Route.ComponentProps) {
                       scrollRef={scrollerRef}
                       selectionMode="multiple"
                       items={skillList.items}
+                      selectedKeys={new Set((offer.skills ?? []).map(String))}
+                      onSelectionChange={(v: any) => {
+                        let ids: number[] = [];
+                        if (v instanceof Set) {
+                          ids = Array.from(v).map((s) => Number(s));
+                        } else if (Array.isArray(v)) {
+                          ids = v.map(Number);
+                        } else if (v != null) {
+                          ids = [Number(v)];
+                        }
+                        setSkills(ids);
+                        setErrors((prev) => ({ ...prev, skills: undefined }));
+                      }}
                     >
                       {(item) => (
                         <SelectItem key={item.id}>{item.name}</SelectItem>
                       )}
+                    </Select>
+
+                    <Select
+                      label="Carreras"
+                      labelPlacement="outside"
+                      placeholder="Seleccionar carreras"
+                      selectionMode="multiple"
+                      items={courses ?? []}
+                      selectedKeys={new Set((offer.courses ?? []).map(String))}
+                      onSelectionChange={(v: any) => {
+                        let ids: number[] = [];
+                        if (v instanceof Set) {
+                          ids = Array.from(v).map((s) => Number(s));
+                        } else if (Array.isArray(v)) {
+                          ids = v.map(Number);
+                        } else if (v != null) {
+                          ids = [Number(v)];
+                        }
+                        setCourses(ids);
+                        setErrors((prev) => ({ ...prev, courses: undefined }));
+                      }}
+                    >
+                      {(c: any) => <SelectItem key={c.id}>{c.name}</SelectItem>}
                     </Select>
 
                     <Select

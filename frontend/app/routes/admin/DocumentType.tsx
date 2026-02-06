@@ -131,7 +131,7 @@ export default function DocumentType({ loaderData }: Route.ComponentProps) {
                     <h1 className="text-2xl font-bold">
                       Detalles del Tipo de Documento
                     </h1>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-col gap-4 w-full">
                       <Input
                         value={item.name ?? ""}
                         onValueChange={(v) =>

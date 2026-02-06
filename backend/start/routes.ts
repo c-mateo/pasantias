@@ -12,18 +12,46 @@ import { middleware } from './kernel.js'
 import { auth, forgot, reset, profile, admin } from '#start/limiter'
 import { UserRole } from '@prisma/client'
 import SendTemplatedEmail from '#jobs/send_templated_email'
+import CreateNotifications from '#jobs/create_notifications'
+import { notifyUser } from '#services/notification_service'
+import transmit from '@adonisjs/transmit/services/main'
+
+transmit.registerRoutes()
 
 router.post('/test', async () => {
-  await SendTemplatedEmail.dispatch({
-    to: 'cerrimateo@hotmail.com.ar',
-    template: 'auth_welcome',
-    data: {
-      name: 'Matias',
-    },
+  await CreateNotifications.dispatch({
+    users: [1],
+    title: 'Postulación aceptada',
+    message: 'Tu postulación #1 fue aceptada.',
+    tag: 'application',
+  }).catch((err) => {
+    console.error('CreateNotifications error', err)
   })
-  return {
-    test: 'it works!',
-  }
+  // Send email using templated email job
+
+  // await SendTemplatedEmail.dispatch({
+  //   to: 'mateo.cerri.ar@gmail.com',
+  //   template: 'application_accepted',
+  //   data: {
+  //     name: 'Mateo',
+  //     applicationId: 1,
+  //     offerPosition: 'Ingeniero',
+  //     appUrl: 'http://127.0.0.1:5173/admin/aplicaciones/1',
+  //   },
+  // }).catch((err) => console.error('SendTemplatedEmail error', err))
+})
+
+router.post('/notifications/test', async ({ request, response }) => {
+  // const userId = auth.user?.id
+  // if (!userId) return response.unauthorized()
+
+  // console.log('Sending test notification to user', 1, 'with payload')
+  await notifyUser(1, {
+    title: 'Notificación de prueba',
+    message: 'Esta es una notificación de prueba.',
+  })
+
+  return response.accepted({ data: { sent: true } })
 })
 
 router
@@ -62,10 +90,8 @@ router
       .group(() => {
         router.get('profile', '#controllers/profile_controller.get').as('profile')
         router.patch('profile', '#controllers/profile_controller.update')
-        router.post('profile/email/change', '#controllers/profile_controller.requestEmailChange')
-        router
-          .patch('profile/email', '#controllers/profile_controller.changeEmail')
-          .as('profile.changeEmail')
+        router.post('profile/change-email', '#controllers/profile_controller.requestEmailChange')
+        router.post('profile/set-cuil', '#controllers/profile_controller.setCuil')
         router
           .post('profile/change-password', '#controllers/profile_controller.changePassword')
           .as('profile.changePassword')

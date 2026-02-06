@@ -33,7 +33,7 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
     if (!pendingStatus) return setShowFeedbackModal(false);
     try {
       setIsSaving(true);
-      await api.patch({ status: pendingStatus, feedback: feedbackInput }, `/applications/${data.id}/status`).res();
+      await api.patch({ status: pendingStatus, feedback: feedbackInput }, `/admin/applications/${data.id}/status`).res();
       toast.success({ title: "Estado actualizado" });
       navigate('/admin/aplicaciones');
     } catch (err) {
@@ -44,6 +44,23 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
       setShowFeedbackModal(false);
       setPendingStatus(null);
       setFeedbackInput("");
+    }
+  };
+
+  const downloadDocument = async (doc: { id: number; originalName?: string }) => {
+    try {
+      const blob = await api.url(`/my-documents/${doc.id}/download`).post().blob();
+      const url = window.URL.createObjectURL(blob as any);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.originalName ?? `document-${doc.id}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      toast.error({ title: "Error", message: "No se pudo descargar el archivo." });
     }
   };
 
@@ -58,7 +75,7 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
                   <a href="/admin/aplicaciones" className="text-sm text-blue-600">← Volver a Aplicaciones</a>
                 </div>
                 <h1 className="text-2xl font-bold">Detalle de Postulación #{data.id}</h1>
-                <div className="mt-4">
+                <div className="mt-4 flex flex-col gap-4 w-full">
                   <div className="flex justify-between items-start">
                     <div>
                       <h2 className="text-lg font-medium">{data.offer?.position}</h2>
@@ -71,6 +88,27 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
                     <p><strong>Creada:</strong> {formatDateTimeLocal(data.createdAt)}</p>
                     {data.finalizedAt && <p><strong>Finalizada:</strong> {formatDateTimeLocal(data.finalizedAt)}</p>}
                     {data.feedback && <p className="mt-2"><strong>Feedback:</strong> {data.feedback}</p>}
+                    {data.documents && data.documents.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-lg font-medium mb-2">Archivos adjuntos</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {data.documents.map((doc: any) => (
+                            <div key={doc.id} className="flex items-center justify-between p-3 border border-gray-200 rounded bg-gray-50">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-10 h-10 bg-white border rounded text-gray-600">📄</div>
+                                <div>
+                                  <div className="font-medium">{doc.originalName ?? `Documento ${doc.id}`}</div>
+                                  {doc.documentType && <div className="text-xs text-gray-500">{doc.documentType}</div>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" color="default" onPress={() => downloadDocument(doc)}>Descargar</Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -83,12 +121,28 @@ export default function AdminApplication({ loaderData }: Route.ComponentProps) {
               <div className="flex flex-col gap-3">
                 <Button color="primary" onPress={() => doUpdate('ACCEPTED')} disabled={isSaving}>Aceptar</Button>
                 <Button color="danger" onPress={() => doUpdate('REJECTED')} disabled={isSaving}>Rechazar</Button>
-
               </div>
             </div>
           </aside>
         </div>
       </div>
+      <Modal
+        isOpen={showFeedbackModal}
+        title={pendingStatus ? `Enviar feedback (${pendingStatus})` : "Enviar feedback"}
+        body={
+          <div className="space-y-2">
+            <p>Opcional: escribe un feedback para el candidato.</p>
+            <textarea
+              className="w-full border rounded p-2 h-32"
+              value={feedbackInput}
+              onChange={(e) => setFeedbackInput(e.target.value)}
+              placeholder="Feedback..."
+            />
+          </div>
+        }
+        onConfirm={confirmUpdate}
+        onCancel={() => setShowFeedbackModal(false)}
+      />
     </main>
   );
 }

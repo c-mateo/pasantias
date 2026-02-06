@@ -1,0 +1,5 @@
+En la pagina de inicio quiero que muestres las ofertas destacadas (segun algun criterio, por ejemplo si esta logeado, las que sean de la carrera del usuario, las que estan por expirar  primero, etc). En la página de todas las ofertas quiero que agregues una barra de búsqueda, posibilidad de ordenar y filtrar. En la página de mis ofertas quiero que adoptes el mismo estilo de las demás pantallas, ya  que actualmente estás usando un borde negro
+
+El front está desprolijo. Quiero que renombres componentes, reescribas mensajes y comentarios en un mismo idioma. Los componentes pueden estar en un idioma, los mensajes en otro y los comentarios en otro. Escoge lo más conveniente. Asegurate que todo el texto de la interaz esté en español
+
+Elimina código comentado y comentarios innecesarios. Documenta mejor el código en general, agregando comentarios donde sea necesario. No quiero que más del 25% del código sea comentarios. Agrega jsdoc donde consideres.

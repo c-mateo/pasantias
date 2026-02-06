@@ -6,6 +6,11 @@ import { api } from "~/api/api";
 import toast from "~/util/toast";
 import { login } from "~/util/AuthContext";
 
+// export async clientLoader({params}: Route.ClientLoaderArgs) {
+//   const token = params.get("token");
+//   return { token };
+// }
+
 export default function ResetPassword() {
   const token = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get("token");
   const navigate = useNavigate();
@@ -91,6 +96,7 @@ export default function ResetPassword() {
             onValueChange={setPassword}
             type="password"
             placeholder="Mínimo 8 caracteres"
+            autoComplete="new-password"
           />
           <Input
             id="confirmPassword"
@@ -101,6 +107,7 @@ export default function ResetPassword() {
             onValueChange={setConfirmPassword}
             type="password"
             placeholder="Reingresa la contraseña"
+            autoComplete="new-password"
           />
 
           <div className="flex items-center justify-between w-full">

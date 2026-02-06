@@ -5,7 +5,7 @@ import { Form, Input, Link } from "@heroui/react";
 import { login, requireUser } from "~/util/AuthContext";
 import toast from "~/util/toast";
 import type { LoginResponse } from "~/api/types";
-import { redirect, useNavigate } from "react-router";
+import { redirect, useNavigate, useLocation } from "react-router";
 
 export async function clientLoader() {
   const user = await requireUser();
@@ -17,6 +17,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,8 +26,13 @@ export default function Login() {
 
     try {
       await login(email, password);
-      await navigate("/admin/carreras");
-      // window.location.href = "/";
+      const params = new URLSearchParams(location.search);
+      const next = params.get("next");
+      if (next) {
+        navigate(next);
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       console.error(err);
       toast.error({ title: "Error", message: "Error al iniciar sesión" });
@@ -67,7 +73,10 @@ export default function Login() {
             <Button type="submit" color="primary" disabled={isLoading}>
               Entrar
             </Button>
-            <Link href="/register">Crear cuenta</Link>
+            <div className="flex flex-col items-end">
+              <Link href="/forgot-password">Olvidé mi contraseña</Link>
+              <Link href="/register">Crear cuenta</Link>
+            </div>
           </div>
         </Form>
       </main>

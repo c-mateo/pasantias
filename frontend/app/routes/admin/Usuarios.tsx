@@ -1,5 +1,5 @@
-import { useState } from "react";
 import AdminList2 from "~/components/AdminList2";
+import { useList } from "../../util/useList";
 import type { Route } from "./+types/Usuarios";
 import { api } from "~/api/api";
 
@@ -27,68 +27,25 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
 }
 
 export default function Usuarios({ loaderData }: Route.ComponentProps) {
-  const { initialData, pagination } = loaderData;
-
-  const [users, setUsers] = useState<AdminUser[]>(initialData || []);
-  const [page, setPage] = useState(pagination.next);
-  const [loading, setLoading] = useState(false);
-
-  const [sort, setSort] = useState<string | undefined>(undefined);
-
-  const loadMore = async () => {
-    if (!page || loading) return;
-    setLoading(true);
-    try {
-      const qs = [`limit=10`, `after=${page}`];
-      if (sort) qs.push(`sort=${encodeURIComponent(sort)}`);
-      const res = await api.get(`/users?${qs.join('&')}`).res();
-      const json = await res.json();
-      const next = json?.data ?? [];
-      setUsers((prev) => [...prev, ...next]);
-      setPage(json?.pagination?.next ?? null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /*
-  // Search & sort helpers (commented out — kept for future use)
-  const searchUsers = async () => {
-    setLoading(true);
-    try {
-      const qs = [`limit=10`];
-      if (sort) qs.push(`sort=${encodeURIComponent(sort)}`);
-      const res = await api.get(`/users?${qs.join('&')}`).res();
-      const json = await res.json();
-      setUsers(json?.data ?? []);
-      setPage(json?.pagination?.next ?? null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cycleSort = (field: string) => {
-    if (sort === field) setSort(`-${field}`);
-    else if (sort === `-${field}`) setSort(undefined);
-    else setSort(field);
-    // searchUsers();
-  };
-  */
-
-  // AdminList2 handles infinite scroll via loadMore/hasMore
-
-  const deleteUser = (id: number) => setUsers((prev) => prev.filter((u) => u.id !== id));
-  const deleteUsers = (ids: number[]) => setUsers((prev) => prev.filter((u) => !ids.includes(u.id)));
+  const {
+    items,
+    hasMore,
+    loading,
+    loadMore,
+    deleteItems,
+    sortDescriptor,
+    setSortDescriptor,
+  } = useList<AdminUser>({
+    endpoint: "/admin/users",
+    deleteEndpoint: "/admin/users",
+    chunk: 10,
+    initialData: loaderData.initialData ?? [],
+    initialPage: loaderData.pagination?.next ?? null,
+  });
 
 
-
-
-
-
+  const deleteUser = (id: number) => deleteItems([id]);
+  const deleteUsers = (ids: number[]) => deleteItems(ids);
 
   return (
     <div className="px-4 py-3 max-w-4xl mx-auto">
@@ -101,18 +58,17 @@ export default function Usuarios({ loaderData }: Route.ComponentProps) {
           { name: "role", label: "Rol", alignment: "center" },
           { name: "status", label: "Estado", alignment: "center", renderer: (v) => (v ? "Inactivo" : "Activo") },
         ]}
-        items={users}
+        items={items}
         loading={loading}
-        hasMore={page !== null}
+        hasMore={hasMore}
         loadMore={loadMore}
+        sortDescriptor={sortDescriptor}
+        onSortChange={setSortDescriptor}
         getId={(u) => u.id}
         getName={(u) => `${u.firstName} ${u.lastName}`}
         onDeleteItem={(id) => deleteUser(id)}
         onDeleteSelected={(ids) => deleteUsers(ids)}
-        createHref="/admin/usuarios/nuevo"
       />
-
-
     </div>
   );
 }

@@ -1,17 +1,19 @@
 import wretch from "wretch";
-import AbortAddon from "wretch/addons/abort"
+import AbortAddon from "wretch/addons/abort";
 import { logout, useAuthState } from "~/util/AuthContext";
 
-
-export const api = wretch("http://localhost:5173/api/v1").options({
-  mode: "cors",
-  credentials: "include",
-}).catcher(401, (err, req) => {
-  // Handle unauthorized globally
-  console.log("Unauthorized - redirecting to login");
-  // You can add redirection logic here if needed
-  logout(true);
-})
+export const api = wretch("http://localhost:5173/api/v1")
+  .options({
+    mode: "cors",
+    credentials: "include",
+  })
+  .addon(AbortAddon())
+  .catcher(401, (err, req) => {
+    // Handle unauthorized globally
+    console.log("Unauthorized - redirecting to login");
+    // You can add redirection logic here if needed
+    logout(true);
+  });
 // .catcher(403, (err, req) => {
 //   // Handle forbidden globally
 //   console.log("Forbidden - you don't have access to this resource");

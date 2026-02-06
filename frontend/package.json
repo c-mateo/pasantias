@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@adonisjs/transmit-client": "^1.1.0",
     "@emotion/react": "^11.14.0",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
@@ -22,6 +23,7 @@
     "@react-stately/data": "^3.15.0",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.26",
+    "fuse.js": "^7.1.0",
     "isbot": "^5.1.32",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -44,6 +46,7 @@
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
+    "vite-plugin-svgr": "^4.5.0",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }

@@ -16,13 +16,7 @@ export type ApiError = {
 export type UserRole = 'STUDENT' | 'ADMIN'
 export type OfferStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'EXPIRED'
 export type ApplicationStatus = 'PENDING' | 'BLOCKED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
-export type NotificationType =
-  | 'APPLICATION_SUBMITTED'
-  | 'APPLICATION_ACCEPTED'
-  | 'APPLICATION_REJECTED'
-  | 'OFFER_PUBLISHED'
-  | 'OFFER_CLOSING_SOON'
-  | 'ADMIN_ANNOUNCEMENT'
+
 
 /** Campos de auditoría visibles solo para el rol ADMIN */
 export interface AuditFields {
@@ -279,7 +273,7 @@ export type ApplicationUpdateStatusResponse = NoContent
 // If omitted, broadcasts to all students (role STUDENT). Provided userIds will be filtered to include only students.
 export interface NotificationBroadcastBody { userIds?: number[]; title: string; message: string; }
 export interface BroadcastResponse { data: { accepted: boolean; } }
-export interface NotificationDTO { id: number; title: string; message: string; type: NotificationType; createdAt: string; readAt?: string; }
+export interface NotificationDTO { id: number; title: string; message: string; tag?: string; createdAt: string; readAt?: string; }
 export type NotificationsListResponse = Paginated<NotificationDTO>
 
 export type NotificationUpdateResponse = DetailResponse<Pick<NotificationDTO, 'id' | 'title' | 'readAt'> & { isRead: boolean }>

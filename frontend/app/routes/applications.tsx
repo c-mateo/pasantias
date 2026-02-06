@@ -17,7 +17,7 @@ export default function MyApplications() {
   const [apps, setApps] = useState<any[]>([]);
   const [drafts, setDrafts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
+  
 
   useEffect(() => {
     (async () => {
@@ -26,45 +26,18 @@ export default function MyApplications() {
         const d = await api.get("/my-drafts").json();
         const appsData = (a as any).data ?? [];
         const draftsData = (d as any).data ?? [];
-
-        if (appsData.length === 0 && draftsData.length === 0) {
-          const hidden = typeof window !== 'undefined' && localStorage.getItem('applications:demoHidden') === '1'
-          if (!hidden) {
-            const { demoApplications, demoDrafts } = await import("~/components/ApplicationsDemo");
-            setApps(demoApplications);
-            setDrafts(demoDrafts);
-            setIsDemo(true);
-          } else {
-            setApps([]);
-            setDrafts([]);
-            setIsDemo(false);
-          }
-        } else {
-          setApps(appsData);
-          setDrafts(draftsData);
-          setIsDemo(false);
-        }
+        setApps(appsData);
+        setDrafts(draftsData);
       } catch (err) {
         console.error(err);
-        // Fall back to demo data when API is not available or empty
-        const { demoApplications, demoDrafts } = await import("~/components/ApplicationsDemo");
-        const hidden = typeof window !== 'undefined' && localStorage.getItem('applications:demoHidden') === '1'
-        if (!hidden) {
-          setApps(demoApplications);
-          setDrafts(demoDrafts);
-        }
+        // If API call fails, show empty lists
+        setApps([]);
+        setDrafts([]);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const hidden = localStorage.getItem('applications:demoHidden') === '1'
-    if (hidden) setApps([])
-    setDemoHidden(hidden)
-  }, [])
 
   const removeDraft = async (offerId: number) => {
     // Open modal to confirm deletion
@@ -90,22 +63,6 @@ export default function MyApplications() {
     }
   };
 
-  const [demoHidden, setDemoHidden] = React.useState(false)
-
-  const clearDemo = () => {
-    setApps([])
-    setDrafts([])
-    setDemoHidden(true)
-    if (typeof window !== 'undefined') localStorage.setItem('applications:demoHidden', '1')
-  }
-
-  const restoreDemo = async () => {
-    const { demoApplications, demoDrafts } = await import("~/components/ApplicationsDemo");
-    setApps(demoApplications)
-    setDrafts(demoDrafts)
-    setDemoHidden(false)
-    if (typeof window !== 'undefined') localStorage.removeItem('applications:demoHidden')
-  }
 
   if (loading) return <div className="p-6">Cargando...</div>;
 
@@ -116,30 +73,9 @@ export default function MyApplications() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Mis solicitudes</h1>
-        {!isDemo && (
-          <div>
-            <Button className="text-sm text-blue-600" onPress={restoreDemo} color="default" size="sm">Mostrar datos de ejemplo</Button>
-          </div>
-        )}
+        <div />
       </div>
-
-      {isDemo && !demoHidden && (
-        <div className="mb-4 flex items-center justify-between gap-4 p-3 rounded bg-yellow-50 border-l-4 border-yellow-300 text-yellow-800">
-          <div>Mostrando datos de ejemplo para previsualización.</div>
-          <div>
-            <Button className="text-sm text-red-600" onPress={clearDemo} color="default" size="sm">Limpiar demo</Button>
-          </div>
-        </div>
-      )}
-
-      {demoHidden && (
-        <div className="mb-4 flex items-center justify-between gap-4 p-3 rounded bg-gray-50 border-l-4 border-gray-200 text-gray-700">
-          <div>Datos de ejemplo ocultos.</div>
-          <div>
-            <Button className="text-sm text-blue-600" onPress={restoreDemo} color="default" size="sm">Restaurar demo</Button>
-          </div>
-        </div>
-      )}
+      
 
       <section className="bg-white p-4 rounded shadow mb-6">
         <h2 className="text-lg font-semibold mb-3">Solicitudes enviadas</h2>
@@ -148,7 +84,7 @@ export default function MyApplications() {
         ) : (
           <ul className="space-y-3">
             {apps.map((a) => (
-              <li key={a.id} className="p-3 border rounded flex justify-between items-center">
+              <li key={a.id} className="p-3 border border-gray-200 rounded flex justify-between items-center">
                 <div>
                   <div className="font-medium">{a.offer.position}</div>
                   <div className="text-sm text-gray-600">{a.offer.company?.name}</div>
@@ -173,7 +109,7 @@ export default function MyApplications() {
         ) : (
           <ul className="space-y-3">
             {drafts.map((d) => (
-              <li key={d.offer.id} className="p-3 border rounded flex justify-between items-center">
+              <li key={d.offer.id} className="p-3 border border-gray-200 rounded flex justify-between items-center">
                 <div>
                   <div className="font-medium">{d.offer.position}</div>
                   <div className="text-sm text-gray-600">{d.offer.company?.name}</div>

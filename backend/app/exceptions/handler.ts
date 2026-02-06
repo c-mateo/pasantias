@@ -2,7 +2,8 @@ import app from '@adonisjs/core/services/app'
 import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
 import { errors as AuthErrors } from '@adonisjs/auth'
 import { errors as LimiterErrors } from '@adonisjs/limiter'
-import { apiErrors } from './my_exceptions.js'
+import { errors as VineErrors } from '@vinejs/vine'
+import { apiErrors, ApiException } from './my_exceptions.js'
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -42,6 +43,34 @@ export default class HttpExceptionHandler extends ExceptionHandler {
       const formattedError = customError.format({ instance: ctx.request.url() })
       return ctx.response.status(formattedError.status).json(formattedError)
     }
+
+    if (error instanceof VineErrors.E_VALIDATION_ERROR) {
+      const customError = apiErrors.validationError(error.messages)
+      const formattedError = customError.format({ instance: ctx.request.url() })
+      return ctx.response.status(formattedError.status).json(formattedError)
+    }
+
+    // If this is an ApiException created by our helpers, format and return it
+    if (error instanceof ApiException) {
+      const formatted = (error as any).format({ instance: ctx.request.url() })
+      return ctx.response.status(formatted.status).json(formatted)
+    }
+
+    // Map controller "missing method" runtime error to a sanitized 404
+    if (typeof error?.message === 'string' && /Missing method\s+"/.test(error.message)) {
+      const custom = apiErrors.notFound('endpoint', ctx.request.url())
+      const formatted = custom.format({ instance: ctx.request.url() })
+      return ctx.response.status(formatted.status).json(formatted)
+    }
+
+    // For other unexpected errors, return a sanitized 500 with an errorId
+    // to avoid leaking implementation details (stack/frames) to clients.
+    // Log the original error along with the generated id for diagnostics.
+    const errorId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    console.error(`InternalError ${errorId}:`, error)
+    const internal = apiErrors.internalError(errorId)
+    const formattedInternal = internal.format({ instance: ctx.request.url() })
+    return ctx.response.status(formattedInternal.status).json(formattedInternal)
 
     // console.log('Error handled by HttpExceptionHandler:', error)
 
