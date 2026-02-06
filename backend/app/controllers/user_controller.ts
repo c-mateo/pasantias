@@ -1,7 +1,7 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
-import { idValidator } from '#validators/users'
+import { idValidator, adminUpdateValidator, adminRoleValidator } from '#validators/users'
 import { buildFilterWhere } from '#utils/query_builder'
 import { sha256 } from '#utils/hash'
 import { updateCuilValidator } from '#validators/users'
@@ -82,6 +82,7 @@ export default class UserController {
         province: true,
         city: true,
         role: true,
+        courses: { select: { id: true, name: true, shortName: true } },
         createdAt: true,
         updatedAt: true,
       },
@@ -109,6 +110,34 @@ export default class UserController {
     })
 
     return response.ok({ message: 'CUIL actualizado' })
+  }
+
+  // PUT /admin/users/:id/courses
+  async updateCourses({ request }: HttpContext) {
+    const { params, ...validated } = await request.validateUsing(adminUpdateValidator)
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: params.id } })
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        courses: {
+          set: validated.coursesIds.map((id: number) => ({ id })),
+        },
+      },
+    })
+    return { data: updated }
+  }
+
+  // PUT /admin/users/:id/role
+  async updateRole({ request, response }: HttpContext) {
+    const { params, role } = await request.validateUsing(adminRoleValidator)
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: params.id } })
+
+    await prisma.user.update({ where: { id: user.id }, data: { role } })
+
+    return response.ok({ message: 'Rol actualizado' })
   }
 
   async delete({ request, response }: HttpContext) {
