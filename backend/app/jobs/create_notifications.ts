@@ -34,7 +34,7 @@ export default class CreateNotifications extends Job {
       users = await getAllStudentIds()
     } else {
       // Sanitize provided user ids: only keep existing users with role = STUDENT
-      const ids = (payload as any).users ?? []
+      const ids = payload.users ?? []
       const result = await prisma.user.findMany({
         where: { id: { in: ids }, role: 'STUDENT', deletedAt: null },
         select: { id: true },
@@ -50,6 +50,6 @@ export default class CreateNotifications extends Job {
         tag: (payload as any).tag ?? '',
       })),
     })
-    this.logger.info(`Created ${result.count} notifications`)
+    this.logger.info(result)
   }
 }

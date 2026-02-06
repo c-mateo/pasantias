@@ -42,6 +42,18 @@ export type EmailTemplateDataMap = {
   auth_change_email_requested: AuthChangeEmailRequestedData
   auth_email_updated: AuthEmailUpdatedData
   auth_email_update_notification: AuthEmailUpdateNotificationData
+  application_accepted: {
+    name: string
+    applicationId: number
+    offerPosition?: string
+    appUrl?: string
+  }
+  application_rejected: {
+    name: string
+    applicationId: number
+    offerPosition?: string
+    appUrl?: string
+  }
 }
 
 export type EmailTemplateName = keyof EmailTemplateDataMap
@@ -52,40 +64,51 @@ type EmailTemplate<T> = {
   textView: string
 }
 
-export const EmailTemplates: { [K in EmailTemplateName]: EmailTemplate<EmailTemplateDataMap[K]> } = {
-  auth_welcome: {
-    subject: (data) => `¡Bienvenido, ${data.name}!`,
-    htmlView: 'emails/auth/welcome_html',
-    textView: 'emails/auth/welcome_text',
-  },
-  auth_change_email: {
-    subject: () => 'Confirmá tu nuevo correo',
-    htmlView: 'emails/auth/change_email_html',
-    textView: 'emails/auth/change_email_text',
-  },
-  auth_reset_password: {
-    subject: () => 'Restablecer contraseña',
-    htmlView: 'emails/auth/reset_password_html',
-    textView: 'emails/auth/reset_password_text',
-  },
-  auth_password_changed: {
-    subject: () => 'Tu contraseña ha sido cambiada',
-    htmlView: 'emails/auth/password_changed_html',
-    textView: 'emails/auth/password_changed_text',
-  },
-  auth_change_email_requested: {
-    subject: () => 'Solicitud de cambio de correo electrónico',
-    htmlView: 'emails/auth/change_email_requested_html',
-    textView: 'emails/auth/change_email_requested_text',
-  },
-  auth_email_updated: {
-    subject: () => 'Correo actualizado',
-    htmlView: 'emails/auth/email_updated_html',
-    textView: 'emails/auth/email_updated_text',
-  },
-  auth_email_update_notification: {
-    subject: () => 'Correo actualizado',
-    htmlView: 'emails/auth/email_update_notification_html',
-    textView: 'emails/auth/email_update_notification_text',
-  },
-}
+export const EmailTemplates: { [K in EmailTemplateName]: EmailTemplate<EmailTemplateDataMap[K]> } =
+  {
+    auth_welcome: {
+      subject: (data) => `¡Bienvenido, ${data.name}!`,
+      htmlView: 'emails/auth/welcome_html',
+      textView: 'emails/auth/welcome_text',
+    },
+    auth_change_email: {
+      subject: () => 'Confirmá tu nuevo correo',
+      htmlView: 'emails/auth/change_email_html',
+      textView: 'emails/auth/change_email_text',
+    },
+    auth_reset_password: {
+      subject: () => 'Restablecer contraseña',
+      htmlView: 'emails/auth/reset_password_html',
+      textView: 'emails/auth/reset_password_text',
+    },
+    auth_password_changed: {
+      subject: () => 'Tu contraseña ha sido cambiada',
+      htmlView: 'emails/auth/password_changed_html',
+      textView: 'emails/auth/password_changed_text',
+    },
+    auth_change_email_requested: {
+      subject: () => 'Solicitud de cambio de correo electrónico',
+      htmlView: 'emails/auth/change_email_requested_html',
+      textView: 'emails/auth/change_email_requested_text',
+    },
+    auth_email_updated: {
+      subject: () => 'Correo actualizado',
+      htmlView: 'emails/auth/email_updated_html',
+      textView: 'emails/auth/email_updated_text',
+    },
+    auth_email_update_notification: {
+      subject: () => 'Correo actualizado',
+      htmlView: 'emails/auth/email_update_notification_html',
+      textView: 'emails/auth/email_update_notification_text',
+    },
+    application_accepted: {
+      subject: (data) => `Tu postulación #${data.applicationId} fue aceptada`,
+      htmlView: 'emails/applications/accepted_html',
+      textView: 'emails/applications/accepted_text',
+    },
+    application_rejected: {
+      subject: (data) => `Tu postulación #${data.applicationId} fue rechazada`,
+      htmlView: 'emails/applications/rejected_html',
+      textView: 'emails/applications/rejected_text',
+    },
+  }
