@@ -2,7 +2,7 @@ import env from '#start/env'
 import { defineConfig, transports } from '@adonisjs/mail'
 
 const mailConfig = defineConfig({
-  default: 'smtp',
+  default: env.get('MAILER_DRIVER', 'smtp'),
 
   /**
    * The mailers object can be used to configure multiple mailers
@@ -23,9 +23,31 @@ const mailConfig = defineConfig({
         pass: env.get('SMTP_PASSWORD'),
       },
     }),
-    // ses: transports.ses({
+    mailgun: transports.mailgun({
+      baseUrl: 'https://api.mailgun.net/v3',
+      key: env.get('MAILGUN_API_KEY'),
+      domain: env.get('MAILGUN_DOMAIN'),
 
-    // })
+      /**
+       * The following options can be overridden at
+       * runtime when calling the `mail.send` method.
+       */
+      oDkim: true,
+      oTags: ['transactional', 'adonisjs_app'],
+      oDeliverytime: new Date(2024, 8, 18),
+      oTestMode: false,
+      oTracking: false,
+      oTrackingClick: false,
+      oTrackingOpens: false,
+      headers: {
+        // h:prefixed headers
+      },
+      variables: {
+        appId: '',
+        userId: '',
+        // v:prefixed variables
+      },
+    }),
   },
 })
 

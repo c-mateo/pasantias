@@ -54,6 +54,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   SMTP_USERNAME: Env.schema.string(),
   SMTP_PASSWORD: Env.schema.string(),
 
+  MAILGUN_API_KEY: Env.schema.string(),
+  MAILGUN_DOMAIN: Env.schema.string(),
+
+  MAILER_DRIVER: Env.schema.enum(['smtp', 'mailgun'] as const),
+
   /*
   |----------------------------------------------------------
   | Variables for configuring the limiter package
