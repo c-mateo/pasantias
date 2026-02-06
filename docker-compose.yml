@@ -27,6 +27,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        DATABASE_URL: "postgresql://root:root@db:5432/app"
     restart: always
     networks: [appnet]
     env_file:

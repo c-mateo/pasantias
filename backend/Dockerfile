@@ -26,6 +26,7 @@ ENV PRISMA_GENERATE=true
 RUN npx prisma generate
 RUN node ace build
 
+
 # Production stage
 FROM base
 ENV NODE_ENV=production
@@ -33,5 +34,12 @@ WORKDIR /app
 COPY --from=production-deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app
 COPY --from=build /app/generated /app/generated
+
+COPY --from=build /app/prisma /app/prisma
+COPY --from=build /app/prisma.config.ts /app/prisma.config.ts
+
+COPY run.sh ./
+RUN chmod +x ./run.sh
+
 EXPOSE 8080
-CMD ["node", "./bin/server.js"]
+ENTRYPOINT ["sh", "/app/run.sh"]

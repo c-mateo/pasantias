@@ -11,7 +11,7 @@ const mailConfig = defineConfig({
    */
   mailers: {
     smtp: transports.smtp({
-      host: env.get('SMTP_HOST'),
+      host: env.get('SMTP_HOST') ?? '',
       port: env.get('SMTP_PORT'),
       /**
        * Uncomment the auth block if your SMTP
@@ -19,14 +19,14 @@ const mailConfig = defineConfig({
        */
       auth: {
         type: 'login',
-        user: env.get('SMTP_USERNAME'),
-        pass: env.get('SMTP_PASSWORD'),
+        user: env.get('SMTP_USERNAME') ?? '',
+        pass: env.get('SMTP_PASSWORD') ?? '',
       },
     }),
     mailgun: transports.mailgun({
       baseUrl: 'https://api.mailgun.net/v3',
-      key: env.get('MAILGUN_API_KEY'),
-      domain: env.get('MAILGUN_DOMAIN'),
+      key: env.get('MAILGUN_API_KEY') ?? '',
+      domain: env.get('MAILGUN_DOMAIN') ?? '',
 
       /**
        * The following options can be overridden at
