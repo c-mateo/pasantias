@@ -65,6 +65,7 @@
     "@adonisjs/mail": "^9.2.2",
     "@adonisjs/redis": "^9.2.0",
     "@adonisjs/session": "^7.7.0",
+    "@adonisjs/transmit": "^2.0.2",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@types/nodemailer": "^7.0.4",
