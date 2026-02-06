@@ -16,8 +16,16 @@ export const createValidator = vine.create({
   location: vine.string().optional(),
   salary: vine.number().optional(),
   durationWeeks: vine.number().optional(),
-  startDate: vine.date().optional(),
-  expiresAt: vine.date().optional(),
+  startDate: vine
+    .date({
+      formats: ['iso8601'],
+    })
+    .optional(),
+  expiresAt: vine
+    .date({
+      formats: ['iso8601'],
+    })
+    .optional(),
 
   courses: vine.array(vine.number()).optional(),
   skills: vine.array(vine.number()).optional(),
@@ -35,8 +43,16 @@ export const updateValidator = vine.create({
   location: vine.string().optional(),
   salary: vine.number().optional(),
   durationWeeks: vine.number().optional(),
-  startDate: vine.date().optional(),
-  expiresAt: vine.date().optional(),
+  startDate: vine
+    .date({
+      formats: ['iso8601'],
+    })
+    .optional(),
+  expiresAt: vine
+    .date({
+      formats: ['iso8601'],
+    })
+    .optional(),
 
   courses: vine.array(vine.number()).optional(),
   skills: vine.array(vine.number()).optional(),

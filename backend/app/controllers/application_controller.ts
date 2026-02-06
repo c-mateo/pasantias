@@ -24,8 +24,13 @@ enum ApplicationSort {
   CREATED_AT_DESC = '-createdAt',
 }
 
+/**
+ * Controlador de aplicaciones (postulaciones).
+ *
+ * @todo Revisar marcaje/eliminación de documentos huérfanos tras cancelación.
+ * @todo Confirmar URLs incluidos en notificaciones y correos.
+ */
 export default class ApplicationController {
-  // Para el usuario logeado solamente
   async listUser({ request, auth }: HttpContext) {
     const paginationSchema = vine.create({
       limit: vine.number().range([1, 100]).optional(),
@@ -148,12 +153,16 @@ export default class ApplicationController {
               id: true,
               firstName: true,
               lastName: true,
+              email: true,
+              cuil: true,
+              address: true,
+              city: true,
+              province: true,
+              phone: true,
             },
           },
         }
       : {}
-
-    console.log(extraFields)
 
     const application = await prisma.application.findUniqueOrThrow({
       where: {
@@ -271,7 +280,7 @@ export default class ApplicationController {
       },
     })
 
-    // TODO: Debería marcar los documentos huérfanos para eliminación aquí mismo?
+    // Nota: considerar marcar documentos huérfanos para eliminación.
   }
 
   async updateStatus({ request }: HttpContext) {
@@ -314,7 +323,6 @@ export default class ApplicationController {
     const user = application.user
     const fullname = user.firstName ?? user.email
     // Link for end-user should point to the public application view
-    // TODO: Check
     const appUrl = `${env.get('FRONTEND_URL')}/applications/${application.id}`
 
     const title =

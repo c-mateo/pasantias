@@ -1,7 +1,7 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import { checkUnique } from '../../prisma/strategies.js'
-import getRoute from '#utils/getRoutes'
+import getRoute from '#utils/get_routes'
 import { sha256 } from '#utils/hash'
 import hash from '@adonisjs/core/services/hash'
 import { apiErrors } from '#exceptions/my_exceptions'
@@ -51,25 +51,19 @@ export default class ProfilesController {
   }
 
   async update({ request, auth }: HttpContext) {
-    const data = request.only(['skillsIds', 'coursesIds'])
-    const validated = await request.validateUsing(updateValidator)
+    const { skillsIds, ...validated } = await request.validateUsing(updateValidator)
 
     const updatedUser = await prisma.user.guardedUpdate(
       {
         where: { id: auth.user!.id },
         data: {
           ...validated,
-          skills: data.skillsIds
+          skills: skillsIds
             ? {
-                set: data.skillsIds.map((id: number) => ({ id })),
+                set: skillsIds.map((id: number) => ({ id })),
               }
             : undefined,
-          // TODO: Debería permitir a los usuarios controlar esto?
-          courses: data.coursesIds
-            ? {
-                set: data.coursesIds.map((id: number) => ({ id })),
-              }
-            : undefined,
+          // Users cannot manage their own courses; admin must set courses
         },
         select: {
           role: true,

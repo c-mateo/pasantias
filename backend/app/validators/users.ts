@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { UserRole } from '../../generated/prisma/enums.js'
 
 export const idValidator = vine.create({
   params: vine.object({
@@ -15,4 +16,14 @@ export const updateCuilValidator = vine.create({
   params: vine.object({
     id: vine.number(),
   }),
+})
+
+export const adminUpdateValidator = vine.create({
+  params: vine.object({ id: vine.number() }),
+  coursesIds: vine.array(vine.number()),
+})
+
+export const adminRoleValidator = vine.create({
+  params: vine.object({ id: vine.number() }),
+  role: vine.enum(UserRole),
 })

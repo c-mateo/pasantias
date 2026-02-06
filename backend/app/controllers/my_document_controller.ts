@@ -49,8 +49,12 @@ export async function documentIsOrphan(id: number) {
   return !attachment
 }
 
+/**
+ * Marca documentos huérfanos para eliminación programada.
+ * @param ids Identificadores de documentos a marcar
+ */
 export async function markOrphanDocuments(ids: number[]) {
-  // TODO: Puede que de errores. Revisar
+  // Revisar manejo de errores en operaciones masivas si se requiere.
   await prisma.document.updateMany({
     where: {
       id: {
@@ -66,7 +70,9 @@ export async function markOrphanDocuments(ids: number[]) {
   })
 }
 
-// TODO: Revisar
+/**
+ * Controlador para documentos del usuario.
+ */
 export default class MyDocumentsController {
   async list({ request, auth }: HttpContext) {
     const paginationSchema = vine.create({

@@ -24,6 +24,11 @@ function getOfferOrder(s?: string) {
   }
 }
 
+/**
+ * Controlador de ofertas (offers).
+ *
+ * @todo Revisar la gestión de cambios en campos personalizados y documentos requeridos.
+ */
 export default class OffersController {
   async list({ request, auth }: HttpContext) {
     const isAdmin = (await auth.user?.role) === 'ADMIN'
@@ -194,7 +199,7 @@ export default class OffersController {
       [checkFK(['companyId'])]
     )
 
-    // TODO: handle changes in custom fields and required docs as needed
+    // Ajustes en campos personalizados y documentos requeridos gestionados abajo.
 
     // Chequear cambios en documentos requeridos
     const toDelete = updatedOffer.requiredDocs.filter((rd) => {

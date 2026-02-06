@@ -5,6 +5,7 @@ export const updateValidator = vine.create({
   address: vine.string().alphaNumeric({ allowSpaces: true }).optional(),
   city: vine.string().optional(),
   province: vine.string().optional(),
+  skillsIds: vine.array(vine.number().withoutDecimals()).nullable().optional(),
 })
 
 export const requestEmailChangeValidator = vine.create({

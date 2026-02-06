@@ -1,9 +1,6 @@
 import vine from '@vinejs/vine'
 
-/**
- * Shared id validator for routes using `params.id`.
- * Use `idParam(name)` to create a validator for a different param name (eg. offerId).
- */
+// Shared id validator for routes using `params.id`.
 export const idValidator = vine.create({
   params: vine.object({
     id: vine.number(),

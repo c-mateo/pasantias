@@ -123,16 +123,14 @@ export default class NotificationsController {
 
   async broadcast({ request, response }: HttpContext) {
     const { title, message, userIds } = await broadcastValidator.validate(request)
-
-    // Enqueue a background job to perform the broadcast so large recipients lists
-    // do not block the request. The enqueue helper will use the queue when
-    // available and fall back to synchronous execution otherwise.
+    /**
+     * Enqueue a background job to perform the broadcast so large recipient lists
+     * do not block the request. `enqueue` falls back to sync execution if no queue.
+     */
     await enqueue('BroadcastNotificationsJob', { title, message, userIds }).catch((err: any) => {
       console.error('Failed to enqueue broadcast job', err)
       throw err
     })
-
-    // Return accepted response — job will process the broadcast asynchronously.
     response.accepted({ data: { accepted: true } })
   }
 }

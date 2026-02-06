@@ -10,7 +10,7 @@ import {
 } from '#validators/auth'
 import { sha256 } from '#utils/hash'
 import { checkUnique, FieldContext } from '../../prisma/strategies.js'
-import getRoute from '#utils/getRoutes'
+import getRoute from '#utils/get_routes'
 
 import { generateToken } from '#utils/tokens'
 import SendTemplatedEmail from '#jobs/send_templated_email'
@@ -26,6 +26,12 @@ const emailHashUnique = (email: string): FieldContext => ({
   },
 })
 
+/**
+ * Controlador de autenticación: registro, login, logout y recuperación de contraseña.
+ *
+ * @todo Añadir tests para flujos de registro/login y verificación por email.
+ * @todo Mejorar la gestión de caducidad/invalidez de sesiones (revocación).
+ */
 export default class AuthController {
   async register({ request, response }: HttpContext) {
     const validated = await request.validateUsing(registerValidator)
@@ -46,7 +52,6 @@ export default class AuthController {
       [checkUnique([emailHashUnique(validated.email)])]
     )
 
-    // TODO: Test this
     // Enqueue verification email (job) and a welcome notification.
     const verificationToken = sha256(`${id}-${Date.now()}`)
 
@@ -109,7 +114,7 @@ export default class AuthController {
     return {
       data: {
         user: userWithoutPassword,
-        // TODO: Implement proper session expiration management
+        // Nota: implementar gestión robusta de expiración de sesión si es necesario
         sessionExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
         links: [
           { rel: 'profile', href: getRoute('profile'), method: 'GET' },
@@ -123,8 +128,7 @@ export default class AuthController {
   }
 
   async logout({ auth, response }: HttpContext) {
-    // await auth.logout()
-    // return response.redirect('/login')
+    // Use web guard logout; keep redirect logic out of controller for API
     await auth.use('web').logout()
     response.noContent()
   }
@@ -207,7 +211,7 @@ export default class AuthController {
         data: { usedAt: new Date() },
       })
 
-      // TODO: invalidate user sessions — see note in docs
+      // Nota: invalidar sesiones si se requiere según política de seguridad
     })
 
     // Notify user
@@ -219,7 +223,6 @@ export default class AuthController {
       data: { name: user.firstName ?? user.email },
     }).catch(console.error)
 
-    // Return email in response so frontend can auto-login if desired
     return response.ok({ message: 'Contraseña actualizada', email: user.email })
   }
 }
