@@ -1,9 +1,10 @@
 import { prisma } from '#start/prisma'
 import { HttpContext } from '@adonisjs/core/http'
+import vine from '@vinejs/vine'
 import { validator, createValidator, updateValidator } from '#validators/company'
 import { checkUnique } from '../../prisma/strategies.js'
 import { apiErrors } from '#exceptions/my_exceptions'
-import { buildWhere, preparePagination } from '#utils/pagination'
+import { buildFilterWhere } from '#utils/query_builder'
 
 enum CompanySort {
   NAME = 'name',
@@ -53,25 +54,44 @@ function getOfferOrder(s?: string) {
 export default class CompaniesController {
   // GET /companies
   async list({ request, auth }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      sortEnum: CompanySort,
-      fieldMap: {
-        id: 'number',
-        name: 'string',
-        description: 'string',
-        website: 'string',
-        email: 'string',
-        phone: 'string',
-        createdAt: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.enum(CompanySort).optional(),
+      filter: vine
+        .object({
+          id: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+          name: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          description: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          website: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          email: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          phone: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
 
     const isNotAdmin = auth.user?.role !== 'ADMIN'
 
     return await prisma.company.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: filterWhere,
+      where: filter,
       orderBy: getOrder(query.sort),
       omit: {
         createdAt: isNotAdmin, // Ocultar auditoría al estudiante
@@ -147,20 +167,51 @@ export default class CompaniesController {
     if (!companyExists) {
       throw apiErrors.notFound('Company', params.id)
     }
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        title: 'string',
-        status: 'string',
-        publishedAt: 'string',
-        expiresAt: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          id: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+          title: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          status: vine
+            .object({ eq: vine.string().optional(), in: vine.array(vine.string()).optional() })
+            .optional(),
+          publishedAt: vine
+            .object({
+              eq: vine.string().optional(),
+              gte: vine.string().optional(),
+              lte: vine.string().optional(),
+            })
+            .optional(),
+          expiresAt: vine
+            .object({
+              eq: vine.string().optional(),
+              gte: vine.string().optional(),
+              lte: vine.string().optional(),
+            })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    // Build the filter where first, then inject the companyId condition
+    // into the resolved where object so we don't duplicate operator logic.
+    const filter = buildFilterWhere(query.filter)
+
+    filter.companyId = params.id
 
     return await prisma.offer.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere({ companyId: params.id }, filterWhere),
+      where: filter,
       orderBy: getOfferOrder(query.sort),
       omit: {
         createdAt: true,

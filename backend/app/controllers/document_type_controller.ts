@@ -6,7 +6,8 @@ import {
   updateValidator,
   deleteValidator,
 } from '#validators/document_type'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import vine from '@vinejs/vine'
+import { buildFilterWhere } from '#utils/query_builder'
 import { checkDeleteRestrict, checkUnique } from '../../prisma/strategies.js'
 
 function getDocumentTypeOrder(sort?: string) {
@@ -26,19 +27,29 @@ function getDocumentTypeOrder(sort?: string) {
 
 export default class DocumentTypeController {
   async list({ request, auth }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        name: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          name: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
 
     const isNotAdmin = auth.user?.role !== 'ADMIN'
 
     return await prisma.documentType.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere(filterWhere),
+      where: filter,
       orderBy: getDocumentTypeOrder(query.sort as any),
       omit: {
         createdAt: isNotAdmin,

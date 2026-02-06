@@ -42,3 +42,34 @@ export const updateValidator = vine.create({
   skills: vine.array(vine.number()).optional(),
   requiredDocuments: vine.array(vine.number()).optional(),
 })
+
+export const paginationValidator = vine.create({
+  limit: vine.number().range([1, 100]).optional(),
+  after: vine.number().optional(),
+  sort: vine
+    .enum(['position', '-position', 'publishedAt', '-publishedAt', 'expiresAt', '-expiresAt'])
+    .optional(),
+  filter: vine
+    .object({
+      position: vine
+        .object({
+          contains: vine.string().optional(),
+          eq: vine.string().optional(),
+        })
+        .optional(),
+      status: vine
+        .object({
+          eq: vine.string().optional(),
+          in: vine.array(vine.string()).optional(),
+        })
+        .optional(),
+      companyId: vine
+        .object({
+          eq: vine.number().optional(),
+          in: vine.array(vine.number()).optional(),
+        })
+        .optional(),
+      courses: vine.array(vine.number()).optional(),
+    })
+    .optional(),
+})

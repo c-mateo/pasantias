@@ -1,8 +1,9 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import { checkFK } from '../../prisma/strategies.js'
-import { validator, createValidator, updateValidator } from '#validators/offer'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import { apiErrors } from '#exceptions/my_exceptions'
+import { validator, createValidator, updateValidator, paginationValidator } from '#validators/offer'
+import { buildFilterWhere } from '#utils/query_builder'
 
 function getOfferOrder(s?: string) {
   switch (s) {
@@ -24,25 +25,21 @@ function getOfferOrder(s?: string) {
 }
 
 export default class OffersController {
-  async list({ request }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        position: 'string',
-        description: 'string',
-        status: 'string',
-        companyId: 'number',
-        publishedAt: 'string',
-        expiresAt: 'string',
-        // TODO: Support this
-        // courses: 'number[]',
-      },
-    })
+  async list({ request, auth }: HttpContext) {
+    const isAdmin = (await auth.user?.role) === 'ADMIN'
+
+    // Validate pagination + filter structure from querystring
+    const query = await paginationValidator.validate(request.qs())
+    const filter = buildFilterWhere(query.filter)
+
+    if (!isAdmin || !filter.status) {
+      filter.status = 'ACTIVE'
+    }
 
     return await prisma.offer.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere({ status: 'ACTIVE' }, filterWhere),
+      where: filter,
       orderBy: getOfferOrder(query.sort as any),
       omit: {
         companyId: true,
@@ -244,7 +241,7 @@ export default class OffersController {
       const resultCounts = result.map((r) => r.count)
 
       if (expectedCounts.some((count, i) => resultCounts[i] !== count)) {
-        throw new Error('Error updating required documents for offer ' + params.id)
+        throw apiErrors.internalError('update-required-docs-' + params.id)
       }
     }
 
@@ -266,22 +263,17 @@ export default class OffersController {
       where: { id: params.id },
       select: { id: true },
     })
-    if (!companyExists) throw new Error('Company not found')
+    if (!companyExists) throw apiErrors.notFound('Company', params.id)
 
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        position: 'string',
-        status: 'string',
-        publishedAt: 'string',
-        expiresAt: 'string',
-      },
-    })
+    const query = await paginationValidator.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
+    filter.companyId = params.id
 
     return await prisma.offer.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere({ companyId: params.id }, filterWhere),
+      where: filter,
       orderBy: getOfferOrder(query.sort),
       omit: { createdAt: true, updatedAt: true, deletedAt: true, customFieldsSchema: true },
       include: { company: true, skills: true },

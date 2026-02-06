@@ -1,7 +1,10 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
+import vine from '@vinejs/vine'
 import { idValidator, broadcastValidator } from '#validators/notifications'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import { buildFilterWhere } from '#utils/query_builder'
+import { notifyUser } from '#services/notification_service'
+import { enqueue } from '#utils/jobs'
 
 function getNotificationOrder(s?: string) {
   switch (s) {
@@ -16,23 +19,42 @@ function getNotificationOrder(s?: string) {
 
 export default class NotificationsController {
   async list({ auth }: HttpContext) {
-    // use shared pagination validator
-    // @ts-ignore
     const request: any = arguments[0]?.request
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        title: 'string',
-        message: 'string',
-        type: 'string',
-        createdAt: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          title: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          message: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          type: vine
+            .object({ eq: vine.string().optional(), in: vine.array(vine.string()).optional() })
+            .optional(),
+          createdAt: vine
+            .object({
+              eq: vine.string().optional(),
+              gte: vine.string().optional(),
+              lte: vine.string().optional(),
+            })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere<any>(query.filter)
+    filter.userId = auth.user?.id
 
     return await prisma.notification.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere({ userId: auth.user?.id }, filterWhere),
+      where: filter,
       orderBy: getNotificationOrder(query.sort as any),
       omit: {
         userId: true,
@@ -105,8 +127,6 @@ export default class NotificationsController {
     // Enqueue a background job to perform the broadcast so large recipients lists
     // do not block the request. The enqueue helper will use the queue when
     // available and fall back to synchronous execution otherwise.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { enqueue } = require('#utils/jobs')
     await enqueue('BroadcastNotificationsJob', { title, message, userIds }).catch((err: any) => {
       console.error('Failed to enqueue broadcast job', err)
       throw err

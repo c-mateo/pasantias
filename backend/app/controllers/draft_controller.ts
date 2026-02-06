@@ -165,13 +165,37 @@ export default class DraftsController {
       // Eliminar el archivo subido ya que el documento ya existe
       await fs.rm(savePath)
       if (document.documentTypeId !== params.reqDocId) {
-        // El documento existente no es del tipo requerido
-        throw apiErrors.invalidFile([
-          {
-            reason: 'A document with the same content already exists but is of a different type',
-            field: 'document-type',
+        // If the existing document belongs to the same user and is orphan (no attachments),
+        // allow reassigning its documentType to the requested one so the user can re-upload
+        // after unlinking/deleting the previous attachment.
+        const attachment = await prisma.documentAttachment.findFirst({
+          where: { documentId: document.id },
+        })
+        const isOrphan = !attachment
+        if (document.userId !== auth.user!.id) {
+          // Document exists but belongs to another user
+          throw apiErrors.internalError('Document with same content already exists')
+        }
+        if (!isOrphan) {
+          // Document exists and cannot be reused
+          throw apiErrors.invalidFile([
+            {
+              reason: 'A document with the same content already exists but is of a different type',
+              field: 'document-type',
+            },
+          ])
+        }
+
+        // Update the existing orphan document to the requested type and original name
+        await prisma.document.guardedUpdate({
+          where: { id: document.id },
+          data: {
+            documentTypeId: params.reqDocId,
+            originalName: originalName,
           },
-        ])
+        })
+        // reload document after update
+        document = await prisma.document.findUniqueOrThrow({ where: { id: document.id } })
       }
     } else {
       // No deberían repetirse los nombres de archivo por el UUID
@@ -362,7 +386,7 @@ export default class DraftsController {
       users: [auth.user!.id],
       title: 'Application submitted',
       message: `Your application for offer ${params.offerId} was submitted.`,
-      type: 'APPLICATION_SUBMITTED',
+      tag: 'APPLICATION_SUBMITTED',
     })
 
     // Notify company admins — for now create a notification for all company users with role ADMIN
@@ -375,7 +399,7 @@ export default class DraftsController {
         users: companyAdmins.map((u) => u.id),
         title: 'New application',
         message: `A new application was submitted for offer ${params.offerId}.`,
-        type: 'APPLICATION_SUBMITTED',
+        tag: 'APPLICATION_SUBMITTED',
       }).catch(console.error)
     }
 

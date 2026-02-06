@@ -12,6 +12,7 @@ import {
   requestEmailChangeValidator,
   confirmEmailChangeValidator,
   changePasswordValidator,
+  setCuilValidator,
 } from '#validators/profile'
 import CreateNotifications from '#jobs/create_notifications'
 import env from '#start/env'
@@ -24,6 +25,7 @@ export default class ProfilesController {
     const userData = await prisma.user.findUniqueOrThrow({
       where: { id: auth.user!.id },
       select: {
+        id: true,
         role: true,
         email: true,
         firstName: true,
@@ -51,22 +53,6 @@ export default class ProfilesController {
   async update({ request, auth }: HttpContext) {
     const data = request.only(['skillsIds', 'coursesIds'])
     const validated = await request.validateUsing(updateValidator)
-
-    // Prevent changing CUIL if already set
-    if (validated.cuil) {
-      const existing = await prisma.user.findUniqueOrThrow({
-        where: { id: auth.user!.id },
-        select: { cuil: true },
-      })
-      if (existing.cuil) {
-        throw apiErrors.validationError([
-          {
-            field: 'cuil',
-            message: 'CUIL cannot be changed once set. Contact support for assistance.',
-          },
-        ])
-      }
-    }
 
     const updatedUser = await prisma.user.guardedUpdate(
       {
@@ -99,7 +85,7 @@ export default class ProfilesController {
           skills: { select: { id: true, name: true, description: true } }, // PublicSkillDTO
         },
       },
-      [checkUnique(['cuil', 'phone'])]
+      [checkUnique(['phone'])]
     )
 
     return {
@@ -213,7 +199,7 @@ export default class ProfilesController {
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: record.userId },
-        data: { email: newEmail, emailHash: sha256(newEmail), emailVerifiedAt: null },
+        data: { email: newEmail, emailHash: sha256(newEmail), emailVerifiedAt: new Date() },
       })
       await tx.userToken.update({ where: { id: record.id }, data: { usedAt: new Date() } })
 
@@ -264,5 +250,36 @@ export default class ProfilesController {
     return {
       message: 'Password changed',
     }
+  }
+
+  // POST /profile/set-cuil
+  async setCuil({ request, auth }: HttpContext) {
+    const { cuil } = await request.validateUsing(setCuilValidator)
+
+    // Ensure user exists and hasn't set cuil before
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: auth.user!.id },
+      select: { cuil: true },
+    })
+    if (user.cuil) {
+      throw apiErrors.validationError([
+        {
+          field: 'cuil',
+          message: 'CUIL cannot be changed once set. Contact support for assistance.',
+        },
+      ])
+    }
+
+    // Use guardedUpdate with uniqueness checks to avoid duplicates
+    const updated = await prisma.user.guardedUpdate(
+      {
+        where: { id: auth.user!.id },
+        data: { cuil, cuilHash: sha256(cuil) },
+        select: { cuil: true },
+      },
+      [checkUnique(['cuil'])]
+    )
+
+    return { message: 'CUIL establecido', data: updated }
   }
 }

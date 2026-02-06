@@ -2,7 +2,8 @@ import { apiErrors } from '#exceptions/my_exceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
 import fs from 'node:fs/promises'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import vine from '@vinejs/vine'
+import { buildFilterWhere } from '#utils/query_builder'
 import { idValidator } from '#validators/common'
 
 function getDocumentOrder(s?: string) {
@@ -68,21 +69,39 @@ export async function markOrphanDocuments(ids: number[]) {
 // TODO: Revisar
 export default class MyDocumentsController {
   async list({ request, auth }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        originalName: 'string',
-        documentTypeId: 'number',
-        createdAt: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          originalName: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          documentTypeId: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+          createdAt: vine
+            .object({
+              eq: vine.string().optional(),
+              gte: vine.string().optional(),
+              lte: vine.string().optional(),
+            })
+            .optional(),
+        })
+        .optional(),
     })
 
-    const where = buildWhere({ userId: auth.user!.id, hiddenAt: null }, filterWhere)
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere<any>(query.filter)
+    filter.userId = auth.user!.id
+    filter.hiddenAt = null
 
     const result = await prisma.document.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where,
+      where: filter,
       select: {
         ...select,
         documentType: true,

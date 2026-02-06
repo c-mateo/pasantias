@@ -1,7 +1,8 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
+import vine from '@vinejs/vine'
 import { idValidator, createValidator, updateValidator, deleteValidator } from '#validators/skill'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import { buildFilterWhere } from '#utils/query_builder'
 
 function getSkillOrder(sort?: string) {
   switch (sort) {
@@ -21,21 +22,35 @@ import { checkDeleteRestrict, checkUnique } from '../../prisma/strategies.js'
 
 export default class SkillsController {
   async list({ request, auth }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        name: 'string',
-        description: 'string',
-        category: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          name: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          description: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+          category: vine
+            .object({ contains: vine.string().optional(), eq: vine.string().optional() })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
 
     const isNotAdmin = auth.user?.role !== 'ADMIN'
 
     return await prisma.skill.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere(filterWhere),
+      where: filter,
       orderBy: getSkillOrder(query.sort as any),
       omit: {
         createdAt: isNotAdmin,

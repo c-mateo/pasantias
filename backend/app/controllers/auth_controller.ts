@@ -15,6 +15,7 @@ import getRoute from '#utils/getRoutes'
 import { generateToken } from '#utils/tokens'
 import SendTemplatedEmail from '#jobs/send_templated_email'
 import CreateNotifications from '#jobs/create_notifications'
+import env from '#start/env'
 
 // Validators moved to `backend/app/validators/auth.ts` and imported at top
 
@@ -50,7 +51,7 @@ export default class AuthController {
     const verificationToken = sha256(`${id}-${Date.now()}`)
 
     // Compose verification link (frontend should implement route to accept token)
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
+    const verifyUrl = `${env.get('FRONTEND_URL')}/verify-email?token=${verificationToken}`
 
     await SendTemplatedEmail.dispatch({
       to: validated.email,
@@ -164,7 +165,7 @@ export default class AuthController {
     })
 
     // Send email with reset link (frontend should implement route to accept token)
-    const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`
+    const url = `${env.get('FRONTEND_URL')}/reset-password?token=${token}`
     await SendTemplatedEmail.dispatch({
       to: user.email,
       template: 'auth_reset_password',

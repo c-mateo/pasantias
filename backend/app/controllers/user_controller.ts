@@ -1,26 +1,49 @@
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
+import vine from '@vinejs/vine'
 import { idValidator } from '#validators/users'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import { buildFilterWhere } from '#utils/query_builder'
 import { sha256 } from '#utils/hash'
 import { updateCuilValidator } from '#validators/users'
 
 export default class UserController {
   async list({ request }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        email: 'string',
-        firstName: 'string',
-        lastName: 'string',
-        role: 'string',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          firstName: vine
+            .object({
+              contains: vine.string().optional(),
+              eq: vine.string().optional(),
+            })
+            .optional(),
+          lastName: vine
+            .object({
+              contains: vine.string().optional(),
+              eq: vine.string().optional(),
+            })
+            .optional(),
+          role: vine
+            .object({
+              eq: vine.string().optional(),
+              in: vine.array(vine.string()).optional(),
+            })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
 
     const result = await prisma.user.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere(filterWhere),
+      where: filter,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
