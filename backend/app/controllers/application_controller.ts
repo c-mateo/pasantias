@@ -1,8 +1,12 @@
 import { apiErrors } from '#exceptions/my_exceptions'
 import { prisma } from '#start/prisma'
 import type { HttpContext } from '@adonisjs/core/http'
-import { preparePagination, buildWhere } from '#utils/pagination'
+import vine from '@vinejs/vine'
+import { buildFilterWhere } from '#utils/query_builder'
 import { idValidator, updateStatusValidator } from '#validators/application'
+import SendTemplatedEmail from '#jobs/send_templated_email'
+import CreateNotifications from '#jobs/create_notifications'
+import env from '#start/env'
 
 function getApplicationOrder(s?: string) {
   switch (s) {
@@ -23,20 +27,32 @@ enum ApplicationSort {
 export default class ApplicationController {
   // Para el usuario logeado solamente
   async listUser({ request, auth }: HttpContext) {
-    const { query, filterWhere } = await preparePagination(request, {
-      fieldMap: {
-        id: 'number',
-        status: 'string',
-        createdAt: 'string',
-        finalizedAt: 'string',
-        offerId: 'number',
-      },
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.string().optional(),
+      filter: vine
+        .object({
+          status: vine
+            .object({ eq: vine.string().optional(), in: vine.array(vine.string()).optional() })
+            .optional(),
+          offerId: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+        })
+        .optional(),
     })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
+
+    filter.userId = auth.user?.id
 
     return await prisma.application.paginate({
       limit: query.limit ?? 20,
       after: query.after,
-      where: buildWhere({ userId: auth.user?.id }, filterWhere),
+      where: filter,
       orderBy: getApplicationOrder(query.sort as any),
       select: {
         id: true,
@@ -60,11 +76,36 @@ export default class ApplicationController {
   }
 
   async listAdmin({ request }: HttpContext) {
-    const { query } = await preparePagination(request, { sortEnum: ApplicationSort })
+    const paginationSchema = vine.create({
+      limit: vine.number().range([1, 100]).optional(),
+      after: vine.number().optional(),
+      sort: vine.enum(ApplicationSort).optional(),
+      filter: vine
+        .object({
+          id: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+          status: vine
+            .object({ eq: vine.string().optional(), in: vine.array(vine.string()).optional() })
+            .optional(),
+          offerId: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+          userId: vine
+            .object({ eq: vine.number().optional(), in: vine.array(vine.number()).optional() })
+            .optional(),
+        })
+        .optional(),
+    })
+
+    const query = await paginationSchema.validate(request.qs())
+
+    const filter = buildFilterWhere(query.filter)
 
     return await prisma.application.paginate({
       limit: query.limit ?? 20,
       after: query.after,
+      where: filter,
       orderBy: getApplicationOrder(query.sort as any),
       select: {
         id: true,
@@ -97,7 +138,6 @@ export default class ApplicationController {
   async get({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
 
-    console.log('Role', auth.user?.role)
     const isAdmin = auth.user?.role === 'ADMIN'
 
     const extraWhere = isAdmin ? {} : { userId: auth.user?.id }
@@ -245,6 +285,8 @@ export default class ApplicationController {
       select: {
         id: true,
         status: true,
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        offer: { select: { id: true, position: true } },
       },
     })
 
@@ -268,7 +310,56 @@ export default class ApplicationController {
       },
     })
 
-    // TODO: Notificar al usuario sobre el cambio de estado
+    // Notify user in-site and via email
+    const user = application.user
+    const fullname = user.firstName ?? user.email
+    // Link for end-user should point to the public application view
+    // TODO: Check
+    const appUrl = `${env.get('FRONTEND_URL')}/applications/${application.id}`
+
+    const title =
+      status === 'ACCEPTED'
+        ? 'Postulación aceptada'
+        : status === 'REJECTED'
+          ? 'Postulación rechazada'
+          : 'Estado de postulación actualizado'
+
+    const message =
+      status === 'ACCEPTED'
+        ? `Tu postulación #${application.id} fue aceptada.`
+        : status === 'REJECTED'
+          ? `Tu postulación #${application.id} fue rechazada.`
+          : `El estado de tu postulación #${application.id} cambió a ${status}.`
+
+    // Create in-site notification
+    await CreateNotifications.dispatch({
+      users: [user.id],
+      title,
+      message,
+      tag: 'application',
+    }).catch((err) => {
+      console.error('CreateNotifications error', err)
+    })
+
+    const templateMap: Record<string, string> = {
+      ACCEPTED: 'application_accepted',
+      REJECTED: 'application_rejected',
+    }
+
+    // Send email using templated email job
+    const template = templateMap[status]
+    if (template) {
+      await SendTemplatedEmail.dispatch({
+        to: user.email,
+        template: template as any,
+        data: {
+          name: fullname,
+          applicationId: application.id,
+          offerPosition: application.offer?.position,
+          appUrl,
+        },
+      }).catch((err) => console.error('SendTemplatedEmail error', err))
+    }
   }
 }
 
@@ -281,7 +372,7 @@ function transition(status: string, applicationId: number, reason?: string, feed
   switch (status) {
     case 'BLOCKED':
       return {
-        blockReason: reason || 'No reason provided',
+        blockReason: reason,
         blockedAt: new Date(),
         unblockedAt: null,
       }
@@ -293,7 +384,7 @@ function transition(status: string, applicationId: number, reason?: string, feed
     case 'ACCEPTED':
     case 'REJECTED':
       return {
-        feedback: feedback || 'No feedback provided',
+        feedback: feedback,
         finalizedAt: new Date(),
         unblockedAt: null,
         attachments: {
