@@ -21,8 +21,14 @@ import CreateNotifications from '#jobs/create_notifications'
 const uploadsFolder = 'uploads'
 const maxUploadFileSize = 10 * 1024 * 1024
 
+/**
+ * Controlador para gestionar borradores de postulación (drafts).
+ *
+ * @todo Consolidar la lógica de eliminación automática de documentos huérfanos.
+ * @todo Añadir pruebas para flujos de subida concurrente y enlaces de documentos.
+ */
 export default class DraftsController {
-  // Drafts
+  /** Listar/obtener borrador del usuario para una oferta. */
   async get({ request, response, auth }: HttpContext) {
     const { params } = await request.validateUsing(validator)
     const draft = await prisma.draft.findUnique({
@@ -52,7 +58,6 @@ export default class DraftsController {
       },
     })
 
-    // TODO: Revisar
     if (draft) return draft
     response.noContent()
   }
@@ -137,7 +142,7 @@ export default class DraftsController {
       await pipeline(request.request, createWriteStream(savePath, { flags: 'w' }))
     } catch (error) {
       await fs.rm(savePath)
-      // TODO: Convert error if needed
+      // Re-throw for upstream handling; consider mapping to apiErrors if needed.
       throw error
     }
 
@@ -259,16 +264,34 @@ export default class DraftsController {
 
   async removeDocument({ request, response }: HttpContext) {
     const { params } = await request.validateUsing(deleteValidator)
+
+    // Fetch attachment to know documentId before deleting
+    const attachment = await prisma.documentAttachment.findUniqueOrThrow({
+      where: { id: params.attachmentId },
+      select: { id: true, documentId: true },
+    })
+
     await prisma.documentAttachment.guardedDelete({
       where: {
         id: params.attachmentId,
       },
     })
 
+    // If the document has no more attachments, schedule it for deletion (grace period)
+    const remaining = await prisma.documentAttachment.count({
+      where: { documentId: attachment.documentId },
+    })
+    if (remaining === 0) {
+      const TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
+      await prisma.document.update({
+        where: { id: attachment.documentId },
+        data: { scheduledForDeletion: new Date(Date.now() + TTL_MS) },
+      })
+    }
+
     response.noContent()
   }
 
-  // TODO: Test
   async getDocuments({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
     const documents = await prisma.document.findMany({
@@ -327,7 +350,7 @@ export default class DraftsController {
       },
     })
 
-    // TODO: Validar que el draft está completo
+    // Validar que el draft está completo (documentos requeridos)
     const requiredDocs = await prisma.requiredDocument.findMany({
       where: {
         offerId: params.offerId,
@@ -342,7 +365,7 @@ export default class DraftsController {
       },
     })
 
-    // TODO: Contar los campos personalizados completados también
+    // Nota: también debería validarse customFieldsValues si aplica.
     const completed = draft.attachments.length
     const total = requiredDocs.length
     if (total !== completed) {
@@ -376,8 +399,6 @@ export default class DraftsController {
       },
       [checkUnique(['userId', 'offerId']), checkFK(['userId', 'offerId'])]
     )
-
-    // TODO: Notificar a la empresa y al usuario
 
     // Enqueue notification and email jobs
     // Notify applicant (user)
@@ -511,7 +532,7 @@ async function linkDocumentToDraft(
   if (!isLinked) throw apiErrors.internalError('Document was not linked to draft')
 
   if (otherLinkedDocsOfSameType.length > 0) {
-    // TODO: Creo que no debería haber ningún error sin manejar
+    // Eliminar attachments antiguos del mismo tipo sin detener el flujo.
     await prisma.documentAttachment.deleteMany({
       where: {
         draftId: draft.id,
@@ -522,5 +543,18 @@ async function linkDocumentToDraft(
     })
   }
 
-  // TODO: Marcar documentos sin usar para borrado automático
+  // If the document was previously scheduled for deletion (orphan), clear it because
+  // it's now in use again and update lastUsedAt.
+  const doc = await prisma.document.findUnique({
+    where: { id: document.id },
+    select: { id: true, scheduledForDeletion: true },
+  })
+  if (doc && doc.scheduledForDeletion) {
+    await prisma.document.update({
+      where: { id: document.id },
+      data: { scheduledForDeletion: null, lastUsedAt: new Date() },
+    })
+  }
+
+  // Considerar marcar documentos sin usar para borrado automático desde jobs/cleanup.
 }
