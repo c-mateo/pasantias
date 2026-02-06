@@ -17,20 +17,50 @@ function createTransmitClient() {
 export function useTransmit() {
   const [client, _] = useState<Transmit | undefined>(createTransmitClient());
 
-    const subscribe = async (
+  const subscribe = (
     channelName: string,
     callback: (message: NotificationDTO) => void,
   ) => {
     if (!client) {
-      return;
+      return () => {};
     }
 
-    const subscription = client.subscription(channelName);
-    await subscription.create();
+    let subscription: Subscription | undefined;
+    let cancelled = false;
 
-    if (subscription.isCreated) {
-      subscription.onMessage(callback);
-    }
+    (async () => {
+      try {
+        subscription = client.subscription(channelName);
+        await subscription.create();
+
+        if (cancelled) {
+          try {
+            await subscription.delete?.();
+          } catch (e) {
+            // ignore
+          }
+          return;
+        }
+
+        if (subscription.isCreated) {
+          subscription.onMessage(callback);
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("Transmit subscribe failed", e);
+      }
+    })();
+
+    // Return synchronous unsubscribe function so callers can cleanup safely
+    return () => {
+      cancelled = true;
+      try {
+        // attempt to remove handlers / close subscription if available
+        subscription?.delete?.();
+      } catch (e) {
+        // ignore cleanup errors
+      }
+    };
   };
 
   return {

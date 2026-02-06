@@ -42,4 +42,4 @@ COPY run.sh ./
 RUN chmod +x ./run.sh
 
 EXPOSE 8080
-ENTRYPOINT ["sh", "/app/run.sh"]
+CMD ["sh", "/app/run.sh"]

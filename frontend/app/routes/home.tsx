@@ -24,6 +24,11 @@ export default function Home() {
         <Button color="default" onPress={() => navigate('/ofertas')}>Ver todas</Button>
       </div>
       <OffersList hideControls onlyRelevantForUser />
+      <footer className="mt-8 text-center text-sm text-gray-500">
+        <small>
+          Icons by <a href="https://www.flaticon.com/" className="text-blue-600">Flaticon</a>
+        </small>
+      </footer>
     </section>
   );
 }

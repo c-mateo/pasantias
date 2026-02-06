@@ -8,8 +8,8 @@ import {
   NavbarMenu,
   NavbarMenuItem,
   Link,
-  Button,
 } from "@heroui/react";
+import { Button } from "@heroui/button";
 import NotificationBell from "~/components/NotificationBell";
 
 export type NavItem = {

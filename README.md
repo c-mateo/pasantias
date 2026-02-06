@@ -28,3 +28,9 @@ Siguientes pasos sugeridos:
 ---
 
 Para dudas o contribuciones, abre un issue o crea un PR con el cambio propuesto.
+
+---
+
+Credits:
+
+- Icons by [Flaticon](https://www.flaticon.com/)

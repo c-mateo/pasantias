@@ -3,6 +3,7 @@ import { Form, Select, SelectItem } from "@heroui/react";
 import Cuil from "~/components/Cuil";
 import InlineEditable from "~/components/InlineEditable";
 import { Modal } from "~/components/Modal";
+import UserMessage from "~/components/UserMessage";
 import { api } from "~/api/api";
 import { toast as toastHelper } from "~/util/toast";
 import { formatDateTimeLocal } from "~/util/helpers";
@@ -368,7 +369,9 @@ export default function Usuario({ loaderData }: any) {
           </div>
 
           <aside className="lg:col-span-2" aria-hidden="true">
-            <div className="bg-white rounded shadow p-4 space-y-4"></div>
+            <div className="bg-white rounded shadow p-4 space-y-4">
+              <UserMessage userId={userData?.id} userName={`${userData?.firstName || ""} ${userData?.lastName || ""}`}/>
+            </div>
           </aside>
         </div>
       </div>

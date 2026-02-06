@@ -1,0 +1,12 @@
+# Por defecto: texto normalizado a LF
+* text=auto eol=lf
+
+# Shell scripts SIEMPRE LF
+*.sh text eol=lf
+
+# Docker
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# Prisma
+*.prisma text eol=lf

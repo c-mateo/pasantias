@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ActionButtons from "./ActionButtons";
+import BroadcastMessage from "./BroadcastMessage";
 
 const users = [
   { name: "Emily Carter", email: "emily.carter@example.com", role: "Administrador", status: "Activo" },
@@ -33,8 +34,10 @@ export default function UsuariosTabla() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-300 bg-white">
-      <table className="w-full">
+    <div>
+      <BroadcastMessage />
+      <div className="overflow-hidden rounded-xl border border-gray-300 bg-white">
+        <table className="w-full">
         <thead className="bg-white">
             <tr>
             <th className="px-4 py-2 text-center text-sm font-medium text-gray-900">

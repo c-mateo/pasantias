@@ -35,7 +35,8 @@ export default function Login() {
       }
     } catch (err) {
       console.error(err);
-      toast.error({ title: "Error", message: "Error al iniciar sesión" });
+      const message = err?.response?.message || err?.message || "Error al iniciar sesión";
+      toast.error({ title: "Error al iniciar sesión", message });
     } finally {
       // setIsLoading(false);
     }

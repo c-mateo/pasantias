@@ -53,7 +53,8 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
       await notifications.markAsRead(id);
       toast.success({ title: "Leído", message: "Notificación marcada como leída" });
     } catch (err) {
-      toast.error({ title: "Error", message: "No se pudo marcar como leída" });
+      const message = (err as any)?.response?.message || (err as any)?.message || "No se pudo marcar como leída";
+      toast.error({ title: "Error al marcar como leída", message });
     }
   };
 
@@ -62,7 +63,8 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
       await notifications.remove(id);
       toast.success({ title: "Eliminado", message: "Notificación eliminada" });
     } catch (err) {
-      toast.error({ title: "Error", message: "No se pudo eliminar" });
+      const message = (err as any)?.response?.message || (err as any)?.message || "No se pudo eliminar";
+      toast.error({ title: "Error al eliminar notificación", message });
     }
   };
 

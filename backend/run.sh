@@ -1,18 +1,15 @@
 #!/bin/sh
+set -eu
 
-# Esperar a la DB
-until npx prisma debug > /dev/null 2>&1; do
-  echo 'DB not ready, retrying...'
+echo "Esperando a la DB..."
+
+# Reintenta hasta que Prisma pueda hablar con la DB
+until npx prisma migrate deploy >/dev/null 2>&1; do
+  echo "DB no lista o migraciones fallaron, reintentando en 2s..."
   sleep 2
 done
 
-echo 'DB detectada, aplicando migraciones...'
+echo "DB lista, migraciones aplicadas."
 
-# El error "unexpected fi" suele ser porque falta el "then" aquí:
-if npx prisma migrate deploy; then
-  echo 'Migraciones exitosas'
-  node ./bin/server.js
-else
-  echo 'Error en las migraciones'
-  exit 1
-fi
+echo "Iniciando servidor..."
+exec node ./bin/server.js
