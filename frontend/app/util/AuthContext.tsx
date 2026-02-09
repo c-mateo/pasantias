@@ -79,10 +79,11 @@ export async function login(email: string, password: string) {
 export async function logout(skip: boolean = false) {
   if (!skip) {
     // Invoke logout endpoint; skip in some flows (SSR/tests)
-    await api.post({}, "/auth/logout").json();
+    await api.post({}, "/auth/logout").res();
   }
   const auth = useAuthState.getState();
   auth.setUser(null);
+  console.log(auth.checked, auth.user)
 }
 
 export function isLogged() {
@@ -109,6 +110,9 @@ export const AuthProvider = ({
 }) => {
   // Provider inicializa sesión desde API al montar.
   const session = useAuthState();
+
+  console.log('Checked', session.checked)
+  console.log('User', session.user)
 
   useEffect(() => {
     // Check session

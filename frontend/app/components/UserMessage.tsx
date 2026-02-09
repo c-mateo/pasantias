@@ -3,7 +3,13 @@ import { Button, Input, Textarea } from "@heroui/react";
 import { api } from "~/api/api";
 import { toast } from "~/util/toast";
 
-export default function UserMessage({ userId, userName }: { userId: number; userName?: string }) {
+export default function UserMessage({
+  userId,
+  userName,
+}: {
+  userId: number;
+  userName?: string;
+}) {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -12,14 +18,24 @@ export default function UserMessage({ userId, userName }: { userId: number; user
     if (!message.trim()) return toast.warn({ title: "Mensaje vacío" });
     setSending(true);
     try {
-      const res = await api.post({ title, message }, `/admin/notifications/user/${userId}`).res();
+      const res = await api
+        .post(
+          { title, message, users: [userId] },
+          `/admin/notifications/broadcast`,
+        )
+        .res();
       if (!res.ok) throw new Error(`Error ${res.status}`);
-      toast.success({ title: `Notificación enviada a ${userName ?? "usuario"}` });
+      toast.success({
+        title: `Notificación enviada a ${userName ?? "usuario"}`,
+      });
       setTitle("");
       setMessage("");
     } catch (err) {
       console.error(err);
-      const message = (err as any)?.response?.message || (err as any)?.message || "Error al enviar notificación";
+      const message =
+        (err as any)?.response?.message ||
+        (err as any)?.message ||
+        "Error al enviar notificación";
       toast.error({ title: "Error al enviar notificación", message });
     } finally {
       setSending(false);
@@ -27,9 +43,10 @@ export default function UserMessage({ userId, userName }: { userId: number; user
   };
 
   return (
-    <div className="bg-white rounded shadow p-4">
-      <h3 className="text-sm font-medium mb-2">Enviar notificación a usuario</h3>
-      <div className="text-sm text-default-500 mb-2">Destinatario: {userName ?? userId}</div>
+    <div className="bg-white rounded shadow p-4 flex flex-col">
+      <h3 className="text-sm font-medium mb-2">
+        Enviar notificación a usuario
+      </h3>
       <div className="space-y-2">
         <Input
           label="Título (opcional)"

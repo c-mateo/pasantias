@@ -4,7 +4,7 @@ import type { NotificationDTO } from "~/api/types";
 import { useNavigate } from "react-router";
 import toast from "~/util/toast";
 import { useAuthState } from "~/util/AuthContext";
-import { useTransmit } from "~/utils/transmit";
+
 import { Button } from "@heroui/button";
 import { formatDateTimeLocal } from "~/util/helpers";
 import { Tooltip } from "@heroui/react";
@@ -25,7 +25,7 @@ export default function NotificationBell({
   const navigate = useNavigate();
 
   const auth = useAuthState();
-  const transmit = useTransmit();
+
 
   if (!auth.user) return null;
 
@@ -33,13 +33,7 @@ export default function NotificationBell({
     // initial load
     if (!notifications.loadedOnce) void notifications.loadInitial();
 
-    // subscribe to realtime notifications for the user
-    if (transmit && auth.user) {
-      const unsub = transmit.subscribe(`user:${auth.user.id}`, (notification: NotificationDTO) => {
-        notifications.push(notification);
-      });
-      return () => unsub?.();
-    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);
 
@@ -98,7 +92,7 @@ export default function NotificationBell({
                 Ver todas
               </Button>
             </div>
-            <ul>
+            <ul className="max-h-72 overflow-y-auto">
               {items.length === 0 && (
                 <li className="text-sm text-gray-500">No hay notificaciones</li>
               )}

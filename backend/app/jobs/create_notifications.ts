@@ -2,7 +2,7 @@ import { prisma } from '#start/prisma'
 import { Job } from 'adonisjs-jobs'
 
 type BroadcastNotification = {
-  users: 'ALL'
+  users: 'all'
   title: string
   message: string
 }
@@ -30,7 +30,7 @@ export default class CreateNotifications extends Job {
 
     let users: number[] = []
 
-    if (payload.users === 'ALL') {
+    if (payload.users === 'all') {
       users = await getAllStudentIds()
     } else {
       // Sanitize provided user ids: only keep existing users with role = STUDENT
@@ -42,7 +42,7 @@ export default class CreateNotifications extends Job {
       users = result.map((u) => u.id)
     }
 
-    const result = await prisma.notification.createMany({
+    await prisma.notification.createMany({
       data: users.map((userId) => ({
         userId: userId,
         title: payload.title,
@@ -50,6 +50,5 @@ export default class CreateNotifications extends Job {
         tag: (payload as any).tag ?? '',
       })),
     })
-    this.logger.info(result)
   }
 }

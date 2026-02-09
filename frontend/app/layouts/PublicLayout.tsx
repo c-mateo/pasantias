@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "@heroui/react";
 import { Outlet } from "react-router";
-import { checkSessionOnce, useAuthState } from "~/util/AuthContext";
+import { checkSessionOnce, logout, useAuthState } from "~/util/AuthContext";
 import NotificationBell from "~/components/NotificationBell";
 import AppNavbar from "~/components/AppNavbar";
 
@@ -26,7 +26,7 @@ export default function PublicLayout() {
         ]}
         rightItems={auth.user ? [
           { label: 'Mi cuenta', href: '/profile' },
-          { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await import('~/util/AuthContext').then(m => m.logout()); window.location.href = '/'; } }
+          { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await logout(); } }
         ] : [
           { label: 'Entrar', href: '/login', asButton: true, color: 'primary' }
         ]}

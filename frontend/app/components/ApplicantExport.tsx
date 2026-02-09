@@ -1,6 +1,6 @@
 import React from 'react';
 import { jsPDF } from 'jspdf';
-import { zipFiles, downloadBlob } from '../utils/zipClient';
+import { zipFiles, downloadBlob } from '../util/zipClient';
 
 type Attachment = { name: string; file: File | Blob };
 

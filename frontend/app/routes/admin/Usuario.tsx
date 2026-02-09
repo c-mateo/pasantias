@@ -239,7 +239,6 @@ export default function Usuario({ loaderData }: any) {
                         <InlineEditable
                           value={userData?.role ?? "USER"}
                           Editor={(props: any) => {
-                            console.log(props.value);
                             return (
                               <Select
                                 isRequired

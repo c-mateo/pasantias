@@ -2,6 +2,7 @@ import {
   isRouteErrorResponse,
   Links,
   Meta,
+  Navigate,
   Outlet,
   Scripts,
   ScrollRestoration,
@@ -12,15 +13,8 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
-import {
-  AuthProvider,
-  checkSession,
-  checkSessionOnce,
-  requireUser,
-  useAuthState,
-  useSession,
-} from "./util/AuthContext";
-import { use, useEffect, useState } from "react";
+import { checkSessionOnce } from "./util/AuthContext";
+import { useEffect } from "react";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -72,6 +66,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
+
+  if ((error as any).status === 401) {
+    return <Navigate to="/" replace />;
+  }
 
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? "404" : "Error";

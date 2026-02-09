@@ -10,7 +10,7 @@ import { Tooltip } from "@heroui/react";
 import { formatDateTimeLocal } from "~/util/helpers";
 import ApplicationStatusBadge from "~/components/ApplicationStatusBadge";
 import type { AdminApplicationDetailsResponse } from "~/api/types";
-import { zipFiles, downloadBlob } from "~/utils/zipClient";
+import { zipFiles, downloadBlob } from "~/util/zipClient";
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
   const user = await requireUser();

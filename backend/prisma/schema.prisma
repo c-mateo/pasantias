@@ -337,12 +337,10 @@ model Notification {
   clickUrl String? @db.VarChar(200)
   tag      String  @db.VarChar(100)
 
-  isRead    Boolean   @default(false)
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, isRead])
   @@index([userId, createdAt])
 }

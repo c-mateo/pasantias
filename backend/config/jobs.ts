@@ -6,6 +6,8 @@ const jobsConfig = defineConfig({
     host: env.get('REDIS_HOST', 'localhost'),
     port: env.get('REDIS_PORT', 6379),
     password: env.get('REDIS_PASSWORD'),
+    db: 2,
+    keyPrefix: 'jobs',
   },
 
   queue: env.get('REDIS_QUEUE', 'default'),

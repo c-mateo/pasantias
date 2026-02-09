@@ -45,8 +45,7 @@ export default function Register() {
       lastName,
     };
     try {
-      const result = await api.post(data, "/auth/register").json();
-      console.log(result);
+      await api.post(data, "/auth/register").json();
       navigate("/login");
     } catch (err) {
       console.error(err);

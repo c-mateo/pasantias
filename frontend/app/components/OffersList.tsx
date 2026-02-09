@@ -159,8 +159,6 @@ export default function OffersList({
     return list;
   }, [items, search, careerFilter, sort, hideControls]);
 
-  console.log(hideControls);
-
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       {!hideControls && (

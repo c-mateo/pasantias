@@ -24,7 +24,7 @@ export default [
   ]),
 
   // Panel de administración con navbar
-  route("admin", "layouts/NavbarLayout.tsx", [
+  route("admin", "layouts/AdminLayout.tsx", [
     index("routes/admin/AdminIndex.tsx"),
     route("home", "routes/home.tsx"),
     route("usuarios", "routes/admin/Usuarios.tsx"),

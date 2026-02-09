@@ -1,5 +1,5 @@
 import React from 'react';
-import { zipFiles, downloadBlob } from '../utils/zipClient';
+import { zipFiles, downloadBlob } from '../util/zipClient';
 
 type AppDatum = { name: string; content: any };
 

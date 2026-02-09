@@ -3,7 +3,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import { idValidator, broadcastValidator } from '#validators/notifications'
 import { buildFilterWhere } from '#utils/query_builder'
-import { enqueue } from '#utils/jobs'
+import CreateNotifications from '#jobs/create_notifications'
 
 function getNotificationOrder(s?: string) {
   switch (s) {
@@ -97,7 +97,6 @@ export default class NotificationsController {
       select: {
         id: true,
         title: true,
-        isRead: true,
         readAt: true,
       },
     })
@@ -121,17 +120,17 @@ export default class NotificationsController {
   }
 
   async broadcast({ request, response }: HttpContext) {
-    const { title, message, userIds } = await broadcastValidator.validate(request)
+    const { title, message, users = 'all' } = await request.validateUsing(broadcastValidator)
     /**
      * Enqueue a background job to perform the broadcast so large recipient lists
      * do not block the request. `enqueue` falls back to sync execution if no queue.
      */
-    await enqueue('BroadcastNotificationsJob', { title, message, userIds }).catch((err: any) => {
-      console.error('Failed to enqueue broadcast job', err)
-      throw err
+    await CreateNotifications.dispatch({
+      title,
+      message,
+      users,
     })
+
     response.accepted({ data: { accepted: true } })
   }
 }
-
-// Broadcast job performs fetching of recipients; no local helper required.

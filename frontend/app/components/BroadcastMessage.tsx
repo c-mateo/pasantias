@@ -13,7 +13,10 @@ export default function BroadcastMessage() {
     setSending(true);
     try {
       const res = await api
-        .post({ title, message }, "/admin/notifications/broadcast")
+        .post(
+          { title, message },
+          "/admin/notifications/broadcast",
+        )
         .res();
       if (!res.ok) throw new Error(`Error ${res.status}`);
       toast.success({ title: "Broadcast enviado" });

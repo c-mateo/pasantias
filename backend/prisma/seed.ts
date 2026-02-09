@@ -1,6 +1,18 @@
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client.js'
+import { env } from 'node:process'
 
-export async function seed(prisma: PrismaClient) {
+const databaseUrl = env.DATABASE_URL
+
+const adapter = new PrismaPg({
+  connectionString: databaseUrl,
+})
+
+const prisma = new PrismaClient({
+  adapter,
+})
+
+async function main() {
   console.log('Starting seed...')
 
   // Courses (some sample courses)
@@ -87,3 +99,13 @@ export async function seed(prisma: PrismaClient) {
   // Optionally: create Drafts & Applications or other test data here.
   console.log('Seeding completed')
 }
+
+main()
+  .then(async () => {
+    await prisma.$disconnect()
+  })
+  .catch(async (e) => {
+    console.error(e)
+    await prisma.$disconnect()
+    process.exit(1)
+  })

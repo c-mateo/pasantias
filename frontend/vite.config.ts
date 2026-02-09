@@ -20,10 +20,13 @@ export default defineConfig({
     svgr(),
   ],
   server: {
+    host: true,
     // For local development with backend running on different port
     proxy: {
-      "/api": "http://localhost:3333",
-      "/__transmit": "http://localhost:3333",
+      "/api": {
+        target: "http://localhost:3333",
+        changeOrigin: true,
+      },
     },
   },
 });

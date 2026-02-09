@@ -72,8 +72,7 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
   };
 
   const save = () => {
-    // Lógica para guardar los cambios de la empresa
-    console.log("Guardando empresa:", company);
+    // Lógica para guardar los cambios de la em
     const e = validate(company);
     setErrors(e);
     if (Object.keys(e).length > 0) {
@@ -128,13 +127,11 @@ export default function Empresa({ loaderData }: Route.ComponentProps) {
 
   const del = () => {
     // Lógica para eliminar la empresa
-    console.log("Eliminando empresa con ID:", company.id);
     setModal({
       isOpen: true,
       message:
         "¿Está seguro de que desea eliminar esta empresa? Esta acción no se puede deshacer.",
       action: () => {
-        console.log("Empresa eliminada.");
         setModal({ ...modal, isOpen: false });
         goBack();
       },

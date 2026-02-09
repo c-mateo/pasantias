@@ -4,7 +4,7 @@ import {
   useLocation,
 } from "react-router";
 import type { Route } from "./+types/NavbarLayout";
-import { checkSessionOnce, useAuthState } from "~/util/AuthContext";
+import { checkSessionOnce, logout, useAuthState } from "~/util/AuthContext";
 import { useEffect } from "react";
 import { Link } from "@heroui/react";
 import NotificationBell from "~/components/NotificationBell";
@@ -20,7 +20,7 @@ const titles: Record<string, string> = {
   "/admin/document-types": "Administrar Tipos de Documentos",
 };
 
-export default function NavbarLayout({}: Route.ComponentProps) {
+export default function AdminLayout({}: Route.ComponentProps) {
   const location = useLocation();
   const title = titles[location.pathname] || "Panel de Control";
 
@@ -42,7 +42,7 @@ export default function NavbarLayout({}: Route.ComponentProps) {
           { label: 'Skills', href: '/admin/skills', isActive: location.pathname === '/admin/skills' },
           { label: 'Tipos de Docs', href: '/admin/document-types', isActive: location.pathname === '/admin/document-types' },
         ]}
-        rightItems={[{ label: 'Mi cuenta', href: '/profile' }, { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await import('~/util/AuthContext').then(m => m.logout()); window.location.href = '/'; } }]}
+        rightItems={[{ label: 'Mi cuenta', href: '/profile' }, { label: 'Cerrar sesión', asButton: true, color: 'primary', onPress: async () => { await logout(); } }]}
         showNotificationBell
       />
 

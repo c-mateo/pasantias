@@ -3,8 +3,8 @@ import { Button } from "@heroui/button";
 import { Form, Input, type InputProps } from "@heroui/react";
 import { api } from "~/api/api";
 import toast from "~/util/toast";
-import { requireUser, checkSession } from "~/util/AuthContext";
-import { redirect } from "react-router";
+import { requireUser, checkSession, useAuth } from "~/util/AuthContext";
+import { Navigate, redirect } from "react-router";
 
 export async function clientLoader() {
   const user = await requireUser();
@@ -35,6 +35,10 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+
+  const auth = useAuth()
+
+  if (!auth.user) return <Navigate to="/" replace />;
 
   useEffect(() => {
     let mounted = true;

@@ -9,11 +9,8 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
-import transmit from '@adonisjs/transmit/services/main'
 import { UserRole } from '../generated/prisma/enums.js'
 import { admin, auth, forgot, profile, reset } from './limiter.js'
-
-transmit.registerRoutes()
 
 router
   .group(() => {

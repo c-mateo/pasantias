@@ -72,7 +72,6 @@ const defaultActions: RowActions = (item, { createHref, handleDeleteItem }) => {
   return (
     <ActionButtons
       onDelete={() => {
-        console.log("Deleting item:", item.id);
         handleDeleteItem();
       }}
       editHref={
@@ -124,10 +123,8 @@ export default function AdminList2<
   };
 
   const createDeleteItemHandler = (id: number) => () => {
-    console.log("Deleting item:", id);
     const name = items.find((it) => getId(it) === id);
     const displayName = getDisplayName(name);
-    console.log("Deleting item:", displayName);
     setModal({
       isOpen: true,
       message: (
@@ -196,7 +193,6 @@ export default function AdminList2<
   const filteredItems = useMemo(() => {
     if (!filterValue) return items;
     if (fuse) {
-      console.log('Using fuse search for', filterValue);
       return fuse.search(filterValue).map(result => result.item);
     }
 

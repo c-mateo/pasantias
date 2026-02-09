@@ -64,7 +64,6 @@ export default class DraftsController {
 
   async save({ request, auth }: HttpContext) {
     const { params, customFieldsValues } = await request.validateUsing(validator)
-    console.log(customFieldsValues)
 
     const offerId = params.offerId
 

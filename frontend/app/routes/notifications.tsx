@@ -68,9 +68,34 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
     }
   };
 
+  const markAll = async () => {
+    try {
+      await notifications.markAllAsRead();
+      toast.success({ title: "Leído", message: "Todas las notificaciones marcadas como leídas" });
+    } catch (err) {
+      toast.error({ title: "Error", message: "No se pudieron marcar todas como leídas" });
+    }
+  };
+
+  const deleteAll = async () => {
+    if (!confirm('¿Eliminar todas las notificaciones? Esta acción no se puede deshacer.')) return;
+    try {
+      await notifications.removeAll();
+      toast.success({ title: "Eliminadas", message: "Todas las notificaciones fueron eliminadas" });
+    } catch (err) {
+      toast.error({ title: "Error", message: "No se pudieron eliminar todas las notificaciones" });
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Notificaciones</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Notificaciones</h1>
+        <div className="flex gap-2">
+          <Button onPress={markAll} size="sm" disabled={items.length === 0 || loading}>Marcar todas como leídas</Button>
+          <Button onPress={deleteAll} color="danger" size="sm" disabled={items.length === 0 || loading}>Eliminar todas</Button>
+        </div>
+      </div>
       <div className="bg-white border rounded">
         <ul>
           {items.map((n) => (
@@ -89,7 +114,7 @@ export default function Notifications({ loaderData }: Route.ComponentProps) {
                 {!n.readAt && (
                   <Button className="text-sm text-blue-600" onPress={() => markAsRead(n.id)} color="default" size="sm">Marcar leída</Button>
                 )}
-                <Button className="text-sm text-red-600" onPress={() => remove(n.id)} color="default" size="sm">Eliminar</Button>
+                <Button className="text-sm" onPress={() => remove(n.id)} color="danger" size="sm">Eliminar</Button>
               </div>
             </li>
           ))}
