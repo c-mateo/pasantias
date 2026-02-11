@@ -3,6 +3,9 @@ import { api } from '~/api/api'
 import type { NotificationDTO, NotificationsListResponse } from '~/api/types'
 import { useAuthState } from './AuthContext'
 
+// polling timer id (module-scoped so only one timer runs)
+let pollingTimer: number | null = null
+
 type State = {
   items: NotificationDTO[]
   page: number | null
@@ -17,7 +20,9 @@ type State = {
   removeAll: () => Promise<void>
   push: (n: NotificationDTO) => void
   setItems: (items: NotificationDTO[]) => void
-}
+  startPolling: (intervalMs?: number) => void
+  stopPolling: () => void
+} 
 
 export const useNotifications = create<State>((set, get) => ({
   items: [],
@@ -125,6 +130,37 @@ export const useNotifications = create<State>((set, get) => ({
   push: (n: NotificationDTO) => {
     set((state) => ({ items: [n, ...state.items].slice(0, 100), unread: state.unread + (n.readAt ? 0 : 1) }))
   },
+
+  // Start polling for new notifications. intervalMs defaults to 60000 (1 min)
+  startPolling: (intervalMs = 60000) => {
+    const auth = useAuthState.getState();
+    if (!auth.user) return;
+    if (pollingTimer) return; // already polling
+
+    // polling starts after the first interval (no immediate fetch)
+    pollingTimer = window.setInterval(async () => {
+      try {
+        const res = await api.get('/notifications?limit=20').json<NotificationsListResponse>()
+        const data = res?.data ?? []
+        set((state) => {
+          const existingIds = new Set(state.items.map(i => i.id))
+          const newItems = data.filter(d => !existingIds.has(d.id))
+          if (newItems.length === 0) return {}
+          return { items: [...newItems, ...state.items].slice(0,100), unread: state.unread + newItems.filter(n=>!n.readAt).length }
+        })
+      } catch (e) {
+        console.error('polling fetch', e)
+      }
+    }, intervalMs)
+  },
+
+  stopPolling: () => {
+    if (pollingTimer) {
+      clearInterval(pollingTimer)
+      pollingTimer = null
+    }
+  },
+
   setItems: (items: NotificationDTO[]) => set({ items, unread: items.filter(n => !n.readAt).length })
 }))
 

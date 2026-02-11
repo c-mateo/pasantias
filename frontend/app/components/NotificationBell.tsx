@@ -33,6 +33,12 @@ export default function NotificationBell({
     // initial load
     if (!notifications.loadedOnce) void notifications.loadInitial();
 
+    // start polling for new notifications every 30s
+    notifications.startPolling?.(30_000);
+
+    return () => {
+      notifications.stopPolling?.();
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user]);

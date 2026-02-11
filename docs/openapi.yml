@@ -1,294 +1,345 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: Pasantias API (initial)
-  version: 0.1.0
+  title: Sistema de Pasantías API
   description: |
-    Initial OpenAPI specification covering the most-used public and admin endpoints.
-    This file was generated from existing controllers and documentation; treat it as a living
-    document — extend with more endpoints and schemas as the backend evolves.
+    API REST para gestión de ofertas de pasantías, postulaciones y administración. 
+    Backend: AdonisJS + Prisma + PostgreSQL.
+  version: 0.1.0
+  contact:
+    name: c-mateo
 servers:
-  - url: /api
-paths:
-  /offers:
-    get:
-      summary: List offers (cursor pagination)
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: integer
-        - in: query
-          name: after
-          schema:
-            type: integer
-        - in: query
-          name: q
-          schema:
-            type: string
-        - in: query
-          name: sort
-          schema:
-            type: string
-        - in: query
-          name: courses
-          schema:
-            type: string
-        - in: query
-          name: companyId
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Paginated list of offers
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OfferListResponse'
-  /offers/{id}:
-    get:
-      summary: Offer details
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Offer detail
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OfferDetailsResponse'
-  /companies:
-    get:
-      summary: List companies (admin/public)
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: integer
-        - in: query
-          name: after
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Paginated list of companies
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompanyListResponse'
-  /admin/users:
-    get:
-      summary: Admin — list users (cursor pagination)
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: integer
-        - in: query
-          name: after
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Paginated list of users
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserListResponse'
+  - url: http://localhost:3333/api/v1
+    description: Desarrollo local
+  - url: /api/v1
+    description: Servidor relativo
 
-  /offers/{offerId}/draft:
-    get:
-      summary: Get current user's draft for an offer
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Draft detail
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DraftGetResponse'
-        '204':
-          description: No draft exists
-    patch:
-      summary: Save draft (custom fields)
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DraftSaveBody'
-      responses:
-        '200':
-          description: Draft saved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DraftSaveResponse'
-    delete:
-      summary: Delete draft (and its attachments)
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Deleted
-
-  /offers/{offerId}/draft/documents/{reqDocId}:
-    put:
-      summary: Upload a document for a required document type
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: reqDocId
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/pdf:
-            schema:
-              type: string
-              format: binary
-      responses:
-        '200':
-          description: Document uploaded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UploadDocumentResponse'
-
-  /offers/{offerId}/draft/documents/{attachmentId}:
-    delete:
-      summary: Unlink a document attachment from a draft
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: attachmentId
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Deleted
-
-  /offers/{offerId}/draft/documents/use-existing:
-    post:
-      summary: Link an existing user document to the draft
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                documentId:
-                  type: integer
-              required:
-                - documentId
-      responses:
-        '200':
-          description: Document linked
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DraftAttachmentDTO'
-
-  /offers/{offerId}/draft/submit:
-    post:
-      summary: Submit draft to create an application
-      parameters:
-        - in: path
-          name: offerId
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Application submitted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApplicationSubmitResponse'
-
-  /my-documents:
-    get:
-      summary: List user documents
-      responses:
-        '200':
-          description: List of user's documents
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MyDocumentsListResponse'
-
-  /my-documents/{id}/download:
-    post:
-      summary: Download a document (returns binary PDF)
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: PDF file
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
+tags:
+  - name: Auth
+    description: Autenticación y gestión de sesiones
+  - name: Profile
+    description: Perfil del usuario autenticado
+  - name: Courses
+    description: Gestión de carreras académicas
+  - name: Companies
+    description: Gestión de empresas
+  - name: Offers
+    description: Gestión de ofertas de pasantías
+  - name: Skills
+    description: Gestión de habilidades/skills
+  - name: DocumentTypes
+    description: Tipos de documentos requeridos
+  - name: Applications
+    description: Postulaciones (estudiantes y admin)
+  - name: Drafts
+    description: Borradores de postulación
+  - name: Documents
+    description: Documentos del usuario
+  - name: Notifications
+    description: Notificaciones del usuario
+  - name: Users (Admin)
+    description: Administración de usuarios (solo ADMIN)
 
 components:
   securitySchemes:
     cookieAuth:
       type: apiKey
       in: cookie
-      name: session
+      name: adonis-session
+      description: Sesión basada en cookies (web guard). Autenticación mediante cookie HttpOnly.
+
   schemas:
-    CursorPagination:
+    # ========================
+    # AUTH & USER
+    # ========================
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: estudiante@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    RegisterRequest:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        firstName:
+          type: string
+          minLength: 1
+          description: Solo letras y espacios
+        lastName:
+          type: string
+          minLength: 1
+          description: Solo letras y espacios
+
+    LoginResponse:
       type: object
       properties:
-        limit:
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/UserSummary"
+            sessionExpiresAt:
+              type: string
+              format: date-time
+              description: Fecha de expiración de sesión (7 días)
+            links:
+              type: array
+              items:
+                $ref: "#/components/schemas/HATEOASLink"
+
+    RegisterResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+            email:
+              type: string
+            role:
+              type: string
+              enum: [STUDENT, ADMIN]
+            firstName:
+              type: string
+            lastName:
+              type: string
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/HATEOASLink"
+
+    UserSummary:
+      type: object
+      properties:
+        id:
           type: integer
-        hasNext:
-          type: boolean
-        next:
+        email:
+          type: string
+        role:
+          type: string
+          enum: [STUDENT, ADMIN]
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
           type: integer
+        role:
+          type: string
+          enum: [STUDENT, ADMIN]
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        cuil:
+          type: string
           nullable: true
-    OfferDTO:
+          pattern: '^\d{2}-\d{8}-\d{1}$'
+        phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseRef"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillDetail"
+
+    # ========================
+    # COURSES
+    # ========================
+    CourseRef:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+
+    CourseDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CourseCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        shortName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          nullable: true
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+
+    CourseUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        shortName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          nullable: true
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+
+    # ========================
+    # COMPANIES
+    # ========================
+    CompanyRef:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        logo:
+          type: string
+          nullable: true
+          format: uri
+
+    CompanyDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+          format: uri
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        logo:
+          type: string
+          nullable: true
+          format: uri
+
+    CompanyCreateRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+        website:
+          type: string
+          format: uri
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        logo:
+          type: string
+          maxLength: 500
+          format: uri
+
+    CompanyUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+        website:
+          type: string
+          format: uri
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        logo:
+          type: string
+          maxLength: 500
+          format: uri
+
+    # ========================
+    # OFFERS
+    # ========================
+    OfferSummary:
       type: object
       properties:
         id:
@@ -297,73 +348,185 @@ components:
           type: string
         description:
           type: string
-          nullable: true
         status:
           type: string
-        vacancies:
-          type: integer
+          enum: [DRAFT, ACTIVE, CLOSED]
         publishedAt:
           type: string
+          format: date-time
           nullable: true
-    OfferListResponse:
-      type: object
-      properties:
-        data:
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        vacancies:
+          type: integer
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        salary:
+          type: number
+          nullable: true
+        durationWeeks:
+          type: integer
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        company:
+          $ref: "#/components/schemas/CompanyRef"
+        skills:
           type: array
           items:
-            $ref: '#/components/schemas/OfferDTO'
-        pagination:
-          $ref: '#/components/schemas/CursorPagination'
-    OfferDetailsResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            id:
-              type: integer
-            position:
-              type: string
-            company:
-              type: object
-              properties:
-                id: { type: integer }
-                name: { type: string }
-    CompanyDTO:
-      type: object
-      properties:
-        id: { type: integer }
-        name: { type: string }
-        email: { type: string }
-        website: { type: string, nullable: true }
-    CompanyListResponse:
-      type: object
-      properties:
-        data:
+            $ref: "#/components/schemas/SkillRef"
+        courses:
           type: array
           items:
-            $ref: '#/components/schemas/CompanyDTO'
-        pagination:
-          $ref: '#/components/schemas/CursorPagination'
-    UserDTO:
-      type: object
-      properties:
-        id: { type: integer }
-        firstName: { type: string }
-        lastName: { type: string }
-        email: { type: string }
-        role: { type: string }
-    UserListResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/UserDTO'
-        pagination:
-          $ref: '#/components/schemas/CursorPagination'
+            $ref: "#/components/schemas/CourseRef"
 
-    DocumentTypeDTO:
+    OfferDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        position:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, CLOSED]
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        requirements:
+          type: string
+          nullable: true
+        vacancies:
+          type: integer
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        salary:
+          type: number
+          nullable: true
+        durationWeeks:
+          type: integer
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        company:
+          $ref: "#/components/schemas/CompanyDetail"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillDetail"
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/CourseRef"
+        requiredDocuments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentTypeRef"
+
+    OfferCreateRequest:
+      type: object
+      required: [position, description, companyId, status, vacancies]
+      properties:
+        position:
+          type: string
+        description:
+          type: string
+        companyId:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE]
+        vacancies:
+          type: integer
+        requirements:
+          type: string
+        location:
+          type: string
+        salary:
+          type: number
+        durationWeeks:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        courses:
+          type: array
+          items:
+            type: integer
+        skills:
+          type: array
+          items:
+            type: integer
+        requiredDocuments:
+          type: array
+          items:
+            type: integer
+
+    OfferUpdateRequest:
+      type: object
+      properties:
+        position:
+          type: string
+        description:
+          type: string
+        companyId:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, CLOSED]
+        vacancies:
+          type: integer
+        requirements:
+          type: string
+        location:
+          type: string
+        salary:
+          type: number
+        durationWeeks:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        courses:
+          type: array
+          items:
+            type: integer
+        skills:
+          type: array
+          items:
+            type: integer
+        requiredDocuments:
+          type: array
+          items:
+            type: integer
+
+    # ========================
+    # SKILLS
+    # ========================
+    SkillRef:
       type: object
       properties:
         id:
@@ -371,37 +534,204 @@ components:
         name:
           type: string
 
-    DocumentDTO:
+    SkillDetail:
       type: object
       properties:
         id:
           type: integer
-        documentType:
-          $ref: '#/components/schemas/DocumentTypeDTO'
-        originalName:
+        name:
           type: string
-        hash:
-          type: object
-          properties:
-            sha256:
-              type: string
-        createdAt:
+        description:
           type: string
-        lastUsedAt:
+          nullable: true
+
+    SkillCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
           type: string
 
-    MyDocumentsListResponse:
+    SkillUpdateRequest:
       type: object
       properties:
-        data:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+
+    # ========================
+    # DOCUMENT TYPES
+    # ========================
+    DocumentTypeRef:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    DocumentTypeDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DocumentTypeCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    DocumentTypeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    # ========================
+    # APPLICATIONS
+    # ========================
+    ApplicationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, BLOCKED, ACCEPTED, REJECTED, CANCELED]
+        createdAt:
+          type: string
+          format: date-time
+        finalizedAt:
+          type: string
+          format: date-time
+          nullable: true
+        offer:
+          type: object
+          properties:
+            id:
+              type: integer
+            position:
+              type: string
+            company:
+              $ref: "#/components/schemas/CompanyRef"
+
+    ApplicationDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, BLOCKED, ACCEPTED, REJECTED, CANCELED]
+        offer:
+          type: object
+          properties:
+            id:
+              type: integer
+            position:
+              type: string
+            company:
+              $ref: "#/components/schemas/CompanyRef"
+        createdAt:
+          type: string
+          format: date-time
+        finalizedAt:
+          type: string
+          format: date-time
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+        blockedAt:
+          type: string
+          format: date-time
+          nullable: true
+        blockReason:
+          type: string
+          nullable: true
+        unblockedAt:
+          type: string
+          format: date-time
+          nullable: true
+        documents:
           type: array
           items:
-            $ref: '#/components/schemas/DocumentDTO'
-        pagination:
-          $ref: '#/components/schemas/CursorPagination'
+            type: object
+            properties:
+              id:
+                type: integer
+              originalName:
+                type: string
+              documentType:
+                type: string
+        user:
+          type: object
+          description: Solo visible para admin
+          properties:
+            id:
+              type: integer
+            firstName:
+              type: string
+            lastName:
+              type: string
+            email:
+              type: string
+            cuil:
+              type: string
+              nullable: true
+            address:
+              type: string
+              nullable: true
+            city:
+              type: string
+              nullable: true
+            province:
+              type: string
+              nullable: true
+            phone:
+              type: string
+              nullable: true
 
-    DraftDTO:
+    ApplicationUpdateStatusRequest:
       type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [PENDING, BLOCKED, ACCEPTED, REJECTED]
+        blockReason:
+          type: string
+          description: Requerido si status=BLOCKED
+        feedback:
+          type: string
+
+    # ========================
+    # DRAFTS
+    # ========================
+    DraftDetail:
+      type: object
+      description: "Representa un borrador. `customFieldsValues` es opcional y no está validado dinámicamente en el servidor."
       properties:
         id:
           type: integer
@@ -411,60 +741,63 @@ components:
           type: integer
         customFieldsValues:
           type: object
-          additionalProperties: true
+          nullable: true
         createdAt:
           type: string
+          format: date-time
         updatedAt:
           type: string
+          format: date-time
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              document:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  documentTypeId:
+                    type: integer
+                  documentType:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                  originalName:
+                    type: string
 
-    DraftAttachmentDTO:
+    DraftSaveRequest:
       type: object
-      properties:
-        id:
-          type: integer
-        document:
-          type: object
-          properties:
-            id:
-              type: integer
-            documentTypeId:
-              type: integer
-            documentType:
-              $ref: '#/components/schemas/DocumentTypeDTO'
-            originalName:
-              type: string
-
-    DraftGetResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            id:
-              type: integer
-            userId:
-              type: integer
-            offerId:
-              type: integer
-            attachments:
-              type: array
-              items:
-                $ref: '#/components/schemas/DraftAttachmentDTO'
-
-    DraftSaveBody:
-      type: object
+      description: "Campos personalizados opcionales. `customFieldsValues` no se valida dinámicamente contra `customFieldsSchema` en el servidor; los valores se almacenan como JSON libre."
       properties:
         customFieldsValues:
           type: object
-          additionalProperties: true
+          nullable: true
 
-    DraftSaveResponse:
+    DraftSubmitResponse:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/DraftDTO'
-          
-    DocumentAttachmentInfoDTO:
+          type: object
+          properties:
+            applicationId:
+              type: integer
+            status:
+              type: string
+            appliedAt:
+              type: string
+              format: date-time
+
+    # ========================
+    # DOCUMENTS
+    # ========================
+    DocumentDetail:
       type: object
       properties:
         id:
@@ -481,47 +814,2188 @@ components:
             sha256:
               type: string
 
-    UploadDocumentResponse:
+    # ========================
+    # NOTIFICATIONS
+    # ========================
+    NotificationSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    BroadcastNotificationRequest:
+      type: object
+      required: [title, message]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+        users:
+          oneOf:
+            - type: array
+              items:
+                type: integer
+            - type: string
+              enum: [all]
+
+    # ========================
+    # PROFILE
+    # ========================
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        skillsIds:
+          type: array
+          items:
+            type: integer
+          nullable: true
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    SetCuilRequest:
+      type: object
+      required: [cuil]
+      properties:
+        cuil:
+          type: string
+          pattern: '^\d{2}-\d{8}-\d{1}$'
+
+    RequestEmailChangeRequest:
+      type: object
+      required: [newEmail, currentPassword]
+      properties:
+        newEmail:
+          type: string
+          format: email
+        currentPassword:
+          type: string
+
+    # ========================
+    # PAGINATION
+    # ========================
+    PaginatedResponse:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/DocumentAttachmentInfoDTO'
-        links:
+          type: array
+          items:
+            type: object
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            after:
+              type: integer
+              nullable: true
+            hasMore:
+              type: boolean
+
+    # ========================
+    # ERRORS
+    # ========================
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
           type: array
           items:
             type: object
             properties:
-              rel:
+              field:
                 type: string
-              href:
-                type: string
-              method:
+              message:
                 type: string
 
-    ApplicationSubmitResponse:
+    HATEOASLink:
       type: object
       properties:
-        data:
-          type: object
-          properties:
-            applicationId:
-              type: integer
-            status:
-              type: string
-            appliedAt:
-              type: string
+        rel:
+          type: string
+        href:
+          type: string
+        method:
+          type: string
 
-    ApiError:
-      type: object
-      properties:
-        type:
-          type: string
-        title:
-          type: string
-        status:
-          type: integer
-        detail:
-          type: string
-        meta:
-          type: object
-          additionalProperties: true
+paths:
+  # ========================
+  # AUTH
+  # ========================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login exitoso
+          headers:
+            Set-Cookie:
+              description: Cookie de sesión
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesión
+      operationId: logout
+      security:
+        - cookieAuth: []
+      responses:
+        "204":
+          description: Logout exitoso
+        "401":
+          description: No autenticado
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar nuevo usuario
+      description: El primer usuario registrado se convierte en ADMIN automáticamente. Los siguientes son STUDENT por defecto.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+        "409":
+          description: Email ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/password/forgot:
+    post:
+      tags: [Auth]
+      summary: Solicitar reset de contraseña
+      description: Envía un email con un enlace de reset. Siempre responde 200 (anti-enumeración).
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Si el email existe, se enviará un correo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/password/reset:
+    post:
+      tags: [Auth]
+      summary: Resetear contraseña con token
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  email:
+                    type: string
+        "400":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ========================
+  # PROFILE
+  # ========================
+  /profile:
+    get:
+      tags: [Profile]
+      summary: Obtener perfil del usuario autenticado
+      operationId: getProfile
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HATEOASLink"
+        "401":
+          description: No autenticado
+
+    patch:
+      tags: [Profile]
+      summary: Actualizar perfil del usuario
+      operationId: updateProfile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateRequest"
+      responses:
+        "200":
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: No autenticado
+        "422":
+          description: Error de validación
+
+  /profile/change-email:
+    post:
+      tags: [Profile]
+      summary: Solicitar cambio de email
+      description: Envía un correo de confirmación al nuevo email
+      operationId: requestEmailChange
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestEmailChangeRequest"
+      responses:
+        "200":
+          description: Email de confirmación enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Credenciales inválidas o no autenticado
+        "409":
+          description: El nuevo email ya está en uso
+
+  /profile/email/confirm:
+    post:
+      tags: [Profile]
+      summary: Confirmar cambio de email con token
+      operationId: confirmEmailChange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Email actualizado
+        "400":
+          description: Token inválido o expirado
+
+  /profile/verify:
+    post:
+      tags: [Profile]
+      summary: Verificar email del usuario
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Email verificado
+        "400":
+          description: Token inválido o expirado
+
+  /profile/change-password:
+    post:
+      tags: [Profile]
+      summary: Cambiar contraseña del usuario
+      operationId: changePassword
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "401":
+          description: Credenciales inválidas o no autenticado
+
+  /profile/set-cuil:
+    post:
+      tags: [Profile]
+      summary: Establecer CUIL del usuario (una sola vez)
+      description: El CUIL no se puede cambiar una vez establecido. Contactar soporte para cambios.
+      operationId: setCuil
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetCuilRequest"
+      responses:
+        "200":
+          description: CUIL establecido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      cuil:
+                        type: string
+        "400":
+          description: CUIL ya establecido o formato inválido
+        "401":
+          description: No autenticado
+        "409":
+          description: CUIL ya en uso
+
+  # ========================
+  # NOTIFICATIONS
+  # ========================
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Listar notificaciones del usuario
+      operationId: listNotifications
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de notificaciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationSummary"
+                  pagination:
+                    type: object
+        "401":
+          description: No autenticado
+
+  /notifications/{id}:
+    get:
+      tags: [Notifications]
+      summary: Obtener notificación por ID
+      operationId: getNotification
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de notificación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/NotificationSummary"
+        "401":
+          description: No autenticado
+        "404":
+          description: Notificación no encontrada
+
+    delete:
+      tags: [Notifications]
+      summary: Eliminar notificación
+      operationId: deleteNotification
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Notificación eliminada
+        "401":
+          description: No autenticado
+        "404":
+          description: Notificación no encontrada
+
+  /notifications/{id}/mark-as-read:
+    patch:
+      tags: [Notifications]
+      summary: Marcar notificación como leída
+      operationId: markNotificationAsRead
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notificación marcada como leída
+        "401":
+          description: No autenticado
+        "404":
+          description: Notificación no encontrada
+
+  # ========================
+  # COURSES
+  # ========================
+  /courses:
+    get:
+      tags: [Courses]
+      summary: Listar carreras
+      operationId: listCourses
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              [
+                name,
+                -name,
+                shortName,
+                -shortName,
+                createdAt,
+                -createdAt,
+                updatedAt,
+                -updatedAt,
+              ]
+        - name: filter[name][contains]
+          in: query
+          schema:
+            type: string
+        - name: filter[name][eq]
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de carreras
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+
+  /courses/{id}:
+    get:
+      tags: [Courses]
+      summary: Obtener carrera por ID
+      operationId: getCourse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de carrera
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CourseDetail"
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HATEOASLink"
+        "404":
+          description: Carrera no encontrada
+
+  # ========================
+  # COMPANIES
+  # ========================
+  /companies:
+    get:
+      tags: [Companies]
+      summary: Listar empresas
+      operationId: listCompanies
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [name, -name, createdAt, -createdAt, updatedAt, -updatedAt]
+      responses:
+        "200":
+          description: Lista de empresas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+
+  /companies/{id}:
+    get:
+      tags: [Companies]
+      summary: Obtener empresa por ID
+      operationId: getCompany
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de empresa
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CompanyDetail"
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HATEOASLink"
+        "404":
+          description: Empresa no encontrada
+
+  /companies/{id}/offers:
+    get:
+      tags: [Companies]
+      summary: Listar ofertas de una empresa
+      operationId: getCompanyOffers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de ofertas de la empresa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+        "404":
+          description: Empresa no encontrada
+
+  # ========================
+  # OFFERS
+  # ========================
+  /offers:
+    get:
+      tags: [Offers]
+      summary: Listar ofertas
+      description: Usuarios no-admin solo ven ofertas ACTIVE. Admins pueden filtrar por status.
+      operationId: listOffers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              [
+                position,
+                -position,
+                publishedAt,
+                -publishedAt,
+                expiresAt,
+                -expiresAt,
+              ]
+        - name: filter[position][contains]
+          in: query
+          schema:
+            type: string
+        - name: filter[status][eq]
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, ACTIVE, CLOSED]
+      responses:
+        "200":
+          description: Lista de ofertas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+
+  /offers/{id}:
+    get:
+      tags: [Offers]
+      summary: Obtener oferta por ID
+      operationId: getOffer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de oferta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferDetail"
+        "404":
+          description: Oferta no encontrada
+
+  # ========================
+  # SKILLS
+  # ========================
+  /skills:
+    get:
+      tags: [Skills]
+      summary: Listar skills
+      operationId: listSkills
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de skills
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+
+  /skills/{id}:
+    get:
+      tags: [Skills]
+      summary: Obtener skill por ID
+      operationId: getSkill
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de skill
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SkillDetail"
+        "404":
+          description: Skill no encontrada
+
+  # ========================
+  # DOCUMENT TYPES
+  # ========================
+  /document-types:
+    get:
+      tags: [DocumentTypes]
+      summary: Listar tipos de documentos
+      operationId: listDocumentTypes
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de tipos de documentos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+
+  /document-types/{id}:
+    get:
+      tags: [DocumentTypes]
+      summary: Obtener tipo de documento por ID
+      operationId: getDocumentType
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de tipo de documento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DocumentTypeDetail"
+        "404":
+          description: Tipo de documento no encontrado
+
+  # ========================
+  # DRAFTS (Borradores de postulación)
+  # ========================
+  /offers/{offerId}/draft:
+    get:
+      tags: [Drafts]
+      summary: Obtener borrador del usuario para una oferta
+      operationId: getDraft
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Borrador existente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftDetail"
+        "204":
+          description: No existe borrador
+        "401":
+          description: No autenticado
+        "404":
+          description: Oferta no encontrada o no ACTIVE
+
+    patch:
+      tags: [Drafts]
+      summary: Guardar/actualizar borrador
+      operationId: saveDraft
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftSaveRequest"
+      responses:
+        "200":
+          description: Borrador guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DraftDetail"
+        "401":
+          description: No autenticado
+        "404":
+          description: Oferta no encontrada o no ACTIVE
+
+    delete:
+      tags: [Drafts]
+      summary: Eliminar borrador
+      operationId: clearDraft
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Borrador eliminado
+        "401":
+          description: No autenticado
+        "404":
+          description: Borrador no encontrado
+
+  /offers/{offerId}/draft/submit:
+    post:
+      tags: [Drafts]
+      summary: Enviar borrador como postulación
+      description: Convierte el borrador en una Application y lo elimina. Valida que todos los documentos requeridos estén presentes.
+      operationId: submitDraft
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Postulación creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftSubmitResponse"
+        "400":
+          description: Borrador incompleto (faltan documentos)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  completed:
+                    type: integer
+                  total:
+                    type: integer
+                  missing:
+                    type: object
+        "401":
+          description: No autenticado
+        "404":
+          description: Borrador no encontrado
+        "409":
+          description: Ya existe una postulación para esta oferta
+
+  /offers/{offerId}/draft/documents/{reqDocId}:
+    put:
+      tags: [Drafts]
+      summary: Subir documento PDF al borrador
+      description: |
+        Endpoint para upload de archivo PDF. Debe enviarse el PDF como binary en el body.
+        Headers requeridos:
+          - Content-Type: application/pdf
+          - Content-Length: <tamaño en bytes>
+          - X-Original-Filename: <nombre del archivo>
+        Tamaño máximo: 10 MB
+      operationId: uploadDraftDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: reqDocId
+          in: path
+          required: true
+          description: ID del tipo de documento requerido
+          schema:
+            type: integer
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [application/pdf]
+        - name: Content-Length
+          in: header
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10485760
+        - name: X-Original-Filename
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Documento subido y enlazado al borrador
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DocumentDetail"
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HATEOASLink"
+        "400":
+          description: Archivo inválido (tamaño, tipo, etc.)
+        "401":
+          description: No autenticado
+        "404":
+          description: Oferta o tipo de documento no encontrado
+
+  /offers/{offerId}/draft/documents/{attachmentId}:
+    delete:
+      tags: [Drafts]
+      summary: Remover documento del borrador
+      description: Elimina el attachment. Si el documento queda huérfano, se programa para eliminación tras 7 días.
+      operationId: removeDraftDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Documento removido del borrador
+        "401":
+          description: No autenticado
+        "404":
+          description: Attachment no encontrado
+
+  /offers/{offerId}/draft/documents/use-existing:
+    post:
+      tags: [Drafts]
+      summary: Asociar documento existente al borrador (server-side)
+      description: Asocia un documento previamente subido al borrador. Nota: la deduplicación por hash se realiza automáticamente al subir; esta ruta permite enlazar un documento existente en el servidor y **no** obliga a un flujo separado en la interfaz de usuario.
+      operationId: useExistingDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [documentId]
+              properties:
+                documentId:
+                  type: integer
+      responses:
+        "200":
+          description: Documento enlazado al borrador
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DocumentDetail"
+        "401":
+          description: No autenticado
+        "404":
+          description: Documento no encontrado
+
+  /my-drafts:
+    get:
+      tags: [Drafts]
+      summary: Listar borradores del usuario
+      operationId: listUserDrafts
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Lista de borradores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        offer:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            position:
+                              type: string
+                            company:
+                              $ref: "#/components/schemas/CompanyRef"
+                        attachmentsCount:
+                          type: integer
+        "401":
+          description: No autenticado
+
+  # ========================
+  # MY DOCUMENTS
+  # ========================
+  /my-documents:
+    get:
+      tags: [Documents]
+      summary: Listar documentos del usuario
+      operationId: listMyDocuments
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Lista de documentos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocumentDetail"
+        "401":
+          description: No autenticado
+
+  /my-documents/{id}:
+    get:
+      tags: [Documents]
+      summary: Obtener documento por ID
+      operationId: getMyDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de documento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DocumentDetail"
+        "401":
+          description: No autenticado
+        "404":
+          description: Documento no encontrado
+
+    delete:
+      tags: [Documents]
+      summary: Ocultar documento del usuario
+      description: Marca el documento como oculto (no lo elimina físicamente)
+      operationId: hideMyDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Documento oculto
+        "401":
+          description: No autenticado
+        "404":
+          description: Documento no encontrado
+
+  /my-documents/{id}/download:
+    post:
+      tags: [Documents]
+      summary: Descargar documento
+      operationId: downloadMyDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Archivo PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: No autenticado
+        "404":
+          description: Documento no encontrado
+
+  # ========================
+  # MY APPLICATIONS
+  # ========================
+  /my-applications:
+    get:
+      tags: [Applications]
+      summary: Listar postulaciones del usuario
+      operationId: listMyApplications
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+        - name: filter[status][eq]
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, BLOCKED, ACCEPTED, REJECTED, CANCELED]
+        - name: filter[status][in]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: filter[offerId][eq]
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de postulaciones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+        "401":
+          description: No autenticado
+
+  /my-applications/{id}:
+    get:
+      tags: [Applications]
+      summary: Obtener postulación por ID
+      operationId: getMyApplication
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de postulación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ApplicationDetail"
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HATEOASLink"
+        "401":
+          description: No autenticado
+        "404":
+          description: Postulación no encontrada
+
+    delete:
+      tags: [Applications]
+      summary: Cancelar postulación
+      description: Solo se pueden cancelar postulaciones PENDING o BLOCKED. Cambia el estado a CANCELED.
+      operationId: cancelApplication
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Postulación cancelada
+        "400":
+          description: Estado inválido para cancelar
+        "401":
+          description: No autenticado
+        "404":
+          description: Postulación no encontrada
+
+  # ========================
+  # ADMIN - COURSES
+  # ========================
+  /admin/courses:
+    post:
+      tags: [Courses]
+      summary: Crear carrera (solo ADMIN)
+      operationId: createCourse
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseCreateRequest"
+      responses:
+        "201":
+          description: Carrera creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CourseDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado (requiere rol ADMIN)
+        "409":
+          description: Nombre duplicado
+
+  /admin/courses/{id}:
+    patch:
+      tags: [Courses]
+      summary: Actualizar carrera (solo ADMIN)
+      operationId: updateCourse
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseUpdateRequest"
+      responses:
+        "200":
+          description: Carrera actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CourseDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Carrera no encontrada
+        "409":
+          description: Nombre duplicado
+
+    delete:
+      tags: [Courses]
+      summary: Eliminar carrera (solo ADMIN)
+      operationId: deleteCourse
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Carrera eliminada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Carrera no encontrada
+
+  # ========================
+  # ADMIN - COMPANIES
+  # ========================
+  /admin/companies:
+    post:
+      tags: [Companies]
+      summary: Crear empresa (solo ADMIN)
+      operationId: createCompany
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyCreateRequest"
+      responses:
+        "201":
+          description: Empresa creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "409":
+          description: Nombre o email duplicado
+
+  /admin/companies/{id}:
+    patch:
+      tags: [Companies]
+      summary: Actualizar empresa (solo ADMIN)
+      operationId: updateCompany
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+            $ref: "#/components/schemas/CompanyUpdateRequest"
+      responses:
+        "200":
+          description: Empresa actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CompanyDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Empresa no encontrada
+        "409":
+          description: Nombre o email duplicado
+
+    delete:
+      tags: [Companies]
+      summary: Eliminar empresa (solo ADMIN)
+      operationId: deleteCompany
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Empresa eliminada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Empresa no encontrada
+
+  # ========================
+  # ADMIN - OFFERS
+  # ========================
+  /admin/offers:
+    post:
+      tags: [Offers]
+      summary: Crear oferta (solo ADMIN)
+      operationId: createOffer
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferCreateRequest"
+      responses:
+        "200":
+          description: Oferta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Empresa no encontrada
+
+  /admin/offers/{id}:
+    patch:
+      tags: [Offers]
+      summary: Actualizar oferta (solo ADMIN)
+      operationId: updateOffer
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferUpdateRequest"
+      responses:
+        "200":
+          description: Oferta actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Oferta no encontrada
+
+    delete:
+      tags: [Offers]
+      summary: Eliminar oferta (solo ADMIN)
+      operationId: deleteOffer
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Oferta eliminada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Oferta no encontrada
+
+  # ========================
+  # ADMIN - SKILLS
+  # ========================
+  /admin/skills:
+    post:
+      tags: [Skills]
+      summary: Crear skill (solo ADMIN)
+      operationId: createSkill
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillCreateRequest"
+      responses:
+        "201":
+          description: Skill creada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "409":
+          description: Nombre duplicado
+
+  /admin/skills/{id}:
+    patch:
+      tags: [Skills]
+      summary: Actualizar skill (solo ADMIN)
+      operationId: updateSkill
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillUpdateRequest"
+      responses:
+        "200":
+          description: Skill actualizada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Skill no encontrada
+        "409":
+          description: Nombre duplicado
+
+    delete:
+      tags: [Skills]
+      summary: Eliminar skill (solo ADMIN)
+      operationId: deleteSkill
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Skill eliminada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Skill no encontrada
+
+  # ========================
+  # ADMIN - DOCUMENT TYPES
+  # ========================
+  /admin/document-types:
+    post:
+      tags: [DocumentTypes]
+      summary: Crear tipo de documento (solo ADMIN)
+      operationId: createDocumentType
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentTypeCreateRequest"
+      responses:
+        "201":
+          description: Tipo de documento creado
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "409":
+          description: Nombre duplicado
+
+  /admin/document-types/{id}:
+    patch:
+      tags: [DocumentTypes]
+      summary: Actualizar tipo de documento (solo ADMIN)
+      operationId: updateDocumentType
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentTypeUpdateRequest"
+      responses:
+        "200":
+          description: Tipo de documento actualizado
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Tipo de documento no encontrado
+        "409":
+          description: Nombre duplicado
+
+    delete:
+      tags: [DocumentTypes]
+      summary: Eliminar tipo de documento (solo ADMIN)
+      operationId: deleteDocumentType
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Tipo de documento eliminado
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Tipo de documento no encontrado
+
+  # ========================
+  # ADMIN - APPLICATIONS
+  # ========================
+  /admin/applications:
+    get:
+      tags: [Applications]
+      summary: Listar todas las postulaciones (solo ADMIN)
+      operationId: listAllApplications
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, -createdAt]
+        - name: filter[status][eq]
+          in: query
+          schema:
+            type: string
+        - name: filter[offerId][eq]
+          in: query
+          schema:
+            type: integer
+        - name: filter[userId][eq]
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de postulaciones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+
+  /admin/applications/{id}:
+    get:
+      tags: [Applications]
+      summary: Obtener postulación por ID (solo ADMIN)
+      operationId: getApplicationAdmin
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de postulación con datos del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ApplicationDetail"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Postulación no encontrada
+
+    patch:
+      tags: [Applications]
+      summary: Actualizar estado de postulación (solo ADMIN)
+      description: |
+        Transiciones permitidas:
+        - PENDING → BLOCKED, ACCEPTED, REJECTED, CANCELLED
+        - BLOCKED → PENDING, ACCEPTED, REJECTED, CANCELLED
+        - ACCEPTED, REJECTED, CANCELLED → ninguna (estado final)
+      operationId: updateApplicationStatus
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdateStatusRequest"
+      responses:
+        "200":
+          description: Estado actualizado
+        "400":
+          description: Transición de estado inválida
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Postulación no encontrada
+
+  # ========================
+  # ADMIN - NOTIFICATIONS
+  # ========================
+  /admin/notifications/broadcast:
+    post:
+      tags: [Notifications]
+      summary: Enviar notificación broadcast (solo ADMIN)
+      description: Envía una notificación a usuarios específicos o a todos
+      operationId: broadcastNotification
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BroadcastNotificationRequest"
+      responses:
+        "200":
+          description: Notificación enviada
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+
+  # ========================
+  # ADMIN - USERS
+  # ========================
+  /admin/users:
+    get:
+      tags: [Users (Admin)]
+      summary: Listar usuarios (solo ADMIN)
+      operationId: listUsers
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: after
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedResponse"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+
+  /admin/users/{id}:
+    get:
+      tags: [Users (Admin)]
+      summary: Obtener usuario por ID (solo ADMIN)
+      operationId: getUserAdmin
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+
+    patch:
+      tags: [Users (Admin)]
+      summary: Actualizar cursos del usuario (solo ADMIN)
+      operationId: updateUserCourses
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [coursesIds]
+              properties:
+                coursesIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Cursos actualizados
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+
+  /admin/users/{id}/role:
+    patch:
+      tags: [Users (Admin)]
+      summary: Cambiar rol del usuario (solo ADMIN)
+      operationId: updateUserRole
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [STUDENT, ADMIN]
+      responses:
+        "200":
+          description: Rol actualizado
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+
+  /admin/users/{id}/cuil:
+    patch:
+      tags: [Users (Admin)]
+      summary: Actualizar CUIL del usuario (solo ADMIN)
+      description: Permite al admin cambiar el CUIL de un usuario (normalmente bloqueado tras la primera vez)
+      operationId: updateUserCuil
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cuil]
+              properties:
+                cuil:
+                  type: string
+                  pattern: '^\d{2}-\d{8}-\d{1}$'
+                reason:
+                  type: string
+                  description: Razón del cambio
+      responses:
+        "200":
+          description: CUIL actualizado
+        "401":
+          description: No autenticado
+        "403":
+          description: No autorizado
+        "404":
+          description: Usuario no encontrado
+        "409":
+          description: CUIL ya en uso
