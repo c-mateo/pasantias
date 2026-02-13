@@ -30,11 +30,11 @@ export async function clientLoader({ params }: any) {
 
   // Check if the user already applied to this offer
   const apps = await api
-    .get(`/my-applications?filter=offerId==${params.ofertaId}`)
+    .get(`/my-applications/${params.ofertaId}`)
     .json<ApplicationUserListResponse>()
     .catch(() => null);
-  const hasApplied = (apps?.data.length ?? 0) > 0;
-  return { offer: offer.data ?? null, hasApplied };
+    const hasApplied = (apps?.data.length ?? 0) > 0;
+  return { offer: offer.data ?? null, hasApplied: !!apps };
 }
 
 export function meta({ data }: any) {
@@ -148,7 +148,7 @@ export default function OfertaPublic({ loaderData }: Route.ComponentProps) {
           mapping,
         );
 
-        // Overwrite attachments state with server mapping to avoid stale/merged keys causing wrong UI states
+        // Overwrite attachments state w/ith server mapping ]==$to avoid stale/merged keys causing wrong UI states
         setAttachments(mapping);
       } catch (err) {
         // ignore

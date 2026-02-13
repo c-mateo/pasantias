@@ -337,19 +337,7 @@ export default class DraftsController {
   async submit({ request, auth }: HttpContext) {
     const { params } = await request.validateUsing(idValidator)
 
-    const draft = await prisma.draft.findUniqueOrThrow({
-      where: {
-        userId_offerId: {
-          userId: auth.user!.id,
-          offerId: params.offerId,
-        },
-      },
-      include: {
-        attachments: true,
-      },
-    })
-
-    // Validar que el draft está completo (documentos requeridos)
+    // Primero obtener los documentos requeridos para la oferta (pueden ser 0)
     const requiredDocs = await prisma.requiredDocument.findMany({
       where: {
         offerId: params.offerId,
@@ -364,7 +352,73 @@ export default class DraftsController {
       },
     })
 
-    // Nota: también debería validarse customFieldsValues si aplica.
+    // Intentar obtener el draft del usuario — puede no existir.
+    const draft = await prisma.draft.findUnique({
+      where: {
+        userId_offerId: {
+          userId: auth.user!.id,
+          offerId: params.offerId,
+        },
+      },
+      include: {
+        attachments: true,
+      },
+    })
+
+    // Si no hay draft y no se requieren documentos, crear la aplicación directamente.
+    if (!draft && requiredDocs.length === 0) {
+      const application = await prisma.application.guardedCreate(
+        {
+          data: {
+            userId: auth.user!.id,
+            offerId: params.offerId,
+            // No hay draft ni attachments; conservar campo custom si aplica en futuros cambios.
+          },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+        [checkUnique(['userId', 'offerId']), checkFK(['userId', 'offerId'])]
+      )
+
+      // Enqueue notification and email jobs (mismo comportamiento que cuando hay draft)
+      await CreateNotifications.dispatch({
+        users: [auth.user!.id],
+        title: 'Application submitted',
+        message: `Your application for offer ${params.offerId} was submitted.`,
+        tag: 'APPLICATION_SUBMITTED',
+      })
+
+      const companyAdmins = await prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+      })
+      if (companyAdmins.length > 0) {
+        await CreateNotifications.dispatch({
+          users: companyAdmins.map((u) => u.id),
+          title: 'New application',
+          message: `A new application was submitted for offer ${params.offerId}.`,
+          tag: 'APPLICATION_SUBMITTED',
+        }).catch(console.error)
+      }
+
+      return {
+        data: {
+          applicationId: application.id,
+          status: application.status,
+          appliedAt: application.createdAt,
+        },
+      }
+    }
+
+    // Si no existe el draft y sí hay requisitos, devolver 404 (igual comportamiento anterior).
+    if (!draft) {
+      throw apiErrors.notFound('Draft', params.offerId)
+    }
+
+    // Validar que el draft está completo (documentos requeridos)
     const completed = draft.attachments.length
     const total = requiredDocs.length
     if (total !== completed) {
